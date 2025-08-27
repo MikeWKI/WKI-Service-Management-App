@@ -1,0 +1,249 @@
+import React, { useState } from 'react';
+import { ChevronRight, ChevronLeft, FileText, ExternalLink, Book, Users, Wrench, Package, AlertCircle, Settings, Link } from 'lucide-react';
+
+interface ReferenceDocument {
+  id: string;
+  title: string;
+  description: string;
+  url: string;
+  icon: React.ReactNode;
+  category: 'workflow' | 'technical' | 'training' | 'policy';
+  isExternal?: boolean;
+}
+
+const referenceDocuments: ReferenceDocument[] = [
+  {
+    id: 'decisiv-portal',
+    title: 'Decisiv Portal',
+    description: 'Access Decisiv case management system',
+    url: 'https://paccar.decisiv.net/',
+    icon: <ExternalLink size={16} />,
+    category: 'workflow',
+    isExternal: true
+  },
+  {
+    id: 'vision-dashboards',
+    title: 'Vision - Decisiv Dashboards',
+    description: 'Advanced analytics and reporting dashboards',
+    url: 'https://vision.decisivapps.com/',
+    icon: <Package size={16} />,
+    category: 'technical',
+    isExternal: true
+  },
+  {
+    id: 'canto-scorecard',
+    title: 'Canto - Dealer Scorecard',
+    description: 'Dealer scorecard documents and resources',
+    url: 'https://kenworth.canto.com/w/WichitaKenworth/album/SVDGV?display=curatedView&viewIndex=1&referenceTo=&from=thumbnail',
+    icon: <Wrench size={16} />,
+    category: 'technical',
+    isExternal: true
+  },
+  {
+    id: 'decisiv-training-portal',
+    title: 'Decisiv Training Portal',
+    description: 'Decisiv system training courses and certifications',
+    url: 'https://bca-training.net/kenworthdealertraining/launchseries/56D55CDB-8CE5-44F3-9BC6-BF60D21459F4',
+    icon: <Users size={16} />,
+    category: 'training',
+    isExternal: true
+  },
+  {
+    id: 'workflow-guide',
+    title: 'Service Workflow Guide',
+    description: 'Complete workflow procedures and best practices',
+    url: '/metrics/definitions',
+    icon: <Book size={16} />,
+    category: 'workflow'
+  },
+  {
+    id: 'safety-procedures',
+    title: 'Safety Procedures',
+    description: 'Workplace safety guidelines and protocols',
+    url: '#safety',
+    icon: <AlertCircle size={16} />,
+    category: 'policy'
+  },
+  {
+    id: 'quality-standards',
+    title: 'Quality Standards',
+    description: 'Service quality requirements and checklists',
+    url: '#quality',
+    icon: <Settings size={16} />,
+    category: 'policy'
+  }
+];
+
+const categoryColors = {
+  workflow: 'from-blue-500 to-blue-600',
+  technical: 'from-green-500 to-green-600',
+  training: 'from-purple-500 to-purple-600',
+  policy: 'from-orange-500 to-orange-600'
+};
+
+const categoryLabels = {
+  workflow: 'Workflow',
+  technical: 'Technical',
+  training: 'Training',
+  policy: 'Policy'
+};
+
+export default function QuickLinksPanel() {
+  const [isExpanded, setIsExpanded] = useState(false); // Changed to false for collapsed by default
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+
+  const filteredDocuments = selectedCategory === 'all' 
+    ? referenceDocuments 
+    : referenceDocuments.filter(doc => doc.category === selectedCategory);
+
+  const handleDocumentClick = (doc: ReferenceDocument) => {
+    if (doc.isExternal) {
+      window.open(doc.url, '_blank', 'noopener,noreferrer');
+    } else {
+      window.location.href = doc.url;
+    }
+  };
+
+  return (
+    <div className={`hidden xl:block fixed right-2 xl:right-4 top-1/2 transform -translate-y-1/2 z-40 transition-all duration-300 ${
+      isExpanded ? 'w-72 xl:w-80' : 'w-10 xl:w-12'
+    } max-w-[calc(100vw-1rem)]`}>
+      
+      {/* Floating vertical text for collapsed state */}
+      {!isExpanded && (
+        <div className="absolute right-full mr-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
+          <div className="writing-mode-vertical-rl text-orientation-mixed transform rotate-180">
+            <span className="text-yellow-400 text-sm font-medium tracking-wider animate-pulse">
+              Quick Links
+            </span>
+          </div>
+        </div>
+      )}
+      
+      <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-lg shadow-2xl border border-slate-700 overflow-hidden relative group">
+        {/* Animated tooltip for collapsed state */}
+        {!isExpanded && (
+          <div className="absolute right-full mr-3 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+            <div className="bg-slate-900 text-white px-3 py-2 rounded-lg shadow-xl border border-slate-700 whitespace-nowrap text-sm">
+              <div className="flex items-center space-x-2">
+                <Link className="w-4 h-4 text-yellow-400 animate-bounce" />
+                <span>Quick Links</span>
+              </div>
+              {/* Arrow pointing to button */}
+              <div className="absolute left-full top-1/2 transform -translate-y-1/2 w-0 h-0 border-l-4 border-l-slate-900 border-t-4 border-t-transparent border-b-4 border-b-transparent"></div>
+            </div>
+          </div>
+        )}
+        
+        {/* Toggle Button */}
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="w-full p-2 xl:p-3 flex items-center justify-center hover:bg-slate-700/50 transition-colors duration-200 relative"
+          aria-label={isExpanded ? 'Minimize Quick Links' : 'Expand Quick Links'}
+        >
+          {isExpanded ? (
+            <ChevronRight className="w-4 h-4 xl:w-5 xl:h-5 text-slate-300" />
+          ) : (
+            <div className="flex flex-col items-center space-y-1">
+              <Link className="w-4 h-4 xl:w-5 xl:h-5 text-yellow-400 animate-bounce" />
+              <div className="flex items-center">
+                <ChevronLeft className="w-3 h-3 xl:w-4 xl:h-4 text-slate-300" />
+              </div>
+            </div>
+          )}
+        </button>
+
+        {/* Expanded Content */}
+        {isExpanded && (
+          <div className="p-3 xl:p-4 animate-slide-in-mobile">
+            <div className="mb-3 xl:mb-4">
+              <h3 className="text-base xl:text-lg font-bold text-white mb-1 xl:mb-2 flex items-center">
+                <FileText className="w-4 h-4 xl:w-5 xl:h-5 mr-2 text-red-400" />
+                Quick Links
+              </h3>
+              <p className="text-xs text-slate-400">Reference Documents & Tools</p>
+            </div>
+
+            {/* Category Filter */}
+            <div className="mb-3 xl:mb-4">
+              <div className="flex flex-wrap gap-1">
+                <button
+                  onClick={() => setSelectedCategory('all')}
+                  className={`px-2 py-1 text-xs rounded-md font-medium transition-colors duration-200 ${
+                    selectedCategory === 'all'
+                      ? 'bg-red-600 text-white'
+                      : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600'
+                  }`}
+                >
+                  All
+                </button>
+                {Object.entries(categoryLabels).map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => setSelectedCategory(key)}
+                    className={`px-2 py-1 text-xs rounded-md font-medium transition-colors duration-200 ${
+                      selectedCategory === key
+                        ? 'bg-red-600 text-white'
+                        : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Document Links */}
+            <div className="space-y-2 max-h-80 xl:max-h-96 overflow-y-auto">
+              {filteredDocuments.map((doc) => (
+                <button
+                  key={doc.id}
+                  onClick={() => handleDocumentClick(doc)}
+                  className="w-full p-2 xl:p-3 text-left bg-slate-800/50 hover:bg-slate-700/50 rounded-lg transition-all duration-200 hover:scale-105 group border border-slate-700/50 hover:border-slate-600"
+                >
+                  <div className="flex items-start space-x-2 xl:space-x-3">
+                    <div className={`p-1.5 xl:p-2 rounded-md bg-gradient-to-r ${categoryColors[doc.category]} text-white flex-shrink-0`}>
+                      {doc.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-1">
+                        <h4 className="text-xs xl:text-sm font-semibold text-white group-hover:text-red-400 transition-colors truncate">
+                          {doc.title}
+                        </h4>
+                        {doc.isExternal && (
+                          <ExternalLink className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-400 mt-1 line-clamp-2">
+                        {doc.description}
+                      </p>
+                      <div className="flex items-center mt-1 xl:mt-2">
+                        <span className={`px-1.5 xl:px-2 py-0.5 text-xs rounded-full bg-gradient-to-r ${categoryColors[doc.category]} text-white font-medium`}>
+                          {categoryLabels[doc.category]}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {filteredDocuments.length === 0 && (
+              <div className="text-center py-8">
+                <FileText className="w-12 h-12 text-slate-600 mx-auto mb-2" />
+                <p className="text-slate-400 text-sm">No documents found</p>
+              </div>
+            )}
+
+            {/* Footer */}
+            <div className="mt-4 pt-3 border-t border-slate-700/50">
+              <p className="text-xs text-slate-500 text-center">
+                {filteredDocuments.length} reference{filteredDocuments.length !== 1 ? 's' : ''} available
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

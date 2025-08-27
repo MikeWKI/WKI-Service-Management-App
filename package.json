@@ -1,0 +1,25 @@
+{
+	"name": "service-management-app",
+	"version": "1.0.0",
+	"description": "Service Management Process Application for Kenworth",
+	"scripts": {
+		"dev": "concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
+		"backend:dev": "cd backend && npm run dev",
+		"frontend:dev": "cd frontend && npm start",
+		"build": "cd frontend && npm run build",
+		"start": "cd backend && npm start",
+		"install:all": "npm install && cd backend && npm install && cd ../frontend && npm install"
+	},
+	"devDependencies": {
+		"concurrently": "^7.6.0"
+	},
+	"keywords": [
+		"service",
+		"management",
+		"kenworth",
+		"react",
+		"express"
+	],
+	"author": "Michaela",
+	"license": "ISC"
+}
