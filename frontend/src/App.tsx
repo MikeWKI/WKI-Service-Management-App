@@ -49,7 +49,7 @@ function App() {
           {/* Responsive layout: main content + quick links on right for desktop, stacked for mobile */}
           <div className="w-full max-w-full sm:max-w-7xl mx-auto px-1 sm:px-4 lg:px-8 flex flex-col lg:flex-row gap-0 lg:gap-8">
             {/* Main content */}
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 lg:mr-[120px] xl:mr-[140px] 2xl:mr-[160px] transition-all duration-300">
               <Routes>
                 <Route path="/" element={
                   <div className="flex flex-col items-center justify-center py-2 sm:py-4 md:py-8">
@@ -77,7 +77,7 @@ function App() {
               {/* Quick Links fixed to far right for desktop, bottom for mobile */}
               {/* Desktop: fixed right, scrolls with user */}
               <div className="hidden lg:block">
-                <div className="fixed top-1/2 right-0 z-40 flex flex-col items-center -translate-y-1/2 pr-2">
+                <div className="fixed top-1/2 right-0 z-40 flex flex-col items-center -translate-y-1/2 pr-2 w-[110px] xl:w-[130px] 2xl:w-[150px]">
                   <span className="writing-mode-vertical-rl text-orientation-mixed text-xs font-bold tracking-wider text-slate-400 mb-2 select-none">
                     Quick Links
                   </span>

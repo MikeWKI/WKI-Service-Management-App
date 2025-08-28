@@ -57,7 +57,7 @@ export default function ProcessWorkflowLayout() {
   };
 
   return (
-    <div className="w-full max-w-6xl bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl shadow-2xl border border-slate-200 p-2 sm:p-4 md:p-8 flex flex-col gap-6 sm:gap-8">
+  <div className="w-full max-w-5xl bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl shadow-2xl border border-slate-200 p-2 sm:p-4 md:p-8 flex flex-col gap-6 sm:gap-8 mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-center mb-2 bg-gradient-to-r from-red-600 to-red-700 rounded-xl p-4 sm:p-6 shadow-lg gap-2">
         <div>
@@ -119,7 +119,7 @@ export default function ProcessWorkflowLayout() {
       <div className="relative flex flex-col items-center">
         {/* Centered timeline container for desktop, scrollable on mobile */}
         <div className="w-full flex justify-center">
-          <div className="flex w-full max-w-2xl lg:max-w-2xl xl:max-w-2xl 2xl:max-w-2xl overflow-x-auto sm:overflow-x-visible scrollbar-thin scrollbar-thumb-slate-400 scrollbar-track-slate-200 justify-between md:justify-center items-end z-10 mb-6 gap-2 sm:gap-0 px-1 sm:px-0"
+          <div className="flex w-full max-w-4xl lg:max-w-5xl xl:max-w-5xl 2xl:max-w-5xl overflow-x-auto sm:overflow-x-visible scrollbar-thin scrollbar-thumb-slate-400 scrollbar-track-slate-200 justify-between md:justify-center items-end z-10 mb-6 gap-2 sm:gap-0 px-1 sm:px-0 mx-auto"
             style={{ WebkitOverflowScrolling: 'touch', margin: '0 auto' }}>
             {steps.map((step, idx) => (
               <div
@@ -207,13 +207,13 @@ export default function ProcessWorkflowLayout() {
 
         {/* Timeline Line */}
         <div className="w-full flex justify-center">
-          <div className="h-2 bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 rounded-full z-0 relative shadow-inner min-w-[600px] sm:min-w-0 md:min-w-0 lg:min-w-0 xl:min-w-0 max-w-4xl w-full">
+          <div className="h-2 bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 rounded-full z-0 relative shadow-inner min-w-0 max-w-5xl w-full mx-auto">
             <div className="absolute left-0 top-0 h-full bg-gradient-to-r from-red-600 to-transparent rounded-full transition-all duration-500 shadow-lg opacity-50" style={{width: '30%'}} />
           </div>
         </div>
 
         {/* Timeline Labels - positioned 15% lower */}
-        <div className="flex w-full max-w-4xl mx-auto justify-between text-slate-700 font-bold text-xs sm:text-sm" style={{ marginTop: '1%' }}>
+  <div className="flex w-full max-w-5xl mx-auto justify-between text-slate-700 font-bold text-xs sm:text-sm" style={{ marginTop: '1%' }}>
           <span className="bg-slate-200 px-2 py-1 rounded-full shadow ml-4 sm:ml-20">Triage Time Begins</span>
           <span className="bg-slate-200 px-2 py-1 rounded-full shadow mr-4 sm:mr-0">Dwell Time Ends</span>
         </div>
