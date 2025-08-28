@@ -15,7 +15,7 @@ const LocationMetricsTable: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch('/api/location-metrics');
+  const res = await fetch('https://wki-sma.onrender.com/api/location-metrics');
         if (!res.ok) throw new Error('Failed to fetch metrics');
         const data = await res.json();
         setMetrics(data.metrics || []);

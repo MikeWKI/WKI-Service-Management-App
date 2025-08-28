@@ -18,7 +18,7 @@ const LocationMetricsUpload: React.FC<{ onUploadSuccess: () => void }> = ({ onUp
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await fetch('/api/location-metrics/upload', {
+  const res = await fetch('https://wki-sma.onrender.com/api/location-metrics/upload', {
         method: 'POST',
         body: formData,
       });
