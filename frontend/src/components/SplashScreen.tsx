@@ -12,42 +12,48 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
       setIsVisible(false);
       setTimeout(() => {
         onFinish();
-      }, 350);
-    }, 2000);
+      }, 300);
+    }, 2500);
     return () => clearTimeout(timer);
   }, [onFinish]);
 
   return (
-    <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-slate-900 transition-opacity duration-500 ${
-        isVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-      }`}
-    >
-      <div className="flex flex-col items-center justify-center text-center px-4 animate-fade-in-center">
-        {/* Splash Image (logo) */}
-        <img
-          src="/WKIsplash.png"
-          alt="WKI Kenworth Splash"
-          className="object-contain max-w-md lg:max-w-xl xl:max-w-2xl mb-8 drop-shadow-xl rounded-lg"
-        />
-
-        {/* Service Management Text */}
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-3 tracking-tight drop-shadow-lg">
-          WKI Service Management
-        </h1>
-        <h2 className="text-2xl sm:text-3xl font-bold text-red-400 mb-2">
-          Process Application
-        </h2>
-        <p className="text-slate-300 text-lg sm:text-xl">
-          Powered by WKI Excellence
-        </p>
-
-        {/* Loading indicator - simple fade in, no stagger */}
-        <div className="mt-10 flex justify-center animate-fade-in">
-          <div className="flex space-x-2">
-            <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce"></div>
-            <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce"></div>
-            <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce"></div>
+    <div className={`fixed inset-0 z-50 bg-slate-900 transition-opacity duration-300 ${
+      isVisible ? 'opacity-100' : 'opacity-0'
+    }`}>
+      <div className="h-screen flex items-center justify-center p-8">
+        <div className={`text-center transition-all duration-1000 ease-out ${
+          isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+        }`}>
+          {/* Main Logo */}
+          <div className="mb-8">
+            <img
+              src="/WKIsplash.png"
+              alt="WKI Kenworth"
+              className="mx-auto h-64 w-auto object-contain drop-shadow-2xl"
+            />
+          </div>
+          
+          {/* Title */}
+          <h1 className="text-5xl font-bold text-white mb-4 tracking-tight">
+            WKI Service Management
+          </h1>
+          
+          {/* Subtitle */}
+          <h2 className="text-3xl font-semibold text-red-400 mb-6">
+            Process Application
+          </h2>
+          
+          {/* Tagline */}
+          <p className="text-xl text-slate-300 mb-12">
+            Powered by WKI Excellence
+          </p>
+          
+          {/* Loading Animation */}
+          <div className="flex justify-center space-x-2">
+            <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+            <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+            <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
           </div>
         </div>
       </div>
