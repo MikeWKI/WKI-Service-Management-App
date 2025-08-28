@@ -282,7 +282,7 @@ export default function ScorecardManager() {
       setTimeout(() => {
         setIsUploading(false);
         setUploadProgress(0);
-        alert(`Successfully uploaded and processed ${file.name}!\n\nExtracted data for:\n- WKI Dealership\n- ${locations.length} locations`);
+        alert(`Successfully uploaded and processed ${file.name}!\n\nExtracted data for:\n- WKI Dealership\n- ${(locations ? locations.length : 0)} locations`);
       }, 500);
 
     } catch (error) {
