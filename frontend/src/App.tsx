@@ -49,7 +49,7 @@ function App() {
           {/* Responsive layout: main content + quick links on right for desktop, stacked for mobile */}
           <div className="w-full max-w-full sm:max-w-7xl mx-auto px-1 sm:px-4 lg:px-8 flex flex-col lg:flex-row gap-0 lg:gap-8">
             {/* Main content */}
-            <div className="flex-1 min-w-0 lg:mr-[120px] xl:mr-[140px] 2xl:mr-[160px] transition-all duration-300">
+            <div className="flex-1 min-w-0">
               <Routes>
                 <Route path="/" element={
                   <div className="flex flex-col items-center justify-center py-2 sm:py-4 md:py-8">
