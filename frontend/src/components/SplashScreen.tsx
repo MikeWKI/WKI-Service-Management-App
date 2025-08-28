@@ -24,12 +24,12 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
       }`}
       style={{ minHeight: '100dvh' }}
     >
-      <div className="flex flex-col items-center justify-center text-center w-full max-w-xl mx-auto animate-fade-in-center" style={{ minHeight: '70vh' }}>
+  <div className="flex flex-col items-center justify-center text-center w-full max-w-3xl lg:max-w-4xl mx-auto animate-fade-in-center" style={{ minHeight: '70vh' }}>
         {/* Splash Image (logo) */}
         <img
           src="/WKIsplash.png"
           alt="WKI Kenworth Splash"
-          className="object-contain w-full max-w-xs sm:max-w-sm md:max-w-md mb-8 drop-shadow-xl rounded-lg mx-auto"
+          className="object-contain w-full max-w-md lg:max-w-xl xl:max-w-2xl mb-8 drop-shadow-xl rounded-lg mx-auto"
           style={{ display: 'block' }}
         />
 
