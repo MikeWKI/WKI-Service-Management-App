@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, FileText, MapPin, Calendar, BarChart3, AlertCircle, CheckCircle, X, Download, Eye } from 'lucide-react';
+import { Upload, FileText, MapPin, Calendar, BarChart3, AlertCircle, CheckCircle, X, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface DealershipMetrics {
@@ -77,7 +77,7 @@ const testAPIConnection = async () => {
         console.log(`Response from ${endpoint}:`, text.substring(0, 200) + '...');
       }
     } catch (error) {
-      console.log(`Endpoint ${endpoint} error:`, error.message);
+      console.log(`Endpoint ${endpoint} error:`, error instanceof Error ? error.message : String(error));
     }
   }
   
@@ -242,13 +242,13 @@ export default function ScorecardManager() {
         month: selectedMonth,
         year: selectedYear,
         fileName: file.name,
-        uploadDate: new Date(extractedAt),
+        uploadDate: new Date(extractedAt || new Date().toISOString()),
         metrics: dealership,
         locations: []
       };
 
       // Create location scorecards from backend response
-      const locationScorecards: LocationScorecard[] = locations.map((location: any, index: number) => {
+      const locationScorecards: LocationScorecard[] = locations.map((location: any) => {
         const locationInfo = getLocationInfo(location.name);
         return {
           id: `${locationInfo.id}-${selectedMonth}-${selectedYear}`,
@@ -257,7 +257,7 @@ export default function ScorecardManager() {
           month: selectedMonth,
           year: selectedYear,
           fileName: file.name,
-          uploadDate: new Date(extractedAt),
+          uploadDate: new Date(extractedAt || new Date().toISOString()),
           metrics: location,
           trend: calculateTrend() // Random trend for now
         };
