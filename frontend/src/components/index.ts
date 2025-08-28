@@ -13,6 +13,7 @@ export { default as Footer } from './Footer';
 export { default as SplashScreen } from './SplashScreen';
 export { default as ScorecardManager } from './ScorecardManager';
 export { default as LocationMetrics } from './LocationMetrics';
+export { default as LocationMetricsManager } from './LocationMetricsManager';
 export { default as WichitaMetrics } from './WichitaMetrics';
 export { default as EmporiaMetrics } from './EmporiaMetrics';
 export { default as DodgeCityMetrics } from './DodgeCityMetrics';

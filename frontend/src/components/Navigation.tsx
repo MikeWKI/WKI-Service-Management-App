@@ -11,42 +11,42 @@ export default function Navigation() {
   const isMetrics = location.pathname === '/metrics' || (location.pathname.startsWith('/metrics') && !isMetricsDefinitions);
 
   return (
-    <nav className="bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 shadow-2xl border-b-4 border-red-600 mb-8">
-      <div className="max-w-6xl mx-auto px-4 py-4">
+    <nav className="bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 shadow-2xl border-b-4 border-red-600 mb-4 sm:mb-8">
+      <div className="w-full max-w-full sm:max-w-6xl mx-auto px-2 sm:px-4 py-2 sm:py-4">
         {/* Desktop Layout */}
         <div className="hidden lg:block">
           <div className="flex items-start justify-between">
             {/* Left side - Logos spanning both rows */}
-            <div className="flex items-center space-x-4 pr-8">
-              <div className="bg-white rounded-lg p-3 shadow-lg">
+            <div className="flex items-center space-x-2 sm:space-x-4 pr-2 sm:pr-8">
+              <div className="bg-white rounded-lg p-2 sm:p-3 shadow-lg">
                 <img 
                   src="https://www.wkikenworth.com/efs/wp/domains/www.wkikenworth.com/wp-content/uploads/2022/02/wkw-160x300.png" 
                   alt="WKI Kenworth Logo" 
-                  className="h-12 w-auto" 
+                  className="h-8 sm:h-12 w-auto" 
                 />
               </div>
               <a 
                 href="https://paccar.decisiv.net/" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="bg-white rounded-lg p-3 shadow-lg hover:shadow-xl transition-shadow duration-300 transform hover:scale-105"
+                className="bg-white rounded-lg p-2 sm:p-3 shadow-lg hover:shadow-xl transition-shadow duration-300 transform hover:scale-105"
               >
                 <img 
                   src="https://www.decisiv.com/wp-content/uploads/2020/01/Decisiv-Logo-096126.svg" 
                   alt="Decisiv Logo" 
-                  className="h-12 w-auto" 
+                  className="h-8 sm:h-12 w-auto" 
                 />
               </a>
               <div className="text-white font-bold">
-                <div className="text-xl text-red-400">WKI Service Management</div>
-                <div className="text-sm text-slate-300">The Worlds Best!</div>
+                <div className="text-base sm:text-xl text-red-400">WKI Service Management</div>
+                <div className="text-xs sm:text-sm text-slate-300">The Worlds Best!</div>
               </div>
             </div>
 
             {/* Right side - Navigation buttons and theme toggle */}
-            <div className="flex flex-col space-y-3">
+            <div className="flex flex-col space-y-2 sm:space-y-3">
               {/* Top row - Main navigation */}
-              <div className="flex space-x-2">
+              <div className="flex flex-wrap gap-1 sm:gap-2">
                 <Link
                   to="/"
                   className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 ${
@@ -108,17 +108,17 @@ export default function Navigation() {
         <div className="lg:hidden">
           <div className="flex items-center justify-between">
             {/* Mobile Logo */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1">
               <div className="bg-white rounded-lg p-1 shadow-lg">
                 <img 
                   src="https://www.wkikenworth.com/efs/wp/domains/www.wkikenworth.com/wp-content/uploads/2022/02/wkw-160x300.png" 
                   alt="WKI Kenworth Logo" 
-                  className="h-6 w-auto" 
+                  className="h-5 w-auto" 
                 />
               </div>
               <div className="text-white font-bold">
-                <div className="text-sm text-red-400">WKI Service</div>
-                <div className="text-xs text-slate-300">Management</div>
+                <div className="text-xs text-red-400">WKI Service</div>
+                <div className="text-[10px] text-slate-300">Management</div>
               </div>
             </div>
 
@@ -128,14 +128,14 @@ export default function Navigation() {
               className="p-2 text-white hover:bg-slate-700 rounded-lg transition-colors"
               aria-label="Toggle mobile menu"
             >
-              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
 
           {/* Mobile Menu */}
           {isMobileMenuOpen && (
-            <div className="mt-4 pb-4 border-t border-slate-700">
-              <div className="flex flex-col space-y-2 mt-4">
+            <div className="mt-2 pb-2 border-t border-slate-700">
+              <div className="flex flex-col space-y-1 mt-2">
                 <Link
                   to="/"
                   onClick={() => setIsMobileMenuOpen(false)}

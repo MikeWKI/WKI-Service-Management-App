@@ -57,9 +57,9 @@ export default function ProcessWorkflowLayout() {
   };
 
   return (
-    <div className="w-full max-w-6xl bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl shadow-2xl border border-slate-200 p-8 flex flex-col gap-8">
+    <div className="w-full max-w-6xl bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl shadow-2xl border border-slate-200 p-2 sm:p-4 md:p-8 flex flex-col gap-6 sm:gap-8">
       {/* Header */}
-      <div className="flex justify-between items-center mb-2 bg-gradient-to-r from-red-600 to-red-700 rounded-xl p-6 shadow-lg">
+  <div className="flex flex-col sm:flex-row justify-between items-center mb-2 bg-gradient-to-r from-red-600 to-red-700 rounded-xl p-4 sm:p-6 shadow-lg gap-2">
         <div>
           <h1 className="text-3xl font-bold text-white drop-shadow-lg">WKI Service Management Process</h1>
           <p className="text-red-100 font-semibold text-lg">Start Every Repair Order in Decisiv</p>
@@ -88,7 +88,7 @@ export default function ProcessWorkflowLayout() {
       </div>
 
       {/* Filter by Role - moved below header */}
-      <div className="flex flex-wrap gap-3 mb-6 justify-center bg-slate-800 rounded-xl p-4 shadow-lg">
+  <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6 justify-center bg-slate-800 rounded-xl p-2 sm:p-4 shadow-lg">
         <span className="text-slate-300 font-semibold mr-2 self-center">Filter by Role:</span>
         {roleFilters.map(role => (
           <button
@@ -110,19 +110,19 @@ export default function ProcessWorkflowLayout() {
         <img 
           src="/workflowtruck.png" 
           alt="WKI Service Management Process Workflow" 
-          className="max-w-full h-auto rounded-lg shadow-lg"
-          style={{maxHeight: '400px'}}
+          className="max-w-full h-auto rounded-lg shadow-lg max-h-40 sm:max-h-72 md:max-h-96"
         />
       </div>
 
       {/* Timeline Workflow - boxes above the line */}
       <div className="relative flex flex-col items-center">
-        {/* Step Boxes above the line */}
-        <div className="flex w-full justify-between items-end z-10 mb-6">
+        {/* Step Boxes above the line - horizontally scrollable on mobile */}
+        <div className="flex w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-400 scrollbar-track-slate-200 justify-between items-end z-10 mb-6 gap-2 sm:gap-0 px-1 sm:px-0"
+             style={{ WebkitOverflowScrolling: 'touch' }}>
           {steps.map((step, idx) => (
             <div 
               key={step.id} 
-              className={`flex flex-col items-center w-32 transition-all duration-300 relative ${getStepOpacity(step)}`}
+              className={`flex flex-col items-center min-w-[7rem] sm:w-32 transition-all duration-300 relative ${getStepOpacity(step)}`}
               onMouseEnter={() => setHoveredStep(step.id)}
               onMouseLeave={() => setHoveredStep(null)}
             >
@@ -156,7 +156,7 @@ export default function ProcessWorkflowLayout() {
               {/* Step Box */}
               <button
                 onClick={() => handleStepClick(step.id)}
-                className={`bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-slate-300 rounded-xl px-4 py-3 text-center text-xs font-bold whitespace-pre-line shadow-lg mb-2 transition-all duration-300 hover:shadow-xl hover:scale-110 transform hover:border-red-400 hover:from-red-50 hover:to-red-100 ${
+                className={`bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-slate-300 rounded-xl px-2 py-2 sm:px-4 sm:py-3 text-center text-[0.7rem] sm:text-xs font-bold whitespace-pre-line shadow-lg mb-2 transition-all duration-300 hover:shadow-xl hover:scale-110 transform hover:border-red-400 hover:from-red-50 hover:to-red-100 ${
                   hoveredStep === step.id ? 'bg-gradient-to-br from-red-100 to-red-200 border-red-500 shadow-xl scale-110 text-red-800' : 'text-slate-800'
                 }`}
               >
@@ -203,27 +203,27 @@ export default function ProcessWorkflowLayout() {
         </div>
         
         {/* Timeline Line */}
-        <div className="w-full h-2 bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 rounded-full z-0 relative shadow-inner">
+        <div className="w-full h-2 bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 rounded-full z-0 relative shadow-inner min-w-[600px] sm:min-w-0">
           <div className="absolute left-0 top-0 h-full bg-gradient-to-r from-red-600 to-transparent rounded-full transition-all duration-500 shadow-lg opacity-50" style={{width: '30%'}} />
         </div>
         
         {/* Timeline Labels - positioned 15% lower */}
-        <div className="flex w-full justify-between text-slate-700 font-bold text-sm" style={{ marginTop: '1%' }}>
-          <span className="bg-slate-200 px-3 py-1 rounded-full shadow ml-20">Triage Time Begins</span>
-          <span className="bg-slate-200 px-3 py-1 rounded-full shadow">Dwell Time Ends</span>
+        <div className="flex w-full justify-between text-slate-700 font-bold text-xs sm:text-sm" style={{ marginTop: '1%' }}>
+          <span className="bg-slate-200 px-2 py-1 rounded-full shadow ml-4 sm:ml-20">Triage Time Begins</span>
+          <span className="bg-slate-200 px-2 py-1 rounded-full shadow mr-4 sm:mr-0">Dwell Time Ends</span>
         </div>
       </div>
 
       {/* Bottom Section */}
-      <div className="flex flex-col md:flex-row gap-6 mt-8">
-        <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-8 flex-1 flex flex-col justify-center items-center shadow-2xl border border-red-700">
-          <h3 className="text-2xl font-bold text-white mb-4 drop-shadow-lg">Kenworth Goals</h3>
-          <div className="text-red-100 font-bold text-xl mb-2">Triage: 2 Hours or less</div>
-          <div className="text-red-100 font-bold text-xl">Dwell: 3 Days or less</div>
+      <div className="flex flex-col md:flex-row gap-4 sm:gap-6 mt-6 sm:mt-8">
+        <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-4 sm:p-8 flex-1 flex flex-col justify-center items-center shadow-2xl border border-red-700">
+          <h3 className="text-lg sm:text-2xl font-bold text-white mb-2 sm:mb-4 drop-shadow-lg">Kenworth Goals</h3>
+          <div className="text-red-100 font-bold text-base sm:text-xl mb-1 sm:mb-2">Triage: 2 Hours or less</div>
+          <div className="text-red-100 font-bold text-base sm:text-xl">Dwell: 3 Days or less</div>
         </div>
-        <div className="flex-1 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl p-6 shadow-xl border border-slate-300">
-          <h3 className="text-2xl font-bold mb-4 text-slate-800 border-b border-slate-400 pb-2">Remember Every Case Needs:</h3>
-          <ul className="list-none text-slate-700 text-sm grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
+        <div className="flex-1 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl p-3 sm:p-6 shadow-xl border border-slate-300">
+          <h3 className="text-lg sm:text-2xl font-bold mb-2 sm:mb-4 text-slate-800 border-b border-slate-400 pb-1 sm:pb-2">Remember Every Case Needs:</h3>
+          <ul className="list-none text-slate-700 text-xs sm:text-sm grid grid-cols-1 md:grid-cols-2 gap-x-2 sm:gap-x-4 gap-y-1 sm:gap-y-2">
             <li className="flex items-center space-x-2"><span className="w-2 h-2 bg-red-500 rounded-full"></span><span>Primary Email Contact</span></li>
             <li className="flex items-center space-x-2"><span className="w-2 h-2 bg-red-500 rounded-full"></span><span>Follow Up Time</span></li>
             <li className="flex items-center space-x-2"><span className="w-2 h-2 bg-red-500 rounded-full"></span><span>Case-Level Complaint</span></li>

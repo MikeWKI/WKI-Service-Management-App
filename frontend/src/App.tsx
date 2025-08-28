@@ -13,7 +13,7 @@ import {
   Footer,
   SplashScreen,
   ScorecardManager,
-  LocationMetrics,
+  LocationMetricsManager,
   WichitaMetrics,
   EmporiaMetrics,
   DodgeCityMetrics,
@@ -46,15 +46,15 @@ function App() {
           <Navigation />
           <QuickLinksPanel />
           <FixedThemeToggle />
-          <div className="container mx-auto px-2 sm:px-4 lg:px-8 max-w-7xl">
+          <div className="w-full max-w-full sm:max-w-7xl mx-auto px-1 sm:px-4 lg:px-8">
             <Routes>
               <Route path="/" element={
-                <div className="flex flex-col items-center justify-center py-4 sm:py-8">
+                <div className="flex flex-col items-center justify-center py-2 sm:py-4 md:py-8">
                   <ProcessWorkflowLayout />
                 </div>
               } />
               <Route path="/comprehensive" element={
-                <div className="flex flex-col items-center justify-center py-4 sm:py-8">
+                <div className="flex flex-col items-center justify-center py-2 sm:py-4 md:py-8">
                   <ComprehensiveWorkflow />
                 </div>
               } />
@@ -64,7 +64,7 @@ function App() {
               <Route path="/metrics/parts-staff" element={<PartsStaffMetrics />} />
               <Route path="/metrics/technician" element={<TechnicianMetrics />} />
               <Route path="/scorecard-manager" element={<ScorecardManager />} />
-              <Route path="/location-metrics" element={<LocationMetrics />} />
+              <Route path="/location-metrics" element={<LocationMetricsManager />} />
               <Route path="/metrics/wichita" element={<WichitaMetrics />} />
               <Route path="/metrics/emporia" element={<EmporiaMetrics />} />
               <Route path="/metrics/dodge-city" element={<DodgeCityMetrics />} />
