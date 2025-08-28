@@ -59,29 +59,27 @@ const API_BASE_URL = 'https://wki-service-management-app.onrender.com';
 
 // Test API connection
 const testAPIConnection = async () => {
-  const endpoints = [
-    '/api/locationMetrics',
-    '/api/upload',
-    '/health',
-    '/'
-  ];
-
-  for (const endpoint of endpoints) {
-    try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method: 'GET',
-      });
-      console.log(`Endpoint ${endpoint}:`, response.status, response.statusText);
-      if (response.ok) {
-        const text = await response.text();
-        console.log(`Response from ${endpoint}:`, text.substring(0, 200) + '...');
-      }
-    } catch (error) {
-      console.log(`Endpoint ${endpoint} error:`, error instanceof Error ? error.message : String(error));
+  try {
+    // Test the main endpoint we'll be using
+    const response = await fetch(`${API_BASE_URL}/api/locationMetrics/upload`, {
+      method: 'GET', // Just test connectivity, not actual upload
+    });
+    console.log('Backend connectivity test:', response.status);
+    
+    if (response.status === 405) {
+      // Method not allowed is expected for GET on upload endpoint
+      console.log('✅ Backend is responding (POST endpoint ready)');
+      return true;
+    } else if (response.status === 500) {
+      console.log('⚠️ Backend responding but has server errors (likely database issue)');
+      return true; // Backend is running, just has DB issues
     }
+    
+    return response.ok;
+  } catch (error) {
+    console.error('Backend connectivity test failed:', error instanceof Error ? error.message : String(error));
+    return false;
   }
-  
-  return true; // We'll test connectivity regardless
 };
 
 // API functions
@@ -91,41 +89,30 @@ const uploadScorecardToAPI = async (file: File, month: string, year: number) => 
   formData.append('month', month);
   formData.append('year', year.toString());
 
-  // Try different possible endpoints
-  const possibleEndpoints = [
-    '/api/locationMetrics/upload',
-    '/api/upload',
-    '/api/locationMetrics',
-    '/upload'
-  ];
+  // We found the correct endpoint: /api/locationMetrics/upload
+  const apiUrl = `${API_BASE_URL}/api/locationMetrics/upload`;
+  console.log('Uploading to:', apiUrl);
 
-  let lastError;
-  
-  for (const endpoint of possibleEndpoints) {
-    try {
-      const apiUrl = `${API_BASE_URL}${endpoint}`;
-      console.log('Trying endpoint:', apiUrl);
+  const response = await fetch(apiUrl, {
+    method: 'POST',
+    body: formData,
+  });
 
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        console.log('Success with endpoint:', endpoint);
-        return response.json();
-      } else {
-        const errorText = await response.text();
-        console.log(`Endpoint ${endpoint} failed with:`, response.status, errorText);
-        lastError = new Error(`Upload failed: ${response.status} ${response.statusText} - ${errorText}`);
-      }
-    } catch (error) {
-      console.log(`Endpoint ${endpoint} threw error:`, error);
-      lastError = error;
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Upload failed:', response.status, errorText);
+    
+    // Handle specific backend errors
+    if (response.status === 500 && errorText.includes('buffering timed out')) {
+      throw new Error('Database connection timeout. Please try again in a moment - the backend database may be starting up.');
+    } else if (response.status === 500) {
+      throw new Error('Server error. Please check backend logs for details.');
     }
+    
+    throw new Error(`Upload failed: ${response.status} ${response.statusText} - ${errorText}`);
   }
 
-  throw lastError || new Error('All upload endpoints failed');
+  return response.json();
 };
 
 const fetchLocationMetrics = async () => {
@@ -226,11 +213,20 @@ export default function ScorecardManager() {
       console.log('Upload successful, result:', result);
       setUploadProgress(60);
 
+
       // Process the returned data from your backend
       console.log('Processing result structure:', result);
-      
-      // Your backend returns: { dealership: {...}, locations: [...], extractedAt: "..." }
-      const { dealership, locations, extractedAt } = result;
+
+      // Support both { dealership, locations, extractedAt } and { success, data: { dealership, locations, extractedAt } }
+      let dealership, locations, extractedAt;
+      if (result && typeof result === 'object') {
+        if ('dealership' in result && 'locations' in result) {
+          // Direct structure
+          ({ dealership, locations, extractedAt } = result);
+        } else if ('data' in result && result.data && typeof result.data === 'object') {
+          ({ dealership, locations, extractedAt } = result.data);
+        }
+      }
 
       if (!dealership || !locations) {
         throw new Error('Invalid response structure from backend');
@@ -479,9 +475,17 @@ export default function ScorecardManager() {
           <div className="mt-4 p-4 bg-red-900/50 border border-red-600 rounded-lg">
             <div className="flex items-center text-red-300 mb-2">
               <AlertCircle className="w-5 h-5 mr-2" />
-              <span className="font-medium">PDF Processing Error</span>
+              <span className="font-medium">Upload Error</span>
             </div>
-            <p className="text-red-200 text-sm">{parseError}</p>
+            <p className="text-red-200 text-sm mb-2">{parseError}</p>
+            {parseError.includes('Database connection timeout') && (
+              <div className="mt-3 p-3 bg-yellow-900/30 border border-yellow-600 rounded">
+                <p className="text-yellow-200 text-sm">
+                  <strong>Tip:</strong> This usually happens when the backend database is starting up. 
+                  Wait 30-60 seconds and try uploading again.
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
