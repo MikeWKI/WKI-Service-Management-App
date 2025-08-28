@@ -60,24 +60,25 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://wki-service-manag
 // API functions
 const uploadScorecardToAPI = async (file: File, month: string, year: number) => {
   const formData = new FormData();
-  formData.append('scorecard', file);
+  formData.append('pdf', file); // Match your backend's expected field name
   formData.append('month', month);
   formData.append('year', year.toString());
 
-  const response = await fetch(`${API_BASE_URL}/api/scorecard/upload`, {
+  const response = await fetch(`${API_BASE_URL}/api/locationMetrics`, {
     method: 'POST',
     body: formData,
   });
 
   if (!response.ok) {
-    throw new Error(`Upload failed: ${response.statusText}`);
+    const errorText = await response.text();
+    throw new Error(`Upload failed: ${response.status} ${response.statusText} - ${errorText}`);
   }
 
   return response.json();
 };
 
 const fetchLocationMetrics = async () => {
-  const response = await fetch(`${API_BASE_URL}/api/location-metrics`);
+  const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
   if (!response.ok) {
     throw new Error(`Failed to fetch metrics: ${response.statusText}`);
   }
@@ -164,7 +165,11 @@ export default function ScorecardManager() {
     try {
       // Upload to backend API
       setUploadProgress(20);
+      console.log('Uploading file:', file.name, 'for month:', selectedMonth, 'year:', selectedYear);
+      console.log('API URL:', `${API_BASE_URL}/api/locationMetrics`);
+      
       const result = await uploadScorecardToAPI(file, selectedMonth, selectedYear);
+      console.log('Upload result:', result);
       setUploadProgress(60);
 
       // Process the returned data from your backend
@@ -225,7 +230,9 @@ export default function ScorecardManager() {
 
     } catch (error) {
       console.error('Error uploading PDF:', error);
-      setParseError(error instanceof Error ? error.message : 'Failed to process PDF. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to process PDF. Please try again.';
+      console.error('Detailed error:', errorMessage);
+      setParseError(errorMessage);
       setIsUploading(false);
       setUploadProgress(0);
     }
@@ -471,7 +478,12 @@ export default function ScorecardManager() {
                   {dealership.metrics.customerSatisfaction && (
                     <div className="text-center">
                       <p className="text-slate-400 text-sm">Customer Satisfaction</p>
-                      <p className={`font-semibold ${parseFloat(dealership.metrics.customerSatisfaction.replace('%', '')) < 90 ? 'text-red-400' : 'text-green-400'}`}>
+                      <p className={`font-semibold ${
+                        (typeof dealership.metrics.customerSatisfaction === 'string' && dealership.metrics.customerSatisfaction.includes('%') 
+                          ? parseFloat(dealership.metrics.customerSatisfaction.replace('%', '')) < 90
+                          : typeof dealership.metrics.customerSatisfaction === 'number' && dealership.metrics.customerSatisfaction < 90
+                        ) ? 'text-red-400' : 'text-green-400'
+                      }`}>
                         {dealership.metrics.customerSatisfaction}
                       </p>
                     </div>
@@ -589,7 +601,11 @@ export default function ScorecardManager() {
                   {scorecard.metrics.customerSatisfaction && (
                     <div className="text-center">
                       <p className="text-slate-400 text-sm">Customer Satisfaction</p>
-                      <p className={`font-semibold ${scorecard.metrics.customerSatisfaction.includes('%') && parseFloat(scorecard.metrics.customerSatisfaction.replace('%', '')) < 90 ? 'text-red-400' : 'text-green-400'}`}>
+                      <p className={`font-semibold ${
+                        typeof scorecard.metrics.customerSatisfaction === 'string' && scorecard.metrics.customerSatisfaction.includes('%') 
+                          ? (parseFloat(scorecard.metrics.customerSatisfaction.replace('%', '')) < 90 ? 'text-red-400' : 'text-green-400')
+                          : (typeof scorecard.metrics.customerSatisfaction === 'number' && scorecard.metrics.customerSatisfaction < 90 ? 'text-red-400' : 'text-green-400')
+                      }`}>
                         {scorecard.metrics.customerSatisfaction}
                       </p>
                     </div>
@@ -597,7 +613,12 @@ export default function ScorecardManager() {
                   {scorecard.metrics.etrCompliance && (
                     <div className="text-center">
                       <p className="text-slate-400 text-sm">ETR Compliance</p>
-                      <p className={`font-semibold ${scorecard.metrics.etrCompliance.includes('%') && parseFloat(scorecard.metrics.etrCompliance.replace('%', '')) < 85 ? 'text-red-400' : 'text-green-400'}`}>
+                      <p className={`font-semibold ${
+                        (typeof scorecard.metrics.etrCompliance === 'string' && scorecard.metrics.etrCompliance.includes('%') 
+                          ? parseFloat(scorecard.metrics.etrCompliance.replace('%', '')) < 85
+                          : typeof scorecard.metrics.etrCompliance === 'number' && scorecard.metrics.etrCompliance < 85
+                        ) ? 'text-red-400' : 'text-green-400'
+                      }`}>
                         {scorecard.metrics.etrCompliance}
                       </p>
                     </div>
@@ -605,7 +626,12 @@ export default function ScorecardManager() {
                   {scorecard.metrics.firstTimeFix && (
                     <div className="text-center">
                       <p className="text-slate-400 text-sm">First Time Fix</p>
-                      <p className={`font-semibold ${scorecard.metrics.firstTimeFix.includes('%') && parseFloat(scorecard.metrics.firstTimeFix.replace('%', '')) < 80 ? 'text-red-400' : 'text-green-400'}`}>
+                      <p className={`font-semibold ${
+                        (typeof scorecard.metrics.firstTimeFix === 'string' && scorecard.metrics.firstTimeFix.includes('%') 
+                          ? parseFloat(scorecard.metrics.firstTimeFix.replace('%', '')) < 80
+                          : typeof scorecard.metrics.firstTimeFix === 'number' && scorecard.metrics.firstTimeFix < 80
+                        ) ? 'text-red-400' : 'text-green-400'
+                      }`}>
                         {scorecard.metrics.firstTimeFix}
                       </p>
                     </div>
@@ -613,7 +639,12 @@ export default function ScorecardManager() {
                   {scorecard.metrics.partsAvailability && (
                     <div className="text-center">
                       <p className="text-slate-400 text-sm">Parts Availability</p>
-                      <p className={`font-semibold ${scorecard.metrics.partsAvailability.includes('%') && parseFloat(scorecard.metrics.partsAvailability.replace('%', '')) < 85 ? 'text-red-400' : 'text-green-400'}`}>
+                      <p className={`font-semibold ${
+                        (typeof scorecard.metrics.partsAvailability === 'string' && scorecard.metrics.partsAvailability.includes('%') 
+                          ? parseFloat(scorecard.metrics.partsAvailability.replace('%', '')) < 85
+                          : typeof scorecard.metrics.partsAvailability === 'number' && scorecard.metrics.partsAvailability < 85
+                        ) ? 'text-red-400' : 'text-green-400'
+                      }`}>
                         {scorecard.metrics.partsAvailability}
                       </p>
                     </div>
@@ -621,7 +652,12 @@ export default function ScorecardManager() {
                   {scorecard.metrics.workOrderAccuracy && (
                     <div className="text-center">
                       <p className="text-slate-400 text-sm">Work Order Accuracy</p>
-                      <p className={`font-semibold ${scorecard.metrics.workOrderAccuracy.includes('%') && parseFloat(scorecard.metrics.workOrderAccuracy.replace('%', '')) < 90 ? 'text-red-400' : 'text-green-400'}`}>
+                      <p className={`font-semibold ${
+                        (typeof scorecard.metrics.workOrderAccuracy === 'string' && scorecard.metrics.workOrderAccuracy.includes('%') 
+                          ? parseFloat(scorecard.metrics.workOrderAccuracy.replace('%', '')) < 90
+                          : typeof scorecard.metrics.workOrderAccuracy === 'number' && scorecard.metrics.workOrderAccuracy < 90
+                        ) ? 'text-red-400' : 'text-green-400'
+                      }`}>
                         {scorecard.metrics.workOrderAccuracy}
                       </p>
                     </div>
