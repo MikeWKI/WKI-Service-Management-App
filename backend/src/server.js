@@ -61,7 +61,7 @@ app.get("/api/health", (req, res) => {
 
 // Service Management routes
 app.use('/api/service-cases', serviceCasesRouter);
-app.use('/api/location-metrics', locationMetricsRouter);
+app.use('/api/locationMetrics', locationMetricsRouter);
 
 // Middleware must be after routes
 app.use(errorHandler);
