@@ -89,14 +89,6 @@ export default function QuickLinksPanel() {
     }
   };
 
-  {
-    id: 'workflow-guide',
-    title: 'Service Workflow Guide',
-    description: 'Complete workflow procedures and best practices',
-    url: '/metrics/definitions',
-    icon: <Book size={16} />,
-    category: 'workflow'
-  }
               </div>
               {/* Arrow pointing to button */}
               <div className="absolute left-full top-1/2 transform -translate-y-1/2 w-0 h-0 border-l-4 border-l-slate-900 border-t-4 border-t-transparent border-b-4 border-b-transparent"></div>
