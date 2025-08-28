@@ -218,7 +218,7 @@ export default function ScorecardManager() {
       console.log('Processing result structure:', result);
 
       // Support both { dealership, locations, extractedAt } and { success, data: { dealership, locations, extractedAt } }
-      let dealership, locations, extractedAt;
+  let dealership: DealershipMetrics | undefined, locations: any[] | undefined, extractedAt: string | undefined;
       if (result && typeof result === 'object') {
         if ('dealership' in result && 'locations' in result) {
           // Direct structure
