@@ -25,8 +25,13 @@ mongoose.connect(mongoUri, { useNewUrlParser: true, useUnifiedTopology: true })
 // Security middleware
 app.use(securityHeaders);
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:3000",
-  credentials: true
+  origin: [
+    process.env.FRONTEND_URL || "http://localhost:3000",
+    "https://wki-sma.onrender.com"
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Rate limiting
