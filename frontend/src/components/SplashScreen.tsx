@@ -30,7 +30,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
             <img
               src="/WKIsplash.png"
               alt="WKI Kenworth"
-              className="mx-auto h-64 w-auto object-contain drop-shadow-2xl"
+              className="mx-auto h-[28rem] w-auto object-contain drop-shadow-2xl"
             />
           </div>
           
