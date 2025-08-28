@@ -55,7 +55,21 @@ const locations = [
 ];
 
 // Backend API base URL
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://wki-service-management-app.onrender.com';
+const API_BASE_URL = 'https://wki-service-management-app.onrender.com';
+
+// Test API connection
+const testAPIConnection = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/locationMetrics`, {
+      method: 'GET',
+    });
+    console.log('API test response:', response.status, response.statusText);
+    return response.ok;
+  } catch (error) {
+    console.error('API connection test failed:', error);
+    return false;
+  }
+};
 
 // API functions
 const uploadScorecardToAPI = async (file: File, month: string, year: number) => {
@@ -64,7 +78,10 @@ const uploadScorecardToAPI = async (file: File, month: string, year: number) => 
   formData.append('month', month);
   formData.append('year', year.toString());
 
-  const response = await fetch(`${API_BASE_URL}/api/locationMetrics`, {
+  const apiUrl = `${API_BASE_URL}/api/locationMetrics`;
+  console.log('Making request to:', apiUrl);
+
+  const response = await fetch(apiUrl, {
     method: 'POST',
     body: formData,
   });
@@ -120,6 +137,10 @@ export default function ScorecardManager() {
   useEffect(() => {
     const loadData = async () => {
       try {
+        // Test API connection
+        const apiWorking = await testAPIConnection();
+        console.log('API connection test result:', apiWorking);
+        
         // Load any existing data from localStorage as backup
         setScorecards(getStoredScorecards());
         setDealershipData(getStoredDealershipData());
@@ -165,15 +186,21 @@ export default function ScorecardManager() {
     try {
       // Upload to backend API
       setUploadProgress(20);
-      console.log('Uploading file:', file.name, 'for month:', selectedMonth, 'year:', selectedYear);
-      console.log('API URL:', `${API_BASE_URL}/api/locationMetrics`);
+      console.log('Uploading to:', `${API_BASE_URL}/api/locationMetrics`);
       
       const result = await uploadScorecardToAPI(file, selectedMonth, selectedYear);
       console.log('Upload result:', result);
       setUploadProgress(60);
 
       // Process the returned data from your backend
+      console.log('Processing result structure:', result);
+      
+      // Your backend returns: { dealership: {...}, locations: [...], extractedAt: "..." }
       const { dealership, locations, extractedAt } = result;
+
+      if (!dealership || !locations) {
+        throw new Error('Invalid response structure from backend');
+      }
 
       // Create dealership scorecard from backend response
       const dealershipScorecard: DealershipScorecard = {
