@@ -179,7 +179,7 @@ export default function LocationMetrics() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent mb-4">
           Location Performance Metrics
@@ -190,9 +190,9 @@ export default function LocationMetrics() {
       </div>
 
       {/* Filters */}
-      <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl p-6 mb-8 border border-slate-700 shadow-2xl">
-        <div className="flex flex-wrap gap-4 items-center justify-between">
-          <div className="flex items-center space-x-4">
+      <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl p-3 sm:p-6 mb-6 sm:mb-8 border border-slate-700 shadow-2xl">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-4 items-stretch sm:items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
             <Filter className="w-5 h-5 text-red-400" />
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1">Location</label>
@@ -231,15 +231,16 @@ export default function LocationMetrics() {
       </div>
 
       {/* Metric Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {Object.entries(metricDefinitions).map(([key, def]) => {
+      <div className="overflow-x-auto pb-2">
+        <div className="grid grid-cols-2 min-w-[400px] sm:min-w-0 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
+  {Object.entries(metricDefinitions).map(([key, def]) => {
           const avgValue = filteredMetrics.reduce((sum, m) => 
             sum + (m.metrics as any)[key], 0
           ) / filteredMetrics.length;
           const isGood = def.good(avgValue);
           
           return (
-            <div key={key} className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-xl p-6 border border-slate-700">
+            <div key={key} className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-xl p-3 sm:p-6 border border-slate-700">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-white font-semibold text-sm">{def.name}</h3>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -258,13 +259,13 @@ export default function LocationMetrics() {
       </div>
 
       {/* Location Performance Cards */}
-      <div className="grid gap-6">
+  <div className="grid gap-4 sm:gap-6">
         {filteredMetrics.map((locationData) => (
-          <div key={`${locationData.location}-${locationData.month}`} 
-               className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl p-8 border border-slate-700 shadow-2xl">
+    <div key={`${locationData.location}-${locationData.month}`} 
+      className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl p-4 sm:p-8 border border-slate-700 shadow-2xl">
             
             {/* Location Header */}
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-8 gap-2">
               <div className="flex items-center space-x-4">
                 <div className={`w-16 h-16 bg-gradient-to-br ${getLocationColor(locationData.location)} rounded-full flex items-center justify-center shadow-lg`}>
                   <MapPin className="w-8 h-8 text-white" />
@@ -284,7 +285,8 @@ export default function LocationMetrics() {
             </div>
 
             {/* Metrics Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="overflow-x-auto pb-2">
+              <div className="grid grid-cols-2 min-w-[350px] sm:min-w-0 md:grid-cols-4 gap-2 sm:gap-6">
               {Object.entries(locationData.metrics).map(([key, value]) => {
                 const def = metricDefinitions[key as keyof typeof metricDefinitions];
                 const isGood = def.good(value);
@@ -292,7 +294,7 @@ export default function LocationMetrics() {
                 
                 return (
                   <div key={key} 
-                       className={`p-4 rounded-lg border transition-all ${
+                       className={`p-2 sm:p-4 rounded-lg border transition-all ${
                          isSelected 
                            ? 'border-red-500 bg-red-500/10 shadow-lg' 
                            : 'border-slate-700 bg-slate-800/50'
@@ -303,7 +305,7 @@ export default function LocationMetrics() {
                         isGood ? 'bg-green-500' : 'bg-red-500'
                       }`}></span>
                     </div>
-                    <div className={`text-xl font-bold ${
+                    <div className={`text-base sm:text-xl font-bold ${
                       isGood ? 'text-green-400' : 'text-red-400'
                     }`}>
                       {value.toFixed(1)}{def.unit}
@@ -319,8 +321,8 @@ export default function LocationMetrics() {
         ))}
       </div>
 
-      {/* Performance Summary */}
-      <div className="mt-8 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl p-8 border border-slate-700 shadow-2xl">
+  {/* Performance Summary */}
+  <div className="mt-6 sm:mt-8 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl p-4 sm:p-8 border border-slate-700 shadow-2xl">
         <h3 className="text-2xl font-bold text-white mb-6">Performance Summary</h3>
         <div className="grid md:grid-cols-3 gap-6">
           <div className="text-center">

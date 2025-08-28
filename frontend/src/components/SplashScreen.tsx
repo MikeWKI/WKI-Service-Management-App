@@ -28,12 +28,12 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
       {/* Main content container */}
       <div className="flex flex-col items-center justify-center text-center px-8 w-full">
         {/* WKI Splash Image with border - 90% screen width (20% larger than 75%) */}
-        <div className="mb-8 border-4 border-black rounded-lg shadow-2xl w-[90%] max-w-5xl bg-white p-8 relative min-h-[400px]">
+        <div className="mb-8 border-4 border-black rounded-lg shadow-2xl w-[90%] max-w-5xl bg-white p-8 relative min-h-[300px] sm:min-h-[400px]">
           <img 
             src="/WKIsplash.png" 
             alt="WKI Kenworth Splash" 
-            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 object-contain animate-fade-in-center"
-            style={{ maxHeight: '70vh', maxWidth: 'calc(100% - 4rem)' }}
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 object-contain animate-fade-in sm:animate-fade-in-center"
+            style={{ maxHeight: '50vh', maxWidth: 'calc(100% - 2rem)' }}
           />
         </div>
 

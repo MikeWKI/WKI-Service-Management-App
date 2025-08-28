@@ -56,22 +56,7 @@ const referenceDocuments: ReferenceDocument[] = [
     icon: <Book size={16} />,
     category: 'workflow'
   },
-  {
-    id: 'safety-procedures',
-    title: 'Safety Procedures',
-    description: 'Workplace safety guidelines and protocols',
-    url: '#safety',
-    icon: <AlertCircle size={16} />,
-    category: 'policy'
-  },
-  {
-    id: 'quality-standards',
-    title: 'Quality Standards',
-    description: 'Service quality requirements and checklists',
-    url: '#quality',
-    icon: <Settings size={16} />,
-    category: 'policy'
-  }
+  // Removed Safety Procedures and Quality Standards
 ];
 
 const categoryColors = {
@@ -104,30 +89,14 @@ export default function QuickLinksPanel() {
     }
   };
 
-  return (
-    <div className={`hidden xl:block fixed right-2 xl:right-4 top-1/2 transform -translate-y-1/2 z-40 transition-all duration-300 ${
-      isExpanded ? 'w-72 xl:w-80' : 'w-10 xl:w-12'
-    } max-w-[calc(100vw-1rem)]`}>
-      
-      {/* Floating vertical text for collapsed state */}
-      {!isExpanded && (
-        <div className="absolute right-full mr-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
-          <div className="writing-mode-vertical-rl text-orientation-mixed transform rotate-180">
-            <span className="text-yellow-400 text-sm font-medium tracking-wider animate-pulse">
-              Quick Links
-            </span>
-          </div>
-        </div>
-      )}
-      
-      <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-lg shadow-2xl border border-slate-700 overflow-hidden relative group">
-        {/* Animated tooltip for collapsed state */}
-        {!isExpanded && (
-          <div className="absolute right-full mr-3 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-            <div className="bg-slate-900 text-white px-3 py-2 rounded-lg shadow-xl border border-slate-700 whitespace-nowrap text-sm">
-              <div className="flex items-center space-x-2">
-                <Link className="w-4 h-4 text-yellow-400 animate-bounce" />
-                <span>Quick Links</span>
+  {
+    id: 'workflow-guide',
+    title: 'Service Workflow Guide',
+    description: 'Complete workflow procedures and best practices',
+    url: '/metrics/definitions',
+    icon: <Book size={16} />,
+    category: 'workflow'
+  }
               </div>
               {/* Arrow pointing to button */}
               <div className="absolute left-full top-1/2 transform -translate-y-1/2 w-0 h-0 border-l-4 border-l-slate-900 border-t-4 border-t-transparent border-b-4 border-b-transparent"></div>
@@ -216,20 +185,6 @@ export default function QuickLinksPanel() {
                       </div>
                       <p className="text-xs text-slate-400 mt-1 line-clamp-2">
                         {doc.description}
-                      </p>
-                      <div className="flex items-center mt-1 xl:mt-2">
-                        <span className={`px-1.5 xl:px-2 py-0.5 text-xs rounded-full bg-gradient-to-r ${categoryColors[doc.category]} text-white font-medium`}>
-                          {categoryLabels[doc.category]}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-
-            {filteredDocuments.length === 0 && (
-              <div className="text-center py-8">
                 <FileText className="w-12 h-12 text-slate-600 mx-auto mb-2" />
                 <p className="text-slate-400 text-sm">No documents found</p>
               </div>
