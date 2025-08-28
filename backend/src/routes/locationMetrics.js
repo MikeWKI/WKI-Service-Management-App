@@ -104,26 +104,18 @@ router.post('/upload', upload.single('pdf'), async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ success: false, error: 'No PDF file uploaded' });
     }
-    
     // Extract dealership and location metrics using pdfjs-dist
     const metrics = await extractServiceMetrics(req.file.buffer);
-    
     // Remove all previous metrics (keep only latest)
     await LocationMetric.deleteMany({});
-    
     // Save new metrics
     const newMetrics = new LocationMetric({ metrics });
     await newMetrics.save();
-    
-    res.json({ 
-      success: true, 
-      message: 'Service metrics updated successfully',
-      data: {
-        dealership: metrics.dealership,
-        locations: metrics.locations,
-        locationsCount: metrics.locations?.length || 0,
-        extractedAt: metrics.extractedAt
-      }
+    // Respond with only the expected structure
+    res.json({
+      dealership: metrics.dealership,
+      locations: metrics.locations,
+      extractedAt: metrics.extractedAt
     });
   } catch (error) {
     console.error('Upload error:', error);
