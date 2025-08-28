@@ -119,8 +119,8 @@ export default function ProcessWorkflowLayout() {
       <div className="relative flex flex-col items-center">
         {/* Centered timeline container for desktop, scrollable on mobile */}
         <div className="w-full flex justify-center">
-          <div className="flex w-full max-w-4xl lg:max-w-4xl xl:max-w-4xl 2xl:max-w-4xl overflow-x-auto sm:overflow-x-visible scrollbar-thin scrollbar-thumb-slate-400 scrollbar-track-slate-200 justify-between md:justify-center items-end z-10 mb-6 gap-2 sm:gap-0 px-1 sm:px-0"
-            style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="flex w-full max-w-3xl lg:max-w-3xl xl:max-w-3xl 2xl:max-w-3xl overflow-x-auto sm:overflow-x-visible scrollbar-thin scrollbar-thumb-slate-400 scrollbar-track-slate-200 justify-between md:justify-center items-end z-10 mb-6 gap-2 sm:gap-0 px-1 sm:px-0"
+            style={{ WebkitOverflowScrolling: 'touch', margin: '0 auto' }}>
             {steps.map((step, idx) => (
               <div
                 key={step.id}
