@@ -233,37 +233,38 @@ export default function LocationMetrics() {
       {/* Metric Overview Cards */}
       <div className="overflow-x-auto pb-2">
         <div className="grid grid-cols-2 min-w-[400px] sm:min-w-0 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
-  {Object.entries(metricDefinitions).map(([key, def]) => {
-          const avgValue = filteredMetrics.reduce((sum, m) => 
-            sum + (m.metrics as any)[key], 0
-          ) / filteredMetrics.length;
-          const isGood = def.good(avgValue);
-          
-          return (
-            <div key={key} className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-xl p-3 sm:p-6 border border-slate-700">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-white font-semibold text-sm">{def.name}</h3>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  isGood ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'
-                }`}>
-                  {def.target}
-                </span>
+          {Object.entries(metricDefinitions).map(([key, def]) => {
+            const avgValue = filteredMetrics.reduce((sum, m) =>
+              sum + (m.metrics as any)[key], 0
+            ) / filteredMetrics.length;
+            const isGood = def.good(avgValue);
+
+            return (
+              <div key={key} className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-xl p-3 sm:p-6 border border-slate-700">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-white font-semibold text-sm">{def.name}</h3>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    isGood ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'
+                  }`}>
+                    {def.target}
+                  </span>
+                </div>
+                <div className="text-2xl font-bold text-white mb-1">
+                  {avgValue.toFixed(1)}{def.unit}
+                </div>
+                <p className="text-slate-400 text-xs">{def.description}</p>
               </div>
-              <div className="text-2xl font-bold text-white mb-1">
-                {avgValue.toFixed(1)}{def.unit}
-              </div>
-              <p className="text-slate-400 text-xs">{def.description}</p>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       {/* Location Performance Cards */}
-  <div className="grid gap-4 sm:gap-6">
+      <div className="grid gap-4 sm:gap-6">
         {filteredMetrics.map((locationData) => (
-    <div key={`${locationData.location}-${locationData.month}`} 
-      className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl p-4 sm:p-8 border border-slate-700 shadow-2xl">
-            
+          <div key={`${locationData.location}-${locationData.month}`}
+            className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl p-4 sm:p-8 border border-slate-700 shadow-2xl">
+
             {/* Location Header */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-8 gap-2">
               <div className="flex items-center space-x-4">
@@ -287,42 +288,43 @@ export default function LocationMetrics() {
             {/* Metrics Grid */}
             <div className="overflow-x-auto pb-2">
               <div className="grid grid-cols-2 min-w-[350px] sm:min-w-0 md:grid-cols-4 gap-2 sm:gap-6">
-              {Object.entries(locationData.metrics).map(([key, value]) => {
-                const def = metricDefinitions[key as keyof typeof metricDefinitions];
-                const isGood = def.good(value);
-                const isSelected = key === selectedMetric;
-                
-                return (
-                  <div key={key} 
-                       className={`p-2 sm:p-4 rounded-lg border transition-all ${
-                         isSelected 
-                           ? 'border-red-500 bg-red-500/10 shadow-lg' 
-                           : 'border-slate-700 bg-slate-800/50'
-                       }`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-slate-300 text-sm font-medium">{def.name}</h4>
-                      <span className={`w-3 h-3 rounded-full ${
-                        isGood ? 'bg-green-500' : 'bg-red-500'
-                      }`}></span>
+                {Object.entries(locationData.metrics).map(([key, value]) => {
+                  const def = metricDefinitions[key as keyof typeof metricDefinitions];
+                  const isGood = def.good(value);
+                  const isSelected = key === selectedMetric;
+
+                  return (
+                    <div key={key}
+                      className={`p-2 sm:p-4 rounded-lg border transition-all ${
+                        isSelected
+                          ? 'border-red-500 bg-red-500/10 shadow-lg'
+                          : 'border-slate-700 bg-slate-800/50'
+                      }`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-slate-300 text-sm font-medium">{def.name}</h4>
+                        <span className={`w-3 h-3 rounded-full ${
+                          isGood ? 'bg-green-500' : 'bg-red-500'
+                        }`}></span>
+                      </div>
+                      <div className={`text-base sm:text-xl font-bold ${
+                        isGood ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        {value.toFixed(1)}{def.unit}
+                      </div>
+                      <div className="text-xs text-slate-400 mt-1">
+                        Target: {def.target}
+                      </div>
                     </div>
-                    <div className={`text-base sm:text-xl font-bold ${
-                      isGood ? 'text-green-400' : 'text-red-400'
-                    }`}>
-                      {value.toFixed(1)}{def.unit}
-                    </div>
-                    <div className="text-xs text-slate-400 mt-1">
-                      Target: {def.target}
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-  {/* Performance Summary */}
-  <div className="mt-6 sm:mt-8 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl p-4 sm:p-8 border border-slate-700 shadow-2xl">
+      {/* Performance Summary */}
+      <div className="mt-6 sm:mt-8 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl p-4 sm:p-8 border border-slate-700 shadow-2xl">
         <h3 className="text-2xl font-bold text-white mb-6">Performance Summary</h3>
         <div className="grid md:grid-cols-3 gap-6">
           <div className="text-center">

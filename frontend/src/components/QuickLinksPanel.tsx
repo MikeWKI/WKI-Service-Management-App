@@ -77,8 +77,8 @@ export default function QuickLinksPanel() {
   const [isExpanded, setIsExpanded] = useState(false); // Changed to false for collapsed by default
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  const filteredDocuments = selectedCategory === 'all' 
-    ? referenceDocuments 
+  const filteredDocuments = selectedCategory === 'all'
+    ? referenceDocuments
     : referenceDocuments.filter(doc => doc.category === selectedCategory);
 
   const handleDocumentClick = (doc: ReferenceDocument) => {
@@ -89,74 +89,70 @@ export default function QuickLinksPanel() {
     }
   };
 
-              </div>
-              {/* Arrow pointing to button */}
-              <div className="absolute left-full top-1/2 transform -translate-y-1/2 w-0 h-0 border-l-4 border-l-slate-900 border-t-4 border-t-transparent border-b-4 border-b-transparent"></div>
+  return (
+    <div>
+      {/* Toggle Button */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full p-2 xl:p-3 flex items-center justify-center hover:bg-slate-700/50 transition-colors duration-200 relative"
+        aria-label={isExpanded ? 'Minimize Quick Links' : 'Expand Quick Links'}
+      >
+        {isExpanded ? (
+          <ChevronRight className="w-4 h-4 xl:w-5 xl:h-5 text-slate-300" />
+        ) : (
+          <div className="flex flex-col items-center space-y-1">
+            <Link className="w-4 h-4 xl:w-5 xl:h-5 text-yellow-400 animate-bounce" />
+            <div className="flex items-center">
+              <ChevronLeft className="w-3 h-3 xl:w-4 xl:h-4 text-slate-300" />
             </div>
           </div>
         )}
-        
-        {/* Toggle Button */}
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full p-2 xl:p-3 flex items-center justify-center hover:bg-slate-700/50 transition-colors duration-200 relative"
-          aria-label={isExpanded ? 'Minimize Quick Links' : 'Expand Quick Links'}
-        >
-          {isExpanded ? (
-            <ChevronRight className="w-4 h-4 xl:w-5 xl:h-5 text-slate-300" />
-          ) : (
-            <div className="flex flex-col items-center space-y-1">
-              <Link className="w-4 h-4 xl:w-5 xl:h-5 text-yellow-400 animate-bounce" />
-              <div className="flex items-center">
-                <ChevronLeft className="w-3 h-3 xl:w-4 xl:h-4 text-slate-300" />
-              </div>
-            </div>
-          )}
-        </button>
+      </button>
 
-        {/* Expanded Content */}
-        {isExpanded && (
-          <div className="p-3 xl:p-4 animate-slide-in-mobile">
-            <div className="mb-3 xl:mb-4">
-              <h3 className="text-base xl:text-lg font-bold text-white mb-1 xl:mb-2 flex items-center">
-                <FileText className="w-4 h-4 xl:w-5 xl:h-5 mr-2 text-red-400" />
-                Quick Links
-              </h3>
-              <p className="text-xs text-slate-400">Reference Documents & Tools</p>
-            </div>
+      {/* Expanded Content */}
+      {isExpanded && (
+        <div className="p-3 xl:p-4 animate-slide-in-mobile">
+          <div className="mb-3 xl:mb-4">
+            <h3 className="text-base xl:text-lg font-bold text-white mb-1 xl:mb-2 flex items-center">
+              <FileText className="w-4 h-4 xl:w-5 xl:h-5 mr-2 text-red-400" />
+              Quick Links
+            </h3>
+            <p className="text-xs text-slate-400">Reference Documents & Tools</p>
+          </div>
 
-            {/* Category Filter */}
-            <div className="mb-3 xl:mb-4">
-              <div className="flex flex-wrap gap-1">
+          {/* Category Filter */}
+          <div className="mb-3 xl:mb-4">
+            <div className="flex flex-wrap gap-1">
+              <button
+                onClick={() => setSelectedCategory('all')}
+                className={`px-2 py-1 text-xs rounded-md font-medium transition-colors duration-200 ${
+                  selectedCategory === 'all'
+                    ? 'bg-red-600 text-white'
+                    : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                All
+              </button>
+              {Object.entries(categoryLabels).map(([key, label]) => (
                 <button
-                  onClick={() => setSelectedCategory('all')}
+                  key={key}
+                  onClick={() => setSelectedCategory(key)}
                   className={`px-2 py-1 text-xs rounded-md font-medium transition-colors duration-200 ${
-                    selectedCategory === 'all'
+                    selectedCategory === key
                       ? 'bg-red-600 text-white'
                       : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600'
                   }`}
                 >
-                  All
+                  {label}
                 </button>
-                {Object.entries(categoryLabels).map(([key, label]) => (
-                  <button
-                    key={key}
-                    onClick={() => setSelectedCategory(key)}
-                    className={`px-2 py-1 text-xs rounded-md font-medium transition-colors duration-200 ${
-                      selectedCategory === key
-                        ? 'bg-red-600 text-white'
-                        : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
+              ))}
             </div>
+          </div>
 
-            {/* Document Links */}
-            <div className="space-y-2 max-h-80 xl:max-h-96 overflow-y-auto">
-              {filteredDocuments.map((doc) => (
+          {/* Document Links */}
+          <div className="space-y-2 max-h-80 xl:max-h-96 overflow-y-auto">
+            {filteredDocuments.length > 0 ? (
+              filteredDocuments.map((doc: ReferenceDocument) => (
                 <button
                   key={doc.id}
                   onClick={() => handleDocumentClick(doc)}
@@ -177,20 +173,27 @@ export default function QuickLinksPanel() {
                       </div>
                       <p className="text-xs text-slate-400 mt-1 line-clamp-2">
                         {doc.description}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8">
                 <FileText className="w-12 h-12 text-slate-600 mx-auto mb-2" />
                 <p className="text-slate-400 text-sm">No documents found</p>
               </div>
             )}
-
-            {/* Footer */}
-            <div className="mt-4 pt-3 border-t border-slate-700/50">
-              <p className="text-xs text-slate-500 text-center">
-                {filteredDocuments.length} reference{filteredDocuments.length !== 1 ? 's' : ''} available
-              </p>
-            </div>
           </div>
-        )}
-      </div>
+
+          {/* Footer */}
+          <div className="mt-4 pt-3 border-t border-slate-700/50">
+            <p className="text-xs text-slate-500 text-center">
+              {filteredDocuments.length} reference{filteredDocuments.length !== 1 ? 's' : ''} available
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
