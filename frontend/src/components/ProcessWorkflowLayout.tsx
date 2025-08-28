@@ -114,101 +114,106 @@ export default function ProcessWorkflowLayout() {
         />
       </div>
 
+
       {/* Timeline Workflow - boxes above the line */}
       <div className="relative flex flex-col items-center">
-        {/* Step Boxes above the line - horizontally scrollable on mobile */}
-  <div className="flex w-full sm:w-full overflow-x-auto sm:overflow-x-visible scrollbar-thin scrollbar-thumb-slate-400 scrollbar-track-slate-200 justify-between md:justify-center items-end z-10 mb-6 gap-2 sm:gap-0 px-1 sm:px-0"
-       style={{ WebkitOverflowScrolling: 'touch' }}>
-          {steps.map((step, idx) => (
-            <div 
-              key={step.id} 
-              className={`flex flex-col items-center min-w-[7rem] sm:w-32 transition-all duration-300 relative ${getStepOpacity(step)}`}
-              onMouseEnter={() => setHoveredStep(step.id)}
-              onMouseLeave={() => setHoveredStep(null)}
-            >
-              {/* Hover Card - appears above the step */}
-              {hoveredStep === step.id && (
-                <div className="absolute -top-24 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white p-3 rounded-lg shadow-xl z-50 min-w-48 text-center animate-fade-in">
-                  <div className="text-sm font-semibold mb-1">{step.title.replace('\n', ' ')}</div>
-                  <div className="text-xs text-slate-300 mb-2">
-                    Roles: {step.roles.map(role => capitalizeRole(role)).join(', ')}
-                  </div>
-                  {step.isQAB && (
-                    <div className="text-xs bg-yellow-400 text-black px-2 py-1 rounded font-bold">
-                      QAB Checkpoint
-                    </div>
-                  )}
-                  {step.hasETR && (
-                    <div className="text-xs bg-yellow-500 text-black px-2 py-1 rounded font-bold mt-1">
-                      {step.etrType === 'required' ? 'ETR Required' : 'ETR Check/Update'}
-                    </div>
-                  )}
-                  {step.actionButton && (
-                    <div className="text-xs bg-blue-500 text-white px-2 py-1 rounded mt-1">
-                      Action: {step.actionButton}
-                    </div>
-                  )}
-                  {/* Arrow pointing down */}
-                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
-                </div>
-              )}
-
-              {/* Step Box */}
-              <button
-                onClick={() => handleStepClick(step.id)}
-                className={`bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-slate-300 rounded-xl px-2 py-2 sm:px-4 sm:py-3 text-center text-[0.7rem] sm:text-xs font-bold whitespace-pre-line shadow-lg mb-2 transition-all duration-300 hover:shadow-xl hover:scale-110 transform hover:border-red-400 hover:from-red-50 hover:to-red-100 ${
-                  hoveredStep === step.id ? 'bg-gradient-to-br from-red-100 to-red-200 border-red-500 shadow-xl scale-110 text-red-800' : 'text-slate-800'
-                }`}
+        {/* Centered timeline container for desktop, scrollable on mobile */}
+        <div className="w-full flex justify-center">
+          <div className="flex w-full max-w-5xl overflow-x-auto sm:overflow-x-visible scrollbar-thin scrollbar-thumb-slate-400 scrollbar-track-slate-200 justify-between md:justify-center items-end z-10 mb-6 gap-2 sm:gap-0 px-1 sm:px-0"
+            style={{ WebkitOverflowScrolling: 'touch' }}>
+            {steps.map((step, idx) => (
+              <div
+                key={step.id}
+                className={`flex flex-col items-center min-w-[7rem] sm:w-32 transition-all duration-300 relative ${getStepOpacity(step)}`}
+                onMouseEnter={() => setHoveredStep(step.id)}
+                onMouseLeave={() => setHoveredStep(null)}
               >
-                {step.title}
-              </button>
-              
-              {/* QAB marker */}
-              {step.isQAB && (
-                <div className="mt-2 flex flex-col items-center">
-                  <div className={`bg-gradient-to-br from-red-500 to-red-600 rounded-full w-12 h-12 flex items-center justify-center font-bold text-white text-lg border-2 border-red-700 shadow-lg transition-all duration-300 hover:shadow-red-500/50 ${
-                    hoveredStep === step.id ? 'scale-125 shadow-red-500/50' : ''
-                  }`}>
-                    QAB
+                {/* Hover Card - appears above the step */}
+                {hoveredStep === step.id && (
+                  <div className="absolute -top-24 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white p-3 rounded-lg shadow-xl z-50 min-w-48 text-center animate-fade-in">
+                    <div className="text-sm font-semibold mb-1">{step.title.replace('\n', ' ')}</div>
+                    <div className="text-xs text-slate-300 mb-2">
+                      Roles: {step.roles.map(role => capitalizeRole(role)).join(', ')}
+                    </div>
+                    {step.isQAB && (
+                      <div className="text-xs bg-yellow-400 text-black px-2 py-1 rounded font-bold">
+                        QAB Checkpoint
+                      </div>
+                    )}
+                    {step.hasETR && (
+                      <div className="text-xs bg-yellow-500 text-black px-2 py-1 rounded font-bold mt-1">
+                        {step.etrType === 'required' ? 'ETR Required' : 'ETR Check/Update'}
+                      </div>
+                    )}
+                    {step.actionButton && (
+                      <div className="text-xs bg-blue-500 text-white px-2 py-1 rounded mt-1">
+                        Action: {step.actionButton}
+                      </div>
+                    )}
+                    {/* Arrow pointing down */}
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
                   </div>
-                  <div className="h-4" />
-                </div>
-              )}
+                )}
 
-              {/* ETR marker - placed below steps without QAB, or below QAB if both exist */}
-              {step.hasETR && (
-                <div className={`${step.isQAB ? '' : 'mt-2'} flex flex-col items-center`}>
-                  <div className={`bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full w-12 h-12 flex items-center justify-center font-bold text-black text-lg border-2 border-yellow-600 shadow-lg transition-all duration-300 hover:shadow-yellow-500/50 ${
-                    hoveredStep === step.id ? 'scale-125 shadow-yellow-500/50' : ''
-                  }`}>
-                    ETR
-                  </div>
-                  <div className="h-4" />
-                </div>
-              )}
-              
-              {/* Action Button */}
-              {step.actionButton && (
-                <button 
-                  onClick={() => console.log(`Action: ${step.actionButton} for ${step.id}`)}
-                  className={`bg-gradient-to-r from-slate-700 to-slate-800 text-white px-4 py-2 rounded-lg font-bold text-xs shadow-lg mt-2 transition-all duration-300 hover:from-slate-800 hover:to-slate-900 hover:scale-105 border border-slate-600 hover:shadow-xl ${
-                    hoveredStep === step.id ? 'from-slate-800 to-slate-900 scale-105 shadow-xl' : ''
+                {/* Step Box */}
+                <button
+                  onClick={() => handleStepClick(step.id)}
+                  className={`bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-slate-300 rounded-xl px-2 py-2 sm:px-4 sm:py-3 text-center text-[0.7rem] sm:text-xs font-bold whitespace-pre-line shadow-lg mb-2 transition-all duration-300 hover:shadow-xl hover:scale-110 transform hover:border-red-400 hover:from-red-50 hover:to-red-100 ${
+                    hoveredStep === step.id ? 'bg-gradient-to-br from-red-100 to-red-200 border-red-500 shadow-xl scale-110 text-red-800' : 'text-slate-800'
                   }`}
                 >
-                  {step.actionButton}
+                  {step.title}
                 </button>
-              )}
-            </div>
-          ))}
+
+                {/* QAB marker */}
+                {step.isQAB && (
+                  <div className="mt-2 flex flex-col items-center">
+                    <div className={`bg-gradient-to-br from-red-500 to-red-600 rounded-full w-12 h-12 flex items-center justify-center font-bold text-white text-lg border-2 border-red-700 shadow-lg transition-all duration-300 hover:shadow-red-500/50 ${
+                      hoveredStep === step.id ? 'scale-125 shadow-red-500/50' : ''
+                    }`}>
+                      QAB
+                    </div>
+                    <div className="h-4" />
+                  </div>
+                )}
+
+                {/* ETR marker - placed below steps without QAB, or below QAB if both exist */}
+                {step.hasETR && (
+                  <div className={`${step.isQAB ? '' : 'mt-2'} flex flex-col items-center`}>
+                    <div className={`bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full w-12 h-12 flex items-center justify-center font-bold text-black text-lg border-2 border-yellow-600 shadow-lg transition-all duration-300 hover:shadow-yellow-500/50 ${
+                      hoveredStep === step.id ? 'scale-125 shadow-yellow-500/50' : ''
+                    }`}>
+                      ETR
+                    </div>
+                    <div className="h-4" />
+                  </div>
+                )}
+
+                {/* Action Button */}
+                {step.actionButton && (
+                  <button
+                    onClick={() => console.log(`Action: ${step.actionButton} for ${step.id}`)}
+                    className={`bg-gradient-to-r from-slate-700 to-slate-800 text-white px-4 py-2 rounded-lg font-bold text-xs shadow-lg mt-2 transition-all duration-300 hover:from-slate-800 hover:to-slate-900 hover:scale-105 border border-slate-600 hover:shadow-xl ${
+                      hoveredStep === step.id ? 'from-slate-800 to-slate-900 scale-105 shadow-xl' : ''
+                    }`}
+                  >
+                    {step.actionButton}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
-        
+
         {/* Timeline Line */}
-  <div className="w-full h-2 bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 rounded-full z-0 relative shadow-inner min-w-[600px] sm:min-w-0 md:min-w-0 lg:min-w-0 xl:min-w-0">
-          <div className="absolute left-0 top-0 h-full bg-gradient-to-r from-red-600 to-transparent rounded-full transition-all duration-500 shadow-lg opacity-50" style={{width: '30%'}} />
+        <div className="w-full flex justify-center">
+          <div className="h-2 bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 rounded-full z-0 relative shadow-inner min-w-[600px] sm:min-w-0 md:min-w-0 lg:min-w-0 xl:min-w-0 max-w-5xl w-full">
+            <div className="absolute left-0 top-0 h-full bg-gradient-to-r from-red-600 to-transparent rounded-full transition-all duration-500 shadow-lg opacity-50" style={{width: '30%'}} />
+          </div>
         </div>
-        
+
         {/* Timeline Labels - positioned 15% lower */}
-        <div className="flex w-full justify-between text-slate-700 font-bold text-xs sm:text-sm" style={{ marginTop: '1%' }}>
+        <div className="flex w-full max-w-5xl mx-auto justify-between text-slate-700 font-bold text-xs sm:text-sm" style={{ marginTop: '1%' }}>
           <span className="bg-slate-200 px-2 py-1 rounded-full shadow ml-4 sm:ml-20">Triage Time Begins</span>
           <span className="bg-slate-200 px-2 py-1 rounded-full shadow mr-4 sm:mr-0">Dwell Time Ends</span>
         </div>
