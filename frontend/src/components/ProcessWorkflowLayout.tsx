@@ -59,7 +59,7 @@ export default function ProcessWorkflowLayout() {
   return (
     <div className="w-full max-w-6xl bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl shadow-2xl border border-slate-200 p-2 sm:p-4 md:p-8 flex flex-col gap-6 sm:gap-8">
       {/* Header */}
-  <div className="flex flex-col sm:flex-row justify-between items-center mb-2 bg-gradient-to-r from-red-600 to-red-700 rounded-xl p-4 sm:p-6 shadow-lg gap-2">
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-2 bg-gradient-to-r from-red-600 to-red-700 rounded-xl p-4 sm:p-6 shadow-lg gap-2">
         <div>
           <h1 className="text-3xl font-bold text-white drop-shadow-lg">WKI Service Management Process</h1>
           <p className="text-red-100 font-semibold text-lg">Start Every Repair Order in Decisiv</p>
@@ -67,7 +67,7 @@ export default function ProcessWorkflowLayout() {
         <div className="flex items-center gap-3">
           <div className="bg-white rounded-lg p-3 shadow-lg">
             <img 
-              src="https://www.kenworth.com/media/w4jnzm4t/kenworth_logo-header-new-012023.png" 
+              src="/kenworth_logo-header.png" 
               alt="Kenworth Logo" 
               className="h-12 w-auto" 
             />
@@ -79,7 +79,7 @@ export default function ProcessWorkflowLayout() {
             className="bg-white rounded-lg p-3 shadow-lg hover:shadow-xl transition-shadow duration-300 transform hover:scale-105"
           >
             <img 
-              src="https://www.decisiv.com/wp-content/uploads/2020/01/Decisiv-Logo-096126.svg" 
+              src="/Decisiv-Logo.svg" 
               alt="Decisiv Logo" 
               className="h-12 w-auto" 
             />
@@ -108,7 +108,7 @@ export default function ProcessWorkflowLayout() {
       {/* Workflow Truck Image */}
       <div className="flex justify-center -mb-2">
         <img 
-          src="/workflowtruck.png" 
+          src="/Workflowtruck.png" 
           alt="WKI Service Management Process Workflow" 
           className="max-w-full h-auto rounded-lg shadow-lg max-h-40 sm:max-h-72 md:max-h-96"
         />
