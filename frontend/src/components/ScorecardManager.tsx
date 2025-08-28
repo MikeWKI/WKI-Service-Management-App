@@ -220,10 +220,10 @@ export default function ScorecardManager() {
     try {
       // Upload to backend API
       setUploadProgress(20);
-      console.log('Uploading to:', `${API_BASE_URL}/api/locationMetrics`);
+      console.log('Starting upload process...');
       
       const result = await uploadScorecardToAPI(file, selectedMonth, selectedYear);
-      console.log('Upload result:', result);
+      console.log('Upload successful, result:', result);
       setUploadProgress(60);
 
       // Process the returned data from your backend
