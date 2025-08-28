@@ -1,7 +1,40 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Upload, FileText, MapPin, Calendar, BarChart3, AlertCircle, CheckCircle, X, Download, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+interface DealershipMetrics {
+  dwellTime?: string;
+  triageTime?: string;
+  customerSatisfaction?: string;
+  serviceEfficiency?: string;
+  totalCases?: string;
+  completedCases?: string;
+  etrCompliance?: number;
+  firstTimeFix?: number;
+  caseCount?: number;
+}
+
+interface LocationMetrics {
+  dwellTime?: string;
+  triageTime?: string;
+  cases?: string;
+  completedCases?: string;
+  customerSatisfaction?: string;
+  etrCompliance?: string;
+  firstTimeFix?: string;
+  partsAvailability?: string;
+  workOrderAccuracy?: string;
+}
+
+interface DealershipScorecard {
+  id: string;
+  month: string;
+  year: number;
+  fileName: string;
+  uploadDate: Date;
+  metrics: DealershipMetrics;
+  locations: LocationScorecard[];
+}
 interface LocationScorecard {
   id: string;
   location: string;
@@ -10,28 +43,46 @@ interface LocationScorecard {
   year: number;
   fileName: string;
   uploadDate: Date;
-  metrics: {
-    daysOutOfService: number;
-    etrCompliance: number;
-    extendedUpdateRate: number;
-    qabUsage: number;
-    triageTime: number;
-    dwellTime: number;
-    customerSatisfaction: number;
-    firstTimeFix: number;
-    partsAvailability: number;
-    repairStatusDiscipline: number;
-    atrAccuracy: number;
-  };
+  metrics: LocationMetrics;
   trend: 'up' | 'down' | 'stable';
 }
 
 const locations = [
-  { id: 'wichita', name: 'Wichita', code: 'WIC', color: 'from-blue-500 to-blue-600' },
-  { id: 'emporia', name: 'Emporia', code: 'EMP', color: 'from-green-500 to-green-600' },
-  { id: 'dodge-city', name: 'Dodge City', code: 'DOD', color: 'from-purple-500 to-purple-600' },
-  { id: 'liberal', name: 'Liberal', code: 'LIB', color: 'from-orange-500 to-orange-600' }
+  { id: 'wichita', name: 'Wichita Kenworth', code: 'WIC', color: 'from-blue-500 to-blue-600' },
+  { id: 'emporia', name: 'Emporia Kenworth', code: 'EMP', color: 'from-green-500 to-green-600' },
+  { id: 'dodge-city', name: 'Dodge City Kenworth', code: 'DOD', color: 'from-purple-500 to-purple-600' },
+  { id: 'liberal', name: 'Liberal Kenworth', code: 'LIB', color: 'from-orange-500 to-orange-600' }
 ];
+
+// Backend API base URL
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://wki-service-management-app.onrender.com';
+
+// API functions
+const uploadScorecardToAPI = async (file: File, month: string, year: number) => {
+  const formData = new FormData();
+  formData.append('scorecard', file);
+  formData.append('month', month);
+  formData.append('year', year.toString());
+
+  const response = await fetch(`${API_BASE_URL}/api/scorecard/upload`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Upload failed: ${response.statusText}`);
+  }
+
+  return response.json();
+};
+
+const fetchLocationMetrics = async () => {
+  const response = await fetch(`${API_BASE_URL}/api/location-metrics`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch metrics: ${response.statusText}`);
+  }
+  return response.json();
+};
 
 // This would be replaced with actual localStorage or database storage
 const getStoredScorecards = (): LocationScorecard[] => {
@@ -43,15 +94,46 @@ const saveStoredScorecards = (scorecards: LocationScorecard[]) => {
   localStorage.setItem('wki-scorecards', JSON.stringify(scorecards));
 };
 
+const getStoredDealershipData = (): DealershipScorecard[] => {
+  const stored = localStorage.getItem('wki-dealership-scorecards');
+  return stored ? JSON.parse(stored) : [];
+};
+
+const saveStoredDealershipData = (dealershipData: DealershipScorecard[]) => {
+  localStorage.setItem('wki-dealership-scorecards', JSON.stringify(dealershipData));
+};
+
 export default function ScorecardManager() {
-  const [scorecards, setScorecards] = useState<LocationScorecard[]>(getStoredScorecards());
+  const [scorecards, setScorecards] = useState<LocationScorecard[]>([]);
+  const [dealershipData, setDealershipData] = useState<DealershipScorecard[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [selectedLocation, setSelectedLocation] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [dragActive, setDragActive] = useState(false);
+  const [parseError, setParseError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load data from API on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        // Load any existing data from localStorage as backup
+        setScorecards(getStoredScorecards());
+        setDealershipData(getStoredDealershipData());
+        
+        // Try to fetch from API (optional - for when API has persistent storage)
+        // await fetchLocationMetrics();
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadData();
+  }, []);
 
   // Generate months for dropdown
   const months = [
@@ -64,8 +146,8 @@ export default function ScorecardManager() {
 
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    if (!selectedLocation || !selectedMonth) {
-      alert('Please select a location and month before uploading');
+    if (!selectedMonth) {
+      alert('Please select a month before uploading');
       return;
     }
 
@@ -77,59 +159,93 @@ export default function ScorecardManager() {
 
     setIsUploading(true);
     setUploadProgress(0);
+    setParseError(null);
 
-    // Simulate upload progress
-    const progressInterval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 90) {
-          clearInterval(progressInterval);
-          return 90;
-        }
-        return prev + 10;
-      });
-    }, 100);
+    try {
+      // Upload to backend API
+      setUploadProgress(20);
+      const result = await uploadScorecardToAPI(file, selectedMonth, selectedYear);
+      setUploadProgress(60);
 
-    // Simulate PDF processing and data extraction
-    setTimeout(() => {
-      const locationData = locations.find(loc => loc.id === selectedLocation);
-      const newScorecard: LocationScorecard = {
-        id: `${selectedLocation}-${selectedMonth}-${selectedYear}`,
-        location: locationData?.name || selectedLocation,
-        locationId: selectedLocation,
+      // Process the returned data from your backend
+      const { dealership, locations, extractedAt } = result;
+
+      // Create dealership scorecard from backend response
+      const dealershipScorecard: DealershipScorecard = {
+        id: `dealership-${selectedMonth}-${selectedYear}`,
         month: selectedMonth,
         year: selectedYear,
         fileName: file.name,
-        uploadDate: new Date(),
-        metrics: {
-          // These would be extracted from the actual PDF in a real implementation
-          daysOutOfService: Math.random() * 5 + 3, // 3-8 days
-          etrCompliance: Math.random() * 20 + 80, // 80-100%
-          extendedUpdateRate: Math.random() * 15 + 5, // 5-20%
-          qabUsage: Math.random() * 30 + 70, // 70-100%
-          triageTime: Math.random() * 60 + 30, // 30-90 minutes
-          dwellTime: Math.random() * 200 + 100, // 100-300 minutes
-          customerSatisfaction: Math.random() * 15 + 85, // 85-100%
-          firstTimeFix: Math.random() * 20 + 75, // 75-95%
-          partsAvailability: Math.random() * 15 + 85, // 85-100%
-          repairStatusDiscipline: Math.random() * 20 + 80, // 80-100%
-          atrAccuracy: Math.random() * 15 + 85 // 85-100%
-        },
-        trend: ['up', 'down', 'stable'][Math.floor(Math.random() * 3)] as 'up' | 'down' | 'stable'
+        uploadDate: new Date(extractedAt),
+        metrics: dealership,
+        locations: []
       };
 
+      // Create location scorecards from backend response
+      const locationScorecards: LocationScorecard[] = locations.map((location: any, index: number) => {
+        const locationInfo = getLocationInfo(location.name);
+        return {
+          id: `${locationInfo.id}-${selectedMonth}-${selectedYear}`,
+          location: location.name,
+          locationId: locationInfo.id,
+          month: selectedMonth,
+          year: selectedYear,
+          fileName: file.name,
+          uploadDate: new Date(extractedAt),
+          metrics: location,
+          trend: calculateTrend() // Random trend for now
+        };
+      });
+
+      dealershipScorecard.locations = locationScorecards;
+      setUploadProgress(90);
+
+      // Update state and localStorage
+      setDealershipData(prev => {
+        const filtered = prev.filter(item => !(item.month === selectedMonth && item.year === selectedYear));
+        const updated = [...filtered, dealershipScorecard];
+        saveStoredDealershipData(updated);
+        return updated;
+      });
+
       setScorecards(prev => {
-        const filtered = prev.filter(sc => sc.id !== newScorecard.id);
-        const updated = [...filtered, newScorecard];
-        saveStoredScorecards(updated); // Save to localStorage
+        const filtered = prev.filter(item => !(item.month === selectedMonth && item.year === selectedYear));
+        const updated = [...filtered, ...locationScorecards];
+        saveStoredScorecards(updated);
         return updated;
       });
 
       setUploadProgress(100);
+      
       setTimeout(() => {
         setIsUploading(false);
         setUploadProgress(0);
-      }, 1000);
-    }, 2000);
+        alert(`Successfully uploaded and processed ${file.name}!\n\nExtracted data for:\n- WKI Dealership\n- ${locations.length} locations`);
+      }, 500);
+
+    } catch (error) {
+      console.error('Error uploading PDF:', error);
+      setParseError(error instanceof Error ? error.message : 'Failed to process PDF. Please try again.');
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  // Helper function to get location info by name
+  const getLocationInfo = (locationName: string) => {
+    const normalized = locationName.toLowerCase();
+    if (normalized.includes('wichita')) return locations[0];
+    if (normalized.includes('emporia')) return locations[1];
+    if (normalized.includes('dodge')) return locations[2];
+    if (normalized.includes('liberal')) return locations[3];
+    return { id: 'unknown', name: locationName, code: 'UNK', color: 'from-gray-500 to-gray-600' };
+  };
+
+  // Helper function to calculate trend
+  const calculateTrend = (): 'up' | 'down' | 'stable' => {
+    // Random trend for now - in real implementation, compare with previous month
+    const trends: ('up' | 'down' | 'stable')[] = ['up', 'down', 'stable'];
+    return trends[Math.floor(Math.random() * trends.length)];
   };
 
   const handleDrag = (e: React.DragEvent) => {
@@ -172,7 +288,7 @@ export default function ScorecardManager() {
           Monthly Service Scorecard Manager
         </h1>
         <p className="text-xl text-slate-300 mb-4">
-          Upload and manage monthly service scorecards for all WKI locations
+          Upload and manage monthly W370 Service Scorecards for all WKI locations
         </p>
         <div className="flex justify-center">
           <Link 
@@ -185,28 +301,22 @@ export default function ScorecardManager() {
         </div>
       </div>
 
-      {/* Upload Section */}
-      <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl p-8 mb-8 border border-slate-700 shadow-2xl">
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin w-12 h-12 border-4 border-red-500 border-t-transparent rounded-full"></div>
+          <p className="text-slate-300 ml-4">Loading scorecard data...</p>
+        </div>
+      ) : (
+        <>
+          {/* Upload Section */}
+          <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl p-8 mb-8 border border-slate-700 shadow-2xl">
         <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
           <Upload className="w-6 h-6 mr-2 text-red-400" />
           Upload New Scorecard
         </h2>
 
-        {/* Location and Date Selection */}
-        <div className="grid md:grid-cols-3 gap-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Location</label>
-            <select
-              value={selectedLocation}
-              onChange={(e) => setSelectedLocation(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
-            >
-              <option value="">Select Location</option>
-              {locations.map(location => (
-                <option key={location.id} value={location.id}>{location.name}</option>
-              ))}
-            </select>
-          </div>
+        {/* Date Selection */}
+        <div className="grid md:grid-cols-2 gap-4 mb-6">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">Month</label>
             <select
@@ -269,39 +379,139 @@ export default function ScorecardManager() {
             <div className="space-y-4">
               <FileText className="w-16 h-16 text-slate-400 mx-auto" />
               <div>
-                <p className="text-white font-medium mb-2">Drop your PDF scorecard here or click to browse</p>
-                <p className="text-slate-400 text-sm">Supports PDF files up to 10MB</p>
+                <p className="text-white font-medium mb-2">Drop your WKI Service Scorecard PDF here or click to browse</p>
+                <p className="text-slate-400 text-sm">Supports W370 Service Scorecard PDFs up to 10MB</p>
               </div>
               <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={!selectedLocation || !selectedMonth}
+                  disabled={!selectedMonth}
                   className={`px-8 py-4 font-bold rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg ${
-                    !selectedLocation || !selectedMonth
+                    !selectedMonth
                       ? 'bg-slate-600 text-slate-400 cursor-not-allowed'
                       : 'bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800 hover:shadow-red-500/25'
                   }`}
                 >
                   <Upload className="w-5 h-5 mr-2 inline" />
-                  Choose PDF File
+                  Choose Scorecard PDF
                 </button>
-                {(!selectedLocation || !selectedMonth) && (
+                {!selectedMonth && (
                   <div className="text-yellow-400 text-sm flex items-center">
                     <AlertCircle className="w-4 h-4 mr-1" />
-                    Please select location and month first
+                    Please select month first
                   </div>
                 )}
               </div>
             </div>
           )}
         </div>
+
+        {/* Parse Error Display */}
+        {parseError && (
+          <div className="mt-4 p-4 bg-red-900/50 border border-red-600 rounded-lg">
+            <div className="flex items-center text-red-300 mb-2">
+              <AlertCircle className="w-5 h-5 mr-2" />
+              <span className="font-medium">PDF Processing Error</span>
+            </div>
+            <p className="text-red-200 text-sm">{parseError}</p>
+          </div>
+        )}
       </div>
 
-      {/* Uploaded Scorecards */}
+      {/* Dealership Summary */}
+      {dealershipData.length > 0 && (
+        <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl p-8 mb-8 border border-slate-700 shadow-2xl">
+          <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
+            <BarChart3 className="w-6 h-6 mr-2 text-red-400" />
+            Dealership Performance Summary
+          </h2>
+          <div className="grid gap-4">
+            {dealershipData.map((dealership) => (
+              <div key={dealership.id} className="bg-slate-800/50 rounded-lg p-6 border border-slate-700">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center shadow-lg">
+                      <BarChart3 className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">
+                        WKI Dealership
+                      </h3>
+                      <p className="text-slate-400 text-sm flex items-center">
+                        <Calendar className="w-4 h-4 mr-1" />
+                        {dealership.month} {dealership.year}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-slate-300 text-sm">
+                      {dealership.locations.length} locations
+                    </span>
+                  </div>
+                </div>
+
+                {/* Dealership Metrics Preview */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {dealership.metrics.dwellTime && (
+                    <div className="text-center">
+                      <p className="text-slate-400 text-sm">Dwell Time</p>
+                      <p className="font-semibold text-blue-400">
+                        {dealership.metrics.dwellTime}
+                      </p>
+                    </div>
+                  )}
+                  {dealership.metrics.triageTime && (
+                    <div className="text-center">
+                      <p className="text-slate-400 text-sm">Triage Time</p>
+                      <p className="font-semibold text-blue-400">
+                        {dealership.metrics.triageTime}
+                      </p>
+                    </div>
+                  )}
+                  {dealership.metrics.customerSatisfaction && (
+                    <div className="text-center">
+                      <p className="text-slate-400 text-sm">Customer Satisfaction</p>
+                      <p className={`font-semibold ${parseFloat(dealership.metrics.customerSatisfaction.replace('%', '')) < 90 ? 'text-red-400' : 'text-green-400'}`}>
+                        {dealership.metrics.customerSatisfaction}
+                      </p>
+                    </div>
+                  )}
+                  {dealership.metrics.serviceEfficiency && (
+                    <div className="text-center">
+                      <p className="text-slate-400 text-sm">Service Efficiency</p>
+                      <p className="font-semibold text-blue-400">
+                        {dealership.metrics.serviceEfficiency}
+                      </p>
+                    </div>
+                  )}
+                  {dealership.metrics.totalCases && (
+                    <div className="text-center">
+                      <p className="text-slate-400 text-sm">Total Cases</p>
+                      <p className="font-semibold text-blue-400">
+                        {dealership.metrics.totalCases}
+                      </p>
+                    </div>
+                  )}
+                  {dealership.metrics.completedCases && (
+                    <div className="text-center">
+                      <p className="text-slate-400 text-sm">Completed Cases</p>
+                      <p className="font-semibold text-green-400">
+                        {dealership.metrics.completedCases}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Location Scorecards */}
       <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl p-8 border border-slate-700 shadow-2xl">
         <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
-          <BarChart3 className="w-6 h-6 mr-2 text-red-400" />
-          Uploaded Scorecards ({scorecards.length})
+          <MapPin className="w-6 h-6 mr-2 text-red-400" />
+          Location Performance Details ({scorecards.length})
         </h2>
 
         {scorecards.length === 0 ? (
@@ -352,36 +562,77 @@ export default function ScorecardManager() {
 
                 {/* Metrics Preview */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center">
-                    <p className="text-slate-400 text-sm">Days Out of Service</p>
-                    <p className={`font-semibold ${scorecard.metrics.daysOutOfService > 5 ? 'text-red-400' : 'text-green-400'}`}>
-                      {scorecard.metrics.daysOutOfService.toFixed(1)}
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-slate-400 text-sm">ETR Compliance</p>
-                    <p className={`font-semibold ${scorecard.metrics.etrCompliance < 85 ? 'text-red-400' : 'text-green-400'}`}>
-                      {scorecard.metrics.etrCompliance.toFixed(1)}%
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-slate-400 text-sm">QAB Usage</p>
-                    <p className={`font-semibold ${scorecard.metrics.qabUsage < 80 ? 'text-red-400' : 'text-green-400'}`}>
-                      {scorecard.metrics.qabUsage.toFixed(1)}%
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-slate-400 text-sm">First Time Fix</p>
-                    <p className={`font-semibold ${scorecard.metrics.firstTimeFix < 80 ? 'text-red-400' : 'text-green-400'}`}>
-                      {scorecard.metrics.firstTimeFix.toFixed(1)}%
-                    </p>
-                  </div>
+                  {scorecard.metrics.dwellTime && (
+                    <div className="text-center">
+                      <p className="text-slate-400 text-sm">Dwell Time</p>
+                      <p className="font-semibold text-blue-400">
+                        {scorecard.metrics.dwellTime}
+                      </p>
+                    </div>
+                  )}
+                  {scorecard.metrics.triageTime && (
+                    <div className="text-center">
+                      <p className="text-slate-400 text-sm">Triage Time</p>
+                      <p className="font-semibold text-blue-400">
+                        {scorecard.metrics.triageTime}
+                      </p>
+                    </div>
+                  )}
+                  {scorecard.metrics.cases && (
+                    <div className="text-center">
+                      <p className="text-slate-400 text-sm">Cases</p>
+                      <p className="font-semibold text-blue-400">
+                        {scorecard.metrics.cases}
+                      </p>
+                    </div>
+                  )}
+                  {scorecard.metrics.customerSatisfaction && (
+                    <div className="text-center">
+                      <p className="text-slate-400 text-sm">Customer Satisfaction</p>
+                      <p className={`font-semibold ${scorecard.metrics.customerSatisfaction.includes('%') && parseFloat(scorecard.metrics.customerSatisfaction.replace('%', '')) < 90 ? 'text-red-400' : 'text-green-400'}`}>
+                        {scorecard.metrics.customerSatisfaction}
+                      </p>
+                    </div>
+                  )}
+                  {scorecard.metrics.etrCompliance && (
+                    <div className="text-center">
+                      <p className="text-slate-400 text-sm">ETR Compliance</p>
+                      <p className={`font-semibold ${scorecard.metrics.etrCompliance.includes('%') && parseFloat(scorecard.metrics.etrCompliance.replace('%', '')) < 85 ? 'text-red-400' : 'text-green-400'}`}>
+                        {scorecard.metrics.etrCompliance}
+                      </p>
+                    </div>
+                  )}
+                  {scorecard.metrics.firstTimeFix && (
+                    <div className="text-center">
+                      <p className="text-slate-400 text-sm">First Time Fix</p>
+                      <p className={`font-semibold ${scorecard.metrics.firstTimeFix.includes('%') && parseFloat(scorecard.metrics.firstTimeFix.replace('%', '')) < 80 ? 'text-red-400' : 'text-green-400'}`}>
+                        {scorecard.metrics.firstTimeFix}
+                      </p>
+                    </div>
+                  )}
+                  {scorecard.metrics.partsAvailability && (
+                    <div className="text-center">
+                      <p className="text-slate-400 text-sm">Parts Availability</p>
+                      <p className={`font-semibold ${scorecard.metrics.partsAvailability.includes('%') && parseFloat(scorecard.metrics.partsAvailability.replace('%', '')) < 85 ? 'text-red-400' : 'text-green-400'}`}>
+                        {scorecard.metrics.partsAvailability}
+                      </p>
+                    </div>
+                  )}
+                  {scorecard.metrics.workOrderAccuracy && (
+                    <div className="text-center">
+                      <p className="text-slate-400 text-sm">Work Order Accuracy</p>
+                      <p className={`font-semibold ${scorecard.metrics.workOrderAccuracy.includes('%') && parseFloat(scorecard.metrics.workOrderAccuracy.replace('%', '')) < 90 ? 'text-red-400' : 'text-green-400'}`}>
+                        {scorecard.metrics.workOrderAccuracy}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

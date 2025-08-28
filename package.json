@@ -23,6 +23,7 @@
 	"author": "Michaela",
 	"license": "ISC",
 	"dependencies": {
-		"multer": "^2.0.2"
+		"multer": "^2.0.2",
+		"pdfjs-dist": "^3.11.174"
 	}
 }
