@@ -632,6 +632,7 @@ export default function ScorecardManager() {
           </div>
         )}
       </div>
+        </>
       )}
     </div>
   );
