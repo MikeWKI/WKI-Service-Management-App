@@ -22,15 +22,13 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
       className={`fixed inset-0 z-50 flex items-center justify-center bg-slate-900 transition-opacity duration-500 ${
         isVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
       }`}
-      style={{ minHeight: '100dvh' }}
     >
-      <div className="flex flex-col items-center justify-center text-center w-full max-w-3xl lg:max-w-4xl mx-auto animate-fade-in-center px-4">
+      <div className="flex flex-col items-center justify-center text-center px-4 animate-fade-in-center">
         {/* Splash Image (logo) */}
         <img
           src="/WKIsplash.png"
           alt="WKI Kenworth Splash"
-          className="object-contain w-full max-w-md lg:max-w-xl xl:max-w-2xl mb-8 drop-shadow-xl rounded-lg"
-          style={{ display: 'block' }}
+          className="object-contain max-w-md lg:max-w-xl xl:max-w-2xl mb-8 drop-shadow-xl rounded-lg"
         />
 
         {/* Service Management Text */}

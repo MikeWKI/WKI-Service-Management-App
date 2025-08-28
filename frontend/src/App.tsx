@@ -46,10 +46,10 @@ function App() {
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 light:from-gray-50 light:via-white light:to-gray-100">
           <Navigation />
           <FixedThemeToggle />
-          {/* Responsive layout: main content + quick links on right for desktop, stacked for mobile */}
-          <div className="w-full max-w-full sm:max-w-7xl mx-auto px-1 sm:px-4 lg:px-8 flex flex-col lg:flex-row gap-0 lg:gap-8">
-            {/* Main content */}
-            <div className="flex-1 min-w-0">
+          {/* Responsive layout: main content centered, quick links on right for desktop */}
+          <div className="relative w-full">
+            {/* Main content - always centered */}
+            <div className="w-full max-w-full sm:max-w-7xl mx-auto px-1 sm:px-4 lg:px-8">
               <Routes>
                 <Route path="/" element={
                   <div className="flex flex-col items-center justify-center py-2 sm:py-4 md:py-8">
@@ -74,15 +74,16 @@ function App() {
                 <Route path="/metrics/liberal" element={<LiberalMetrics />} />
               </Routes>
             </div>
-              {/* Quick Links sidebar for desktop */}
-              <div className="hidden lg:flex flex-col items-center justify-start w-[110px] xl:w-[130px] 2xl:w-[150px] ml-4 pt-16">
-                <span className="writing-mode-vertical-rl text-orientation-mixed text-xs font-bold tracking-wider text-slate-400 mb-2 select-none">
-                  Quick Links
-                </span>
-                <div className="w-full">
-                  <QuickLinksPanel />
-                </div>
+            
+            {/* Quick Links fixed to right side for desktop */}
+            <div className="hidden lg:flex fixed top-1/2 right-4 -translate-y-1/2 z-30 flex-col items-center justify-start w-[110px] xl:w-[130px] 2xl:w-[150px]">
+              <span className="writing-mode-vertical-rl text-orientation-mixed text-xs font-bold tracking-wider text-slate-400 mb-2 select-none">
+                Quick Links
+              </span>
+              <div className="w-full">
+                <QuickLinksPanel />
               </div>
+            </div>
           </div>
           {/* Quick Links for mobile (below content) */}
           <div className="block lg:hidden w-full max-w-full sm:max-w-7xl mx-auto px-1 sm:px-4 lg:px-8 mt-2">
