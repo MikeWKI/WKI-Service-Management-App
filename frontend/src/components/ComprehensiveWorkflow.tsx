@@ -109,7 +109,7 @@ export default function ComprehensiveWorkflow() {
         <div className="flex items-center gap-3">
           <div className="bg-white rounded-lg p-3 shadow-lg">
             <img 
-              src="https://www.kenworth.com/media/w4jnzm4t/kenworth_logo-header-new-012023.png" 
+              src="/kenworth_logo-header.png" 
               alt="Kenworth Logo" 
               className="h-12 w-auto" 
             />
@@ -121,7 +121,7 @@ export default function ComprehensiveWorkflow() {
             className="bg-white rounded-lg p-3 shadow-lg hover:shadow-xl transition-shadow duration-300 transform hover:scale-105"
           >
             <img 
-              src="https://www.decisiv.com/wp-content/uploads/2020/01/Decisiv-Logo-096126.svg" 
+              src="/Decisiv-Logo.svg" 
               alt="Decisiv Logo" 
               className="h-12 w-auto" 
             />

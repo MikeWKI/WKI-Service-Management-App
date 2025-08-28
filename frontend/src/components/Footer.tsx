@@ -9,7 +9,7 @@ export default function Footer() {
           <div className="flex items-center space-x-3 mb-6 md:mb-0">
             <div className="bg-white rounded-lg p-2 shadow-lg">
               <img 
-                src="https://www.wkikenworth.com/efs/wp/domains/www.wkikenworth.com/wp-content/uploads/2022/02/wkw-160x300.png" 
+                src="/KWbug.png" 
                 alt="WKI Kenworth Logo" 
                 className="h-8 w-auto" 
               />
