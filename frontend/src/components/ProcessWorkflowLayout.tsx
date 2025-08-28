@@ -117,7 +117,7 @@ export default function ProcessWorkflowLayout() {
       {/* Timeline Workflow - boxes above the line */}
       <div className="relative flex flex-col items-center">
         {/* Step Boxes above the line - horizontally scrollable on mobile */}
-  <div className="flex w-full sm:w-full overflow-x-auto sm:overflow-x-visible scrollbar-thin scrollbar-thumb-slate-400 scrollbar-track-slate-200 justify-between items-end z-10 mb-6 gap-2 sm:gap-0 px-1 sm:px-0"
+  <div className="flex w-full sm:w-full overflow-x-auto sm:overflow-x-visible scrollbar-thin scrollbar-thumb-slate-400 scrollbar-track-slate-200 justify-between md:justify-center items-end z-10 mb-6 gap-2 sm:gap-0 px-1 sm:px-0"
        style={{ WebkitOverflowScrolling: 'touch' }}>
           {steps.map((step, idx) => (
             <div 
