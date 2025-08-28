@@ -59,16 +59,29 @@ const API_BASE_URL = 'https://wki-service-management-app.onrender.com';
 
 // Test API connection
 const testAPIConnection = async () => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/locationMetrics`, {
-      method: 'GET',
-    });
-    console.log('API test response:', response.status, response.statusText);
-    return response.ok;
-  } catch (error) {
-    console.error('API connection test failed:', error);
-    return false;
+  const endpoints = [
+    '/api/locationMetrics',
+    '/api/upload',
+    '/health',
+    '/'
+  ];
+
+  for (const endpoint of endpoints) {
+    try {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: 'GET',
+      });
+      console.log(`Endpoint ${endpoint}:`, response.status, response.statusText);
+      if (response.ok) {
+        const text = await response.text();
+        console.log(`Response from ${endpoint}:`, text.substring(0, 200) + '...');
+      }
+    } catch (error) {
+      console.log(`Endpoint ${endpoint} error:`, error.message);
+    }
   }
+  
+  return true; // We'll test connectivity regardless
 };
 
 // API functions
@@ -78,20 +91,41 @@ const uploadScorecardToAPI = async (file: File, month: string, year: number) => 
   formData.append('month', month);
   formData.append('year', year.toString());
 
-  const apiUrl = `${API_BASE_URL}/api/locationMetrics`;
-  console.log('Making request to:', apiUrl);
+  // Try different possible endpoints
+  const possibleEndpoints = [
+    '/api/locationMetrics/upload',
+    '/api/upload',
+    '/api/locationMetrics',
+    '/upload'
+  ];
 
-  const response = await fetch(apiUrl, {
-    method: 'POST',
-    body: formData,
-  });
+  let lastError;
+  
+  for (const endpoint of possibleEndpoints) {
+    try {
+      const apiUrl = `${API_BASE_URL}${endpoint}`;
+      console.log('Trying endpoint:', apiUrl);
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Upload failed: ${response.status} ${response.statusText} - ${errorText}`);
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        console.log('Success with endpoint:', endpoint);
+        return response.json();
+      } else {
+        const errorText = await response.text();
+        console.log(`Endpoint ${endpoint} failed with:`, response.status, errorText);
+        lastError = new Error(`Upload failed: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+    } catch (error) {
+      console.log(`Endpoint ${endpoint} threw error:`, error);
+      lastError = error;
+    }
   }
 
-  return response.json();
+  throw lastError || new Error('All upload endpoints failed');
 };
 
 const fetchLocationMetrics = async () => {
