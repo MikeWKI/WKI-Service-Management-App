@@ -74,16 +74,22 @@ function App() {
                 <Route path="/metrics/liberal" element={<LiberalMetrics />} />
               </Routes>
             </div>
-            {/* Quick Links on right for desktop, bottom for mobile */}
-            <div className="hidden lg:flex flex-col items-center min-w-[64px] max-w-[120px] ml-2">
-              {/* Vertical label */}
-              <span className="writing-mode-vertical-rl text-orientation-mixed text-xs font-bold tracking-wider text-slate-400 mb-2 select-none">
-                Quick Links
-              </span>
-              <div className="w-full">
+              {/* Quick Links fixed to far right for desktop, bottom for mobile */}
+              {/* Desktop: fixed right, scrolls with user */}
+              <div className="hidden lg:block">
+                <div className="fixed top-1/2 right-0 z-40 flex flex-col items-center -translate-y-1/2 pr-2">
+                  <span className="writing-mode-vertical-rl text-orientation-mixed text-xs font-bold tracking-wider text-slate-400 mb-2 select-none">
+                    Quick Links
+                  </span>
+                  <div className="w-full">
+                    <QuickLinksPanel />
+                  </div>
+                </div>
+              </div>
+              {/* Mobile: bottom */}
+              <div className="block lg:hidden w-full max-w-full sm:max-w-7xl mx-auto px-1 sm:px-4 lg:px-8 mt-2">
                 <QuickLinksPanel />
               </div>
-            </div>
           </div>
           {/* Quick Links for mobile (below content) */}
           <div className="block lg:hidden w-full max-w-full sm:max-w-7xl mx-auto px-1 sm:px-4 lg:px-8 mt-2">

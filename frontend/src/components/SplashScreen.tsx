@@ -24,31 +24,32 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
       }`}
       style={{ minHeight: '100dvh' }}
     >
-      <div className="flex flex-col items-center justify-center text-center px-4 w-full max-w-lg mx-auto animate-fade-in-center" style={{ minHeight: '60vh', justifyContent: 'center' }}>
+      <div className="flex flex-col items-center justify-center text-center px-4 w-full max-w-2xl mx-auto animate-fade-in-center" style={{ minHeight: '70vh', justifyContent: 'center' }}>
         {/* Splash Image Container */}
-        <div className="mb-6 border-4 border-black/80 rounded-2xl shadow-2xl w-full max-w-md bg-white/95 p-4 sm:p-8 flex items-center justify-center mx-auto">
+        <div className="mb-8 border-4 border-black/80 rounded-2xl shadow-2xl w-full max-w-xl bg-white/95 p-4 sm:p-10 flex items-center justify-center mx-auto">
           <img
             src="/WKIsplash.png"
             alt="WKI Kenworth Splash"
-            className="object-contain w-full max-h-[32vh] sm:max-h-[40vh] drop-shadow-xl rounded-lg mx-auto"
+            className="object-contain w-full max-h-[44vh] sm:max-h-[56vh] drop-shadow-xl rounded-lg mx-auto"
+            style={{ display: 'block' }}
           />
         </div>
 
         {/* Service Management Text */}
         <div className="w-full flex flex-col items-center justify-center mx-auto">
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight drop-shadow-lg">
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-3 tracking-tight drop-shadow-lg">
             WKI Service Management
           </h1>
-          <h2 className="text-lg sm:text-2xl font-bold text-red-400 mb-2">
+          <h2 className="text-2xl sm:text-3xl font-bold text-red-400 mb-2">
             Process Application
           </h2>
-          <p className="text-slate-300 text-base sm:text-lg">
+          <p className="text-slate-300 text-lg sm:text-xl">
             Powered by WKI Excellence
           </p>
         </div>
 
         {/* Loading indicator - simple fade in, no stagger */}
-        <div className="mt-8 flex justify-center animate-fade-in mx-auto">
+        <div className="mt-10 flex justify-center animate-fade-in mx-auto">
           <div className="flex space-x-2">
             <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce"></div>
             <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce"></div>
