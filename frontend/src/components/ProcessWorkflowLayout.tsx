@@ -57,7 +57,7 @@ export default function ProcessWorkflowLayout() {
   };
 
   return (
-  <div className="w-full max-w-5xl bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl shadow-2xl border border-slate-200 p-2 sm:p-4 md:p-8 flex flex-col gap-6 sm:gap-8 mx-auto lg:mr-[120px] xl:mr-[140px] 2xl:mr-[160px] transition-all duration-300">
+    <div className="w-full max-w-5xl bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl shadow-2xl border border-slate-200 p-2 sm:p-4 md:p-8 flex flex-col gap-6 sm:gap-8 mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-center mb-2 bg-gradient-to-r from-red-600 to-red-700 rounded-xl p-4 sm:p-6 shadow-lg gap-2">
         <div>

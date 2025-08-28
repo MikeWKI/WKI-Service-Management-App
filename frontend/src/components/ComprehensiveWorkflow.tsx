@@ -99,7 +99,7 @@ export default function ComprehensiveWorkflow() {
   };
 
   return (
-    <div className="w-full max-w-7xl bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl shadow-2xl border border-slate-200 p-8 flex flex-col gap-8">
+    <div className="w-full max-w-7xl bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl shadow-2xl border border-slate-200 p-8 flex flex-col gap-8 mx-auto">
       {/* Header */}
       <div className="flex justify-between items-center mb-2 bg-gradient-to-r from-red-600 to-red-700 rounded-xl p-6 shadow-lg">
         <div>

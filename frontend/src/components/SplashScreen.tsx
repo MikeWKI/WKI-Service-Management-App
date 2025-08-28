@@ -24,12 +24,12 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
       }`}
       style={{ minHeight: '100dvh' }}
     >
-  <div className="flex flex-col items-center justify-center text-center w-full max-w-3xl lg:max-w-4xl mx-auto animate-fade-in-center" style={{ minHeight: '70vh' }}>
+      <div className="flex flex-col items-center justify-center text-center w-full max-w-3xl lg:max-w-4xl mx-auto animate-fade-in-center px-4">
         {/* Splash Image (logo) */}
         <img
           src="/WKIsplash.png"
           alt="WKI Kenworth Splash"
-          className="object-contain w-full max-w-md lg:max-w-xl xl:max-w-2xl mb-8 drop-shadow-xl rounded-lg mx-auto"
+          className="object-contain w-full max-w-md lg:max-w-xl xl:max-w-2xl mb-8 drop-shadow-xl rounded-lg"
           style={{ display: 'block' }}
         />
 
@@ -45,7 +45,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
         </p>
 
         {/* Loading indicator - simple fade in, no stagger */}
-        <div className="mt-10 flex justify-center animate-fade-in mx-auto">
+        <div className="mt-10 flex justify-center animate-fade-in">
           <div className="flex space-x-2">
             <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce"></div>
             <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce"></div>
