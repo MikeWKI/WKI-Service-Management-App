@@ -13,7 +13,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
       setTimeout(() => {
         onFinish();
       }, 350);
-    }, 2200);
+    }, 2000);
     return () => clearTimeout(timer);
   }, [onFinish]);
 
@@ -24,36 +24,36 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
       }`}
       style={{ minHeight: '100dvh' }}
     >
-      <div className="flex flex-col items-center justify-center text-center px-4 w-full max-w-3xl mx-auto">
+      <div className="flex flex-col items-center justify-center text-center px-4 w-full max-w-lg mx-auto animate-fade-in-center">
         {/* Splash Image Container */}
-        <div className="mb-8 border-4 border-black/80 rounded-2xl shadow-2xl w-full max-w-2xl bg-white/95 p-4 sm:p-8 relative min-h-[220px] sm:min-h-[340px] flex items-center justify-center animate-scale-in">
+        <div className="mb-6 border-4 border-black/80 rounded-2xl shadow-2xl w-full max-w-md bg-white/95 p-4 sm:p-8 flex items-center justify-center">
           <img
             src="/WKIsplash.png"
             alt="WKI Kenworth Splash"
-            className="object-contain w-full max-h-[38vh] sm:max-h-[50vh] drop-shadow-xl rounded-lg animate-fade-in-center"
-            style={{ transition: 'box-shadow 0.3s' }}
+            className="object-contain w-full max-h-[32vh] sm:max-h-[40vh] drop-shadow-xl rounded-lg"
+            style={{ display: 'block', margin: '0 auto' }}
           />
         </div>
 
         {/* Service Management Text */}
-        <div className="w-full animate-slide-up" style={{ animationDelay: '0.5s' }}>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight drop-shadow-lg animate-fade-in" style={{ animationDelay: '0.7s' }}>
+        <div className="w-full flex flex-col items-center justify-center">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight drop-shadow-lg">
             WKI Service Management
           </h1>
-          <h2 className="text-lg sm:text-2xl font-bold text-red-400 mb-2 animate-fade-in" style={{ animationDelay: '0.9s' }}>
+          <h2 className="text-lg sm:text-2xl font-bold text-red-400 mb-2">
             Process Application
           </h2>
-          <p className="text-slate-300 text-base sm:text-lg animate-fade-in" style={{ animationDelay: '1.1s' }}>
+          <p className="text-slate-300 text-base sm:text-lg">
             Powered by WKI Excellence
           </p>
         </div>
 
-        {/* Loading indicator - gentle pulse and staggered bounce */}
-        <div className="mt-10 flex justify-center animate-fade-in" style={{ animationDelay: '1.3s' }}>
+        {/* Loading indicator - simple fade in, no stagger */}
+        <div className="mt-8 flex justify-center animate-fade-in">
           <div className="flex space-x-2">
-            <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-            <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0.15s' }}></div>
-            <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
+            <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce"></div>
+            <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce"></div>
+            <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce"></div>
           </div>
         </div>
       </div>
