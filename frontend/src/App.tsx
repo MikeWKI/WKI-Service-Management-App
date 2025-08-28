@@ -13,6 +13,7 @@ import {
   Footer,
   SplashScreen,
   ScorecardManager,
+  LocationMetrics,
   LocationMetricsManager,
   WichitaMetrics,
   EmporiaMetrics,
@@ -64,7 +65,7 @@ function App() {
               <Route path="/metrics/parts-staff" element={<PartsStaffMetrics />} />
               <Route path="/metrics/technician" element={<TechnicianMetrics />} />
               <Route path="/scorecard-manager" element={<ScorecardManager />} />
-              <Route path="/location-metrics" element={<LocationMetricsManager />} />
+              <Route path="/location-metrics" element={<LocationMetrics />} />
               <Route path="/metrics/wichita" element={<WichitaMetrics />} />
               <Route path="/metrics/emporia" element={<EmporiaMetrics />} />
               <Route path="/metrics/dodge-city" element={<DodgeCityMetrics />} />

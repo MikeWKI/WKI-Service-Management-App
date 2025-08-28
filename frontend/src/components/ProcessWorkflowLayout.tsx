@@ -117,8 +117,8 @@ export default function ProcessWorkflowLayout() {
       {/* Timeline Workflow - boxes above the line */}
       <div className="relative flex flex-col items-center">
         {/* Step Boxes above the line - horizontally scrollable on mobile */}
-        <div className="flex w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-400 scrollbar-track-slate-200 justify-between items-end z-10 mb-6 gap-2 sm:gap-0 px-1 sm:px-0"
-             style={{ WebkitOverflowScrolling: 'touch' }}>
+  <div className="flex w-full sm:w-full overflow-x-auto sm:overflow-x-visible scrollbar-thin scrollbar-thumb-slate-400 scrollbar-track-slate-200 justify-between items-end z-10 mb-6 gap-2 sm:gap-0 px-1 sm:px-0"
+       style={{ WebkitOverflowScrolling: 'touch' }}>
           {steps.map((step, idx) => (
             <div 
               key={step.id} 
@@ -203,7 +203,7 @@ export default function ProcessWorkflowLayout() {
         </div>
         
         {/* Timeline Line */}
-        <div className="w-full h-2 bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 rounded-full z-0 relative shadow-inner min-w-[600px] sm:min-w-0">
+  <div className="w-full h-2 bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 rounded-full z-0 relative shadow-inner min-w-[600px] sm:min-w-0 md:min-w-0 lg:min-w-0 xl:min-w-0">
           <div className="absolute left-0 top-0 h-full bg-gradient-to-r from-red-600 to-transparent rounded-full transition-all duration-500 shadow-lg opacity-50" style={{width: '30%'}} />
         </div>
         
