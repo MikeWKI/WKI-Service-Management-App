@@ -213,23 +213,93 @@ export default function ScorecardManager() {
       console.log('Upload successful, result:', result);
       setUploadProgress(60);
 
+      // DEBUGGING BLOCK - Add this to see what the backend is actually returning
+      console.log('=== DEBUGGING RESPONSE STRUCTURE ===');
+      console.log('Type of result:', typeof result);
+      console.log('Result keys:', Object.keys(result || {}));
+      console.log('Full result structure:', JSON.stringify(result, null, 2));
 
-      // Process the returned data from your backend
+      // Check specific properties
+      console.log('Has dealership?', 'dealership' in (result || {}));
+      console.log('Has locations?', 'locations' in (result || {}));
+      console.log('Has data?', 'data' in (result || {}));
+
+      if (result && typeof result === 'object' && 'data' in result) {
+        console.log('Data structure:', JSON.stringify(result.data, null, 2));
+        console.log('Data keys:', Object.keys(result.data || {}));
+      }
+      console.log('=== END DEBUG ===');
+
+      // Process the returned data from your backend with flexible parsing
       console.log('Processing result structure:', result);
 
-      // Support both { dealership, locations, extractedAt } and { success, data: { dealership, locations, extractedAt } }
-  let dealership: DealershipMetrics | undefined, locations: any[] | undefined, extractedAt: string | undefined;
+      let dealership: DealershipMetrics | undefined, locations: any[] | undefined, extractedAt: string | undefined;
+
       if (result && typeof result === 'object') {
+        // Pattern 1: Direct structure { dealership, locations, extractedAt }
         if ('dealership' in result && 'locations' in result) {
-          // Direct structure
           ({ dealership, locations, extractedAt } = result);
-        } else if ('data' in result && result.data && typeof result.data === 'object') {
-          ({ dealership, locations, extractedAt } = result.data);
+          console.log('✅ Using Pattern 1: Direct structure');
+        }
+        // Pattern 2: Nested in data { success, data: { dealership, locations } }
+        else if ('data' in result && result.data && typeof result.data === 'object') {
+          if ('dealership' in result.data && 'locations' in result.data) {
+            ({ dealership, locations, extractedAt } = result.data);
+            console.log('✅ Using Pattern 2: Nested in data');
+          }
+        }
+        // Pattern 3: Success wrapper { success: true, dealership, locations }
+        else if ('success' in result && 'dealership' in result && 'locations' in result) {
+          ({ dealership, locations, extractedAt } = result);
+          console.log('✅ Using Pattern 3: Success wrapper');
+        }
+        // Pattern 4: Results wrapper { results: { dealership, locations } }
+        else if ('results' in result && result.results && typeof result.results === 'object') {
+          if ('dealership' in result.results && 'locations' in result.results) {
+            ({ dealership, locations, extractedAt } = result.results);
+            console.log('✅ Using Pattern 4: Results wrapper');
+          }
+        }
+        // Pattern 5: Message with data { message: "success", data: {...} }
+        else if ('message' in result && 'data' in result && result.data) {
+          if (typeof result.data === 'object' && 'dealership' in result.data && 'locations' in result.data) {
+            ({ dealership, locations, extractedAt } = result.data);
+            console.log('✅ Using Pattern 5: Message with data');
+          }
+        }
+        // Pattern 6: Check if the result itself contains arrays/objects that might be locations
+        else if (Array.isArray(result)) {
+          console.log('⚠️  Response is an array, might be locations directly');
+          locations = result;
+          // You might need to extract dealership data differently
+        }
+        else {
+          console.error('❌ Unknown response pattern. Available keys:', Object.keys(result));
+          console.error('Full response:', JSON.stringify(result, null, 2));
         }
       }
 
-      if (!dealership || !locations) {
-        throw new Error('Invalid response structure from backend');
+      // More detailed error handling
+      if (!dealership && !locations) {
+        const errorDetails = `
+Response Analysis:
+- Type: ${typeof result}
+- Keys: ${result && typeof result === 'object' ? Object.keys(result).join(', ') : 'N/A'}
+- Structure: ${JSON.stringify(result, null, 2)}
+
+Expected one of these structures:
+1. { dealership: {...}, locations: [...] }
+2. { data: { dealership: {...}, locations: [...] } }
+3. { success: true, dealership: {...}, locations: [...] }
+4. { results: { dealership: {...}, locations: [...] } }
+5. { message: "...", data: { dealership: {...}, locations: [...] } }
+        `;
+        
+        throw new Error(`Invalid response structure from backend. ${errorDetails}`);
+      } else if (!dealership) {
+        throw new Error(`Missing dealership data in response. Available: ${locations ? 'locations' : 'none'}`);
+      } else if (!locations) {
+        throw new Error(`Missing locations data in response. Available: ${dealership ? 'dealership' : 'none'}`);
       }
 
       // Create dealership scorecard from backend response
