@@ -5,13 +5,10 @@ import { BarChart3, Workflow, GitBranch, BookOpen, Menu, X } from 'lucide-react'
 export default function Navigation() {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
-  // Improved route detection
   const isWorkflow = location.pathname === '/';
   const isComprehensive = location.pathname === '/comprehensive';
   const isMetricsDefinitions = location.pathname === '/metrics/definitions';
-  const isMetrics = location.pathname === '/metrics';
-  const isInMetricsSection = location.pathname.startsWith('/metrics') || location.pathname.startsWith('/location-metrics');
+  const isMetrics = location.pathname === '/metrics' || (location.pathname.startsWith('/metrics') && !isMetricsDefinitions);
 
   return (
     <nav className="bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 shadow-2xl border-b-4 border-red-600 mb-4 sm:mb-8">
@@ -26,9 +23,6 @@ export default function Navigation() {
                   src="/KWbug.png" 
                   alt="WKI Kenworth Logo" 
                   className="h-8 sm:h-12 w-auto" 
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                  }}
                 />
               </div>
               <a 
@@ -41,18 +35,15 @@ export default function Navigation() {
                   src="/Decisiv-Logo.svg" 
                   alt="Decisiv Logo" 
                   className="h-8 sm:h-12 w-auto" 
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                  }}
                 />
               </a>
               <div className="text-white font-bold">
                 <div className="text-base sm:text-xl text-red-400">WKI Service Management</div>
-                <div className="text-xs sm:text-sm text-slate-300">Performance Excellence</div>
+                <div className="text-xs sm:text-sm text-slate-300">The Worlds Best!</div>
               </div>
             </div>
 
-            {/* Right side - Navigation buttons */}
+            {/* Right side - Navigation buttons and theme toggle */}
             <div className="flex flex-col space-y-2 sm:space-y-3">
               {/* Top row - Main navigation */}
               <div className="flex flex-wrap gap-1 sm:gap-2">
@@ -71,7 +62,7 @@ export default function Navigation() {
                 <Link
                   to="/metrics"
                   className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 ${
-                    isMetrics || (isInMetricsSection && !isMetricsDefinitions)
+                    isMetrics 
                       ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/25' 
                       : 'bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white border border-slate-600'
                   }`}
@@ -97,12 +88,17 @@ export default function Navigation() {
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 border-2 ${
                     isMetricsDefinitions 
                       ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/25 border-blue-500' 
-                      : 'bg-slate-800 text-slate-300 hover:bg-blue-600 hover:text-white border-blue-500/50 hover:border-blue-400'
+                      : 'bg-slate-800 text-slate-300 hover:bg-blue-600 hover:text-white border-blue-500/50 hover:border-blue-400 dark:bg-slate-800 dark:text-slate-300'
                   }`}
                 >
                   <BookOpen size={18} />
                   <span className="text-sm font-semibold">Metrics Guide</span>
                 </Link>
+              </div>
+
+              {/* Bottom row - Empty for now */}
+              <div className="flex justify-end">
+                {/* Theme toggle moved to fixed position */}
               </div>
             </div>
           </div>
@@ -118,9 +114,6 @@ export default function Navigation() {
                   src="/KWbug.png" 
                   alt="WKI Kenworth Logo" 
                   className="h-5 w-auto" 
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                  }}
                 />
               </div>
               <div className="text-white font-bold">
@@ -134,7 +127,6 @@ export default function Navigation() {
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="p-2 text-white hover:bg-slate-700 rounded-lg transition-colors"
               aria-label="Toggle mobile menu"
-              aria-expanded={isMobileMenuOpen}
             >
               {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
@@ -161,7 +153,7 @@ export default function Navigation() {
                   to="/metrics"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
-                    isMetrics || (isInMetricsSection && !isMetricsDefinitions)
+                    isMetrics 
                       ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg' 
                       : 'text-slate-300 hover:bg-slate-700 hover:text-white'
                   }`}
@@ -196,30 +188,26 @@ export default function Navigation() {
                   <span>Metrics Guide</span>
                 </Link>
 
-                {/* Mobile Quick Links */}
+                {/* Mobile External Links */}
                 <div className="pt-2 mt-2 border-t border-slate-700">
-                  <div className="px-4 py-2 text-xs text-slate-400 font-semibold uppercase tracking-wider">
-                    Quick Access
-                  </div>
-                  
-                  <Link
-                    to="/metrics/scorecard-manager"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center space-x-3 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-all duration-200"
+                  <a 
+                    href="https://paccar.decisiv.net/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center space-x-3 px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-all duration-200"
                   >
-                    <span className="text-green-400">•</span>
-                    <span>Upload Scorecards</span>
-                  </Link>
-                  
-                  <Link
-                    to="/location-metrics"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center space-x-3 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-all duration-200"
-                  >
-                    <span className="text-blue-400">•</span>
-                    <span>Performance Dashboard</span>
-                  </Link>
+                    <div className="bg-white rounded p-1">
+                      <img 
+                        src="/Decisiv-Logo.svg" 
+                        alt="Decisiv Logo" 
+                        className="h-4 w-auto" 
+                      />
+                    </div>
+                    <span>Decisiv Portal</span>
+                  </a>
                 </div>
+
+                {/* Mobile theme toggle removed - now in fixed position */}
               </div>
             </div>
           )}
