@@ -13,6 +13,20 @@ interface MetricCard {
   trend?: 'up' | 'down' | 'stable';
 }
 
+// Helper function to safely parse metric values
+const parseMetric = (value: string | number | undefined): number => {
+  if (value === undefined || value === null) return 0;
+  const parsed = typeof value === 'string' ? parseFloat(value) : value;
+  return isNaN(parsed) ? 0 : parsed;
+};
+
+// Helper function to format metric display
+const formatMetric = (value: string | number | undefined, suffix: string = ''): string => {
+  const parsed = parseMetric(value);
+  if (parsed === 0) return 'No data';
+  return `${parsed.toFixed(1)}${suffix}`;
+};
+
 // This would be dynamically loaded from uploaded scorecard data
 const getLocationMetrics = (locationId: string): MetricCard[] => {
   const storedScorecards = localStorage.getItem('wki-scorecards');
@@ -29,63 +43,72 @@ const getLocationMetrics = (locationId: string): MetricCard[] => {
 
   const metrics = locationScorecard.metrics;
   
+  // Map backend data to expected metrics with safe parsing
+  const dwellTime = parseMetric(metrics.dwellTime);
+  const triageTime = parseMetric(metrics.triageTime);
+  const cases = parseMetric(metrics.cases);
+  const satisfaction = parseMetric(metrics.satisfaction || metrics.customerSatisfaction);
+  const etrCompliance = parseMetric(metrics.etrCompliance) || 85; // Default fallback
+  const firstTimeFix = parseMetric(metrics.firstTimeFix) || 80; // Default fallback
+  
   return [
     {
-      title: 'Days Out of Service (DoS)',
-      value: `${metrics.daysOutOfService.toFixed(1)} days`,
-      target: '< 3 days (avoid Extended WIP)',
-      status: metrics.daysOutOfService < 3 ? 'good' : metrics.daysOutOfService < 5 ? 'warning' : 'critical',
-      impact: 'Primary PACCAR dealer performance metric',
-      description: 'Average asset downtime from Check-In to Asset Released',
+      title: 'Dwell Time',
+      value: formatMetric(dwellTime, ' hrs'),
+      target: '< 2.5 hrs (optimal efficiency)',
+      status: dwellTime < 2.5 ? 'good' : dwellTime < 4 ? 'warning' : 'critical',
+      impact: 'Primary customer satisfaction metric',
+      description: 'Average time customers wait for service',
       icon: <Clock size={24} />,
       trend: locationScorecard.trend
     },
     {
-      title: 'ETR Compliance',
-      value: `${metrics.etrCompliance.toFixed(1)}%`,
-      target: '100% ETR provided',
-      status: metrics.etrCompliance >= 95 ? 'good' : metrics.etrCompliance >= 85 ? 'warning' : 'critical',
-      impact: 'PACCAR Vision monitoring & PremierCare standards',
-      description: 'Cases with current ETR vs ETR Overdue flags',
+      title: 'Triage Time', 
+      value: formatMetric(triageTime, ' min'),
+      target: '< 15 min (quick assessment)',
+      status: triageTime < 15 ? 'good' : triageTime < 30 ? 'warning' : 'critical',
+      impact: 'Service process efficiency indicator',
+      description: 'Time to initial service assessment',
       icon: <Users size={24} />,
       trend: locationScorecard.trend
     },
     {
-      title: 'Extended Update Rate',
-      value: `${metrics.extendedUpdateRate.toFixed(1)}%`,
-      target: '0% Extended Updates',
-      status: metrics.extendedUpdateRate <= 5 ? 'good' : metrics.extendedUpdateRate <= 10 ? 'warning' : 'critical',
-      impact: 'PACCAR Vision default favorite tracking',
-      description: 'Cases without updates in 24+ hours',
-      icon: <AlertTriangle size={24} />,
-      trend: locationScorecard.trend
-    },
-    {
-      title: 'QAB Usage Rate',
-      value: `${metrics.qabUsage.toFixed(1)}%`,
-      target: '> 90%',
-      status: metrics.qabUsage >= 90 ? 'good' : metrics.qabUsage >= 75 ? 'warning' : 'critical',
-      impact: 'DoS calculation accuracy & PACCAR tracking',
-      description: 'Percentage of cases using Quick Action Buttons',
-      icon: <CheckCircle size={24} />,
+      title: 'Case Volume',
+      value: formatMetric(cases, ''),
+      target: 'Consistent workload management',
+      status: cases > 0 ? 'good' : 'warning',
+      impact: 'Service capacity utilization',
+      description: 'Total service cases handled',
+      icon: <BarChart3 size={24} />,
       trend: locationScorecard.trend
     },
     {
       title: 'Customer Satisfaction',
-      value: `${metrics.customerSatisfaction.toFixed(1)}%`,
-      target: '> 95%',
-      status: metrics.customerSatisfaction >= 95 ? 'good' : metrics.customerSatisfaction >= 90 ? 'warning' : 'critical',
-      impact: 'Customer retention and PACCAR brand reputation',
+      value: formatMetric(satisfaction, satisfaction > 10 ? '%' : '/5'),
+      target: satisfaction > 10 ? '> 95%' : '> 4.5/5',
+      status: (satisfaction > 10 ? satisfaction >= 95 : satisfaction >= 4.5) ? 'good' : 
+              (satisfaction > 10 ? satisfaction >= 90 : satisfaction >= 4) ? 'warning' : 'critical',
+      impact: 'Customer retention and brand reputation',
       description: 'Customer satisfaction survey scores',
       icon: <Users size={24} />,
       trend: locationScorecard.trend
     },
     {
+      title: 'ETR Compliance',
+      value: formatMetric(etrCompliance, '%'),
+      target: '> 95%',
+      status: etrCompliance >= 95 ? 'good' : etrCompliance >= 85 ? 'warning' : 'critical',
+      impact: 'Service promise reliability',
+      description: 'Estimated time to repair accuracy',
+      icon: <CheckCircle size={24} />,
+      trend: locationScorecard.trend
+    },
+    {
       title: 'First Time Fix Rate',
-      value: `${metrics.firstTimeFix.toFixed(1)}%`,
+      value: formatMetric(firstTimeFix, '%'),
       target: '> 85%',
-      status: metrics.firstTimeFix >= 85 ? 'good' : metrics.firstTimeFix >= 75 ? 'warning' : 'critical',
-      impact: 'Customer satisfaction and operational efficiency',
+      status: firstTimeFix >= 85 ? 'good' : firstTimeFix >= 75 ? 'warning' : 'critical',
+      impact: 'Operational efficiency and customer satisfaction',
       description: 'Percentage of issues resolved on first visit',
       icon: <CheckCircle size={24} />,
       trend: locationScorecard.trend
@@ -95,40 +118,40 @@ const getLocationMetrics = (locationId: string): MetricCard[] => {
 
 const getDefaultMetrics = (): MetricCard[] => [
   {
-    title: 'Days Out of Service (DoS)',
+    title: 'Dwell Time',
     value: 'No data',
-    target: '< 3 days (avoid Extended WIP)',
+    target: '< 2.5 hrs (optimal efficiency)',
     status: 'warning',
-    impact: 'Primary PACCAR dealer performance metric',
+    impact: 'Primary customer satisfaction metric',
     description: 'Upload monthly scorecard to view current metrics',
     icon: <Clock size={24} />
   },
   {
-    title: 'ETR Compliance',
+    title: 'Triage Time',
     value: 'No data',
-    target: '100% ETR provided',
+    target: '< 15 min (quick assessment)',
     status: 'warning',
-    impact: 'PACCAR Vision monitoring & PremierCare standards',
+    impact: 'Service process efficiency indicator', 
     description: 'Upload monthly scorecard to view current metrics',
     icon: <Users size={24} />
   },
   {
-    title: 'Extended Update Rate',
+    title: 'Case Volume',
     value: 'No data',
-    target: '0% Extended Updates',
+    target: 'Consistent workload management',
     status: 'warning',
-    impact: 'PACCAR Vision default favorite tracking',
+    impact: 'Service capacity utilization',
     description: 'Upload monthly scorecard to view current metrics',
-    icon: <AlertTriangle size={24} />
+    icon: <BarChart3 size={24} />
   },
   {
-    title: 'QAB Usage Rate',
+    title: 'Customer Satisfaction',
     value: 'No data',
-    target: '> 90%',
+    target: '> 95%',
     status: 'warning',
-    impact: 'DoS calculation accuracy & PACCAR tracking',
+    impact: 'Customer retention and brand reputation',
     description: 'Upload monthly scorecard to view current metrics',
-    icon: <CheckCircle size={24} />
+    icon: <Users size={24} />
   }
 ];
 
@@ -222,7 +245,7 @@ export default function LocationSpecificMetrics({ locationId, locationName, loca
           {locationName} Performance Metrics
         </h1>
         <p className="text-xl text-slate-300 mb-2">
-          PACCAR Dealer Excellence Standards & KPI Tracking
+          Service Performance Dashboard & KPI Tracking
         </p>
         <p className="text-slate-400">
           Last Updated: {lastUpdated()}
