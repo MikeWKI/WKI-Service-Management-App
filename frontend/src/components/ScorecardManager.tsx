@@ -154,27 +154,67 @@ export default function ScorecardManager() {
   const [isLoading, setIsLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load data from API on component mount
+  // Always load data from backend on mount, fallback to localStorage if backend fails
   useEffect(() => {
     const loadData = async () => {
       try {
         // Test API connection
         const apiWorking = await testAPIConnection();
         console.log('API connection test result:', apiWorking);
-        
-        // Load any existing data from localStorage as backup
+        // Always try to fetch from backend
+        const backendData = await fetchLocationMetrics();
+        // Parse backendData for dealership and locations
+        let dealership: DealershipMetrics | undefined, locations: any[] | undefined, extractedAt: string | undefined;
+        if (backendData && typeof backendData === 'object') {
+          if ('dealership' in backendData && 'locations' in backendData) {
+            ({ dealership, locations, extractedAt } = backendData);
+          } else if ('data' in backendData && backendData.data && typeof backendData.data === 'object') {
+            if ('dealership' in backendData.data && 'locations' in backendData.data) {
+              ({ dealership, locations, extractedAt } = backendData.data);
+            }
+          }
+        }
+        if (dealership && locations) {
+          // Build scorecards from backend
+          const dealershipScorecard: DealershipScorecard = {
+            id: `dealership-latest`,
+            month: '',
+            year: 0,
+            fileName: '',
+            uploadDate: new Date(extractedAt || new Date().toISOString()),
+            metrics: dealership,
+            locations: []
+          };
+          const locationScorecards: LocationScorecard[] = locations.map((location: any) => {
+            const locationInfo = getLocationInfo(location.name);
+            return {
+              id: `${locationInfo.id}-latest`,
+              location: location.name,
+              locationId: locationInfo.id,
+              month: '',
+              year: 0,
+              fileName: '',
+              uploadDate: new Date(extractedAt || new Date().toISOString()),
+              metrics: location,
+              trend: calculateTrend()
+            };
+          });
+          dealershipScorecard.locations = locationScorecards;
+          setDealershipData([dealershipScorecard]);
+          setScorecards(locationScorecards);
+        } else {
+          setScorecards([]);
+          setDealershipData([]);
+        }
+      } catch (error) {
+        // Fallback to localStorage if backend fails
+        console.error('Error loading data from backend, using localStorage fallback:', error);
         setScorecards(getStoredScorecards());
         setDealershipData(getStoredDealershipData());
-        
-        // Try to fetch from API (optional - for when API has persistent storage)
-        // await fetchLocationMetrics();
-      } catch (error) {
-        console.error('Error loading data:', error);
       } finally {
         setIsLoading(false);
       }
     };
-    
     loadData();
   }, []);
 
@@ -332,23 +372,57 @@ Expected one of these structures:
       dealershipScorecard.locations = locationScorecards;
       setUploadProgress(90);
 
-      // Update state and localStorage
-      setDealershipData(prev => {
-        const filtered = prev.filter(item => !(item.month === selectedMonth && item.year === selectedYear));
-        const updated = [...filtered, dealershipScorecard];
-        saveStoredDealershipData(updated);
-        return updated;
-      });
-
-      setScorecards(prev => {
-        const filtered = prev.filter(item => !(item.month === selectedMonth && item.year === selectedYear));
-        const updated = [...filtered, ...locationScorecards];
-        saveStoredScorecards(updated);
-        return updated;
-      });
-
+      // After upload, always fetch latest from backend and update UI
       setUploadProgress(100);
-      
+      try {
+        const backendData = await fetchLocationMetrics();
+        let dealership: DealershipMetrics | undefined, locations: any[] | undefined, extractedAt: string | undefined;
+        if (backendData && typeof backendData === 'object') {
+          if ('dealership' in backendData && 'locations' in backendData) {
+            ({ dealership, locations, extractedAt } = backendData);
+          } else if ('data' in backendData && backendData.data && typeof backendData.data === 'object') {
+            if ('dealership' in backendData.data && 'locations' in backendData.data) {
+              ({ dealership, locations, extractedAt } = backendData.data);
+            }
+          }
+        }
+        if (dealership && locations) {
+          const dealershipScorecard: DealershipScorecard = {
+            id: `dealership-latest`,
+            month: '',
+            year: 0,
+            fileName: '',
+            uploadDate: new Date(extractedAt || new Date().toISOString()),
+            metrics: dealership,
+            locations: []
+          };
+          const locationScorecards: LocationScorecard[] = locations.map((location: any) => {
+            const locationInfo = getLocationInfo(location.name);
+            return {
+              id: `${locationInfo.id}-latest`,
+              location: location.name,
+              locationId: locationInfo.id,
+              month: '',
+              year: 0,
+              fileName: '',
+              uploadDate: new Date(extractedAt || new Date().toISOString()),
+              metrics: location,
+              trend: calculateTrend()
+            };
+          });
+          dealershipScorecard.locations = locationScorecards;
+          setDealershipData([dealershipScorecard]);
+          setScorecards(locationScorecards);
+        } else {
+          setScorecards([]);
+          setDealershipData([]);
+        }
+      } catch (error) {
+        // Fallback to localStorage if backend fails
+        console.error('Error fetching after upload, using localStorage fallback:', error);
+        setScorecards(getStoredScorecards());
+        setDealershipData(getStoredDealershipData());
+      }
       setTimeout(() => {
         setIsUploading(false);
         setUploadProgress(0);
