@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Users, Wrench, Package, BarChart3, Upload, MapPin, Eye } from 'lucide-react';
+import { Users, Wrench, Package, BarChart3, Upload, MapPin } from 'lucide-react';
 
-interface ViewOption {
+interface RoleOption {
   id: string;
   title: string;
   description: string;
@@ -11,132 +11,103 @@ interface ViewOption {
   path: string;
 }
 
-const managementOptions: ViewOption[] = [
+const roleOptions: RoleOption[] = [
   {
-    id: 'upload-scorecards',
-    title: 'Upload Scorecards',
-    description: 'Upload and manage monthly service performance scorecards for all locations',
-    icon: <Upload size={32} />,
-    color: 'bg-gradient-to-br from-green-600 to-green-700',
-    path: '/metrics/scorecard-manager'
-  },
-  {
-    id: 'view-analytics',
-    title: 'Performance Analytics',
-    description: 'View detailed performance metrics and analytics dashboard',
-    icon: <BarChart3 size={32} />,
-    color: 'bg-gradient-to-br from-purple-600 to-purple-700',
-    path: '/location-metrics'
-  },
-  {
-    id: 'metrics-guide',
-    title: 'Metrics Guide',
-    description: 'Learn about key performance metrics and improvement strategies',
+    id: 'service-advisor',
+    title: 'Service Advisor',
+    description: 'DoS management, ETR compliance, QAB usage, and PACCAR communication standards',
     icon: <Users size={32} />,
-    color: 'bg-gradient-to-br from-blue-600 to-blue-700',
-    path: '/metrics/definitions'
+    color: 'bg-gradient-to-br from-red-600 to-red-700',
+    path: '/metrics/service-advisor'
+  },
+  {
+    id: 'parts-staff',
+    title: 'Parts Staff',
+    description: 'Parts status discipline, downtime attribution, and PACCAR Vision compliance',
+    icon: <Package size={32} />,
+    color: 'bg-gradient-to-br from-red-600 to-red-700',
+    path: '/metrics/parts-staff'
+  },
+  {
+    id: 'technician',
+    title: 'Foremen/Technicians',
+    description: 'Repair status discipline, PremierCare compliance, and ATR accuracy',
+    icon: <Wrench size={32} />,
+    color: 'bg-gradient-to-br from-red-600 to-red-700',
+    path: '/metrics/technician'
   }
 ];
 
-const locationOptions: ViewOption[] = [
+const locationOptions: RoleOption[] = [
   {
     id: 'wichita',
-    title: 'Wichita Kenworth',
+    title: 'Wichita',
     description: 'View performance metrics and scorecard data for Wichita location',
-    icon: <MapPin size={32} />,
+    icon: <BarChart3 size={32} />,
     color: 'bg-gradient-to-br from-blue-600 to-blue-700',
-    path: '/metrics/location/wichita'
+    path: '/metrics/wichita'
   },
   {
     id: 'emporia',
-    title: 'Emporia Kenworth',
+    title: 'Emporia',
     description: 'View performance metrics and scorecard data for Emporia location',
-    icon: <MapPin size={32} />,
+    icon: <BarChart3 size={32} />,
     color: 'bg-gradient-to-br from-green-600 to-green-700',
-    path: '/metrics/location/emporia'
+    path: '/metrics/emporia'
   },
   {
     id: 'dodge-city',
-    title: 'Dodge City Kenworth',
+    title: 'Dodge City',
     description: 'View performance metrics and scorecard data for Dodge City location',
-    icon: <MapPin size={32} />,
+    icon: <BarChart3 size={32} />,
     color: 'bg-gradient-to-br from-purple-600 to-purple-700',
-    path: '/metrics/location/dodge-city'
+    path: '/metrics/dodge-city'
   },
   {
     id: 'liberal',
-    title: 'Liberal Kenworth',
+    title: 'Liberal',
     description: 'View performance metrics and scorecard data for Liberal location',
-    icon: <MapPin size={32} />,
+    icon: <BarChart3 size={32} />,
     color: 'bg-gradient-to-br from-orange-600 to-orange-700',
-    path: '/metrics/location/liberal'
+    path: '/metrics/liberal'
   }
 ];
 
 export default function MetricsRoleSelection() {
-  const [viewMode, setViewMode] = useState<'management' | 'location'>('management');
+  const [viewMode, setViewMode] = useState<'role' | 'location'>('role');
   const navigate = useNavigate();
 
-  const handleOptionSelect = (path: string) => {
+  const handleRoleSelect = (path: string) => {
     navigate(path);
   };
 
-  const currentOptions = viewMode === 'management' ? managementOptions : locationOptions;
-
-  // Get quick stats from localStorage
-  const getQuickStats = () => {
-    const scorecards = localStorage.getItem('wki-scorecards');
-    const dealershipData = localStorage.getItem('wki-dealership-scorecards');
-    
-    const locationCount = scorecards ? JSON.parse(scorecards).length : 0;
-    const dealershipCount = dealershipData ? JSON.parse(dealershipData).length : 0;
-    
-    return { locationCount, dealershipCount };
-  };
-
-  const { locationCount, dealershipCount } = getQuickStats();
+  const currentOptions = viewMode === 'role' ? roleOptions : locationOptions;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent mb-4">
-          Service Performance Dashboard
+          PACCAR Dealer Performance Metrics
         </h1>
         <p className="text-xl text-slate-300 mb-6">
-          {viewMode === 'management' ? 
-            'Manage service performance data and analytics across all WKI locations' :
+          {viewMode === 'role' ? 
+            'Choose your role to see how your actions impact PACCAR dealer performance standards' :
             'Select a location to view current performance metrics and scorecard data'
           }
         </p>
-        
-        {/* Quick Stats */}
-        <div className="grid md:grid-cols-3 gap-4 max-w-lg mx-auto mb-8">
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg p-4 border border-slate-700">
-            <div className="text-2xl font-bold text-green-400">{locationCount}</div>
-            <div className="text-slate-300 text-sm">Active Scorecards</div>
-          </div>
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg p-4 border border-slate-700">
-            <div className="text-2xl font-bold text-blue-400">{dealershipCount}</div>
-            <div className="text-slate-300 text-sm">Monthly Reports</div>
-          </div>
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg p-4 border border-slate-700">
-            <div className="text-2xl font-bold text-purple-400">4</div>
-            <div className="text-slate-300 text-sm">WKI Locations</div>
-          </div>
-        </div>
         
         {/* View Mode Toggle */}
         <div className="flex justify-center mb-6">
           <div className="bg-slate-800 p-1 rounded-lg border border-slate-700">
             <button
-              onClick={() => setViewMode('management')}
+              onClick={() => setViewMode('role')}
               className={`px-6 py-2 rounded-md font-medium transition-all ${
-                viewMode === 'management'
+                viewMode === 'role'
                   ? 'bg-red-600 text-white shadow-lg'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              Management
+              By Role
             </button>
             <button
               onClick={() => setViewMode('location')}
@@ -146,26 +117,53 @@ export default function MetricsRoleSelection() {
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              Locations
+              By Location
             </button>
           </div>
         </div>
         
         <div className="bg-gradient-to-r from-red-900/20 to-red-800/20 border border-red-500/30 rounded-lg p-4 inline-block backdrop-blur-sm">
           <p className="text-red-300 font-semibold">
-            {viewMode === 'management' ? 
-              'Manage scorecards, view analytics, and track performance across all locations' :
+            {viewMode === 'role' ? 
+              'Core metrics PACCAR tracks in Decisiv for WKI dealer performance' :
               'Location-specific performance data from uploaded monthly scorecards'
             }
           </p>
         </div>
+        
+        {/* Metrics Definitions Link */}
+        <div className="mt-8 flex flex-wrap justify-center gap-4">
+          <Link 
+            to="/metrics/definitions"
+            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-blue-500/25"
+          >
+            <BarChart3 className="w-5 h-5 mr-2" />
+            View Metrics Definitions & Guide
+          </Link>
+          
+          <Link 
+            to="/scorecard-manager"
+            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-medium rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg hover:shadow-green-500/25"
+          >
+            <Upload className="w-5 h-5 mr-2" />
+            Upload Monthly Scorecards
+          </Link>
+          
+          <Link 
+            to="/location-metrics"
+            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-medium rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200 shadow-lg hover:shadow-purple-500/25"
+          >
+            <MapPin className="w-5 h-5 mr-2" />
+            View Location Performance
+          </Link>
+        </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-8 mb-12">
+      <div className="grid md:grid-cols-3 gap-8">
         {currentOptions.map((option) => (
           <button
             key={option.id}
-            onClick={() => handleOptionSelect(option.path)}
+            onClick={() => handleRoleSelect(option.path)}
             className="group bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl shadow-2xl p-8 hover:shadow-red-500/25 hover:shadow-2xl transition-all duration-500 hover:scale-105 border border-slate-700 hover:border-red-500/50 flex flex-col items-center text-center"
           >
             <div className={`${option.color} w-16 h-16 rounded-full flex items-center justify-center mb-6 text-white group-hover:scale-110 transition-transform duration-300 shadow-lg group-hover:shadow-red-500/50`}>
@@ -183,84 +181,24 @@ export default function MetricsRoleSelection() {
             </p>
             
             <div className="text-red-400 font-semibold group-hover:text-red-300 flex items-center justify-center">
-              {viewMode === 'management' ? 'Access Tool →' : 'View Metrics →'}
+              {viewMode === 'role' ? 'View My Impact →' : 'View Location Metrics →'}
             </div>
           </button>
         ))}
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-xl p-8 border border-slate-700 shadow-2xl mb-8">
-        <h2 className="text-2xl font-bold text-white mb-6 text-center">Quick Actions</h2>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Link
-            to="/metrics/scorecard-manager"
-            className="flex items-center p-4 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-green-500 transition-colors group"
-          >
-            <div className="bg-green-600 p-2 rounded-lg mr-4 group-hover:bg-green-500 transition-colors">
-              <Upload className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <div className="font-medium text-white">Upload Data</div>
-              <div className="text-slate-400 text-sm">Add scorecard</div>
-            </div>
-          </Link>
-          
-          <Link
-            to="/location-metrics"
-            className="flex items-center p-4 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-blue-500 transition-colors group"
-          >
-            <div className="bg-blue-600 p-2 rounded-lg mr-4 group-hover:bg-blue-500 transition-colors">
-              <BarChart3 className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <div className="font-medium text-white">View Dashboard</div>
-              <div className="text-slate-400 text-sm">Performance data</div>
-            </div>
-          </Link>
-          
-          <Link
-            to="/metrics/definitions"
-            className="flex items-center p-4 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-purple-500 transition-colors group"
-          >
-            <div className="bg-purple-600 p-2 rounded-lg mr-4 group-hover:bg-purple-500 transition-colors">
-              <Eye className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <div className="font-medium text-white">Metrics Guide</div>
-              <div className="text-slate-400 text-sm">Learn metrics</div>
-            </div>
-          </Link>
-          
-          <Link
-            to="/metrics"
-            className="flex items-center p-4 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-orange-500 transition-colors group"
-          >
-            <div className="bg-orange-600 p-2 rounded-lg mr-4 group-hover:bg-orange-500 transition-colors">
-              <MapPin className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <div className="font-medium text-white">All Locations</div>
-              <div className="text-slate-400 text-sm">Compare sites</div>
-            </div>
-          </Link>
-        </div>
-      </div>
-
-      {/* Key Performance Areas - Using only actual backend metrics */}
-      <div className="bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 rounded-lg p-6 text-center border border-slate-700 shadow-lg">
-        <h3 className="text-lg font-semibold text-white mb-4">
-          Tracked Performance Metrics
+      <div className="mt-12 bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 rounded-lg p-6 text-center border border-slate-700 shadow-lg">
+        <h3 className="text-lg font-semibold text-white mb-2">
+          Key Performance Areas
         </h3>
         <div className="flex flex-wrap justify-center gap-4 text-sm text-slate-300">
-          <span className="bg-slate-700 px-3 py-1 rounded-full border border-slate-600 hover:border-red-500/50 transition-colors">Dwell Time</span>
           <span className="bg-slate-700 px-3 py-1 rounded-full border border-slate-600 hover:border-red-500/50 transition-colors">Triage Time</span>
-          <span className="bg-slate-700 px-3 py-1 rounded-full border border-slate-600 hover:border-red-500/50 transition-colors">Case Volume</span>
+          <span className="bg-slate-700 px-3 py-1 rounded-full border border-slate-600 hover:border-red-500/50 transition-colors">Dwell Time</span>
           <span className="bg-slate-700 px-3 py-1 rounded-full border border-slate-600 hover:border-red-500/50 transition-colors">Customer Satisfaction</span>
+          <span className="bg-slate-700 px-3 py-1 rounded-full border border-slate-600 hover:border-red-500/50 transition-colors">First-Time Fix Rate</span>
+          <span className="bg-slate-700 px-3 py-1 rounded-full border border-slate-600 hover:border-red-500/50 transition-colors">Parts Availability</span>
+          <span className="bg-slate-700 px-3 py-1 rounded-full border border-slate-600 hover:border-red-500/50 transition-colors">Communication Quality</span>
         </div>
-        <p className="text-slate-400 text-sm mt-4">
-          Metrics extracted from uploaded monthly scorecard PDFs
-        </p>
       </div>
     </div>
   );
