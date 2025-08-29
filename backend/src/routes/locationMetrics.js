@@ -9,7 +9,8 @@ const upload = multer(); // Store file in memory
 // Helper: Extract dealership and location metrics from PDF
 async function extractServiceMetrics(buffer) {
   try {
-    const pdfDoc = await pdfjsLib.getDocument({ data: buffer }).promise;
+    // FIX: Convert Buffer to Uint8Array for pdfjs-dist compatibility
+    const pdfDoc = await pdfjsLib.getDocument(new Uint8Array(buffer)).promise;
     let fullText = '';
     
     // Extract text from all pages
@@ -47,7 +48,8 @@ async function extractServiceMetrics(buffer) {
     };
   } catch (error) {
     console.error('PDF extraction error:', error);
-    return { rawText: buffer.toString(), error: error.message };
+    // FIX: Throw the error instead of returning malformed data
+    throw new Error(`PDF processing failed: ${error.message}`);
   }
 }
 
@@ -101,25 +103,86 @@ function extractLocationMetrics(text, locationName) {
 // POST /api/location-metrics/upload - Upload PDF and update metrics
 router.post('/upload', upload.single('pdf'), async (req, res) => {
   try {
+    console.log('Upload request received:', {
+      hasFile: !!req.file,
+      fileName: req.file?.originalname,
+      fileSize: req.file?.size,
+      month: req.body.month,
+      year: req.body.year
+    });
+
     if (!req.file) {
-      return res.status(400).json({ success: false, error: 'No PDF file uploaded' });
+      console.error('No file uploaded');
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No PDF file uploaded' 
+      });
     }
+
+    if (!req.body.month || !req.body.year) {
+      console.error('Missing month or year');
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Month and year are required' 
+      });
+    }
+
+    console.log('Starting PDF extraction...');
+    
     // Extract dealership and location metrics using pdfjs-dist
     const metrics = await extractServiceMetrics(req.file.buffer);
+    
+    console.log('PDF extraction successful:', {
+      dealershipMetrics: Object.keys(metrics.dealership || {}).length,
+      locationCount: metrics.locations?.length || 0
+    });
+
     // Remove all previous metrics (keep only latest)
     await LocationMetric.deleteMany({});
-    // Save new metrics
-    const newMetrics = new LocationMetric({ metrics });
+    console.log('Cleared previous metrics');
+    
+    // Save new metrics with additional metadata
+    const newMetrics = new LocationMetric({ 
+      metrics: {
+        ...metrics,
+        month: req.body.month,
+        year: parseInt(req.body.year),
+        fileName: req.file.originalname,
+        uploadedAt: new Date()
+      }
+    });
+    
     await newMetrics.save();
-    // Respond with only the expected structure
-    res.json({
+    console.log('New metrics saved to database');
+    
+    // FIX: Always return the exact structure the frontend expects
+    const response = {
       dealership: metrics.dealership,
       locations: metrics.locations,
       extractedAt: metrics.extractedAt
+    };
+
+    console.log('Sending response:', {
+      hasDealership: !!response.dealership,
+      hasLocations: !!response.locations,
+      locationCount: response.locations?.length
     });
+    
+    res.json(response);
+    
   } catch (error) {
-    console.error('Upload error:', error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error('Upload error details:', {
+      message: error.message,
+      stack: error.stack,
+      fileName: req.file?.originalname
+    });
+    
+    // FIX: Return proper error response
+    res.status(500).json({ 
+      success: false, 
+      error: `Failed to process PDF: ${error.message}`,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
@@ -128,11 +191,21 @@ router.get('/', async (req, res) => {
   try {
     const latest = await LocationMetric.findOne().sort({ uploadedAt: -1 });
     if (!latest) {
-      return res.status(404).json({ success: false, error: 'No metrics found' });
+      return res.status(404).json({ 
+        success: false, 
+        error: 'No metrics found' 
+      });
     }
-    res.json({ success: true, data: latest.metrics });
+    res.json({ 
+      success: true, 
+      data: latest.metrics 
+    });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    console.error('Get metrics error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 });
 

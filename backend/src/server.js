@@ -16,6 +16,9 @@ const locationMetricsRouter = require('./routes/locationMetrics');
 
 const app = express();
 
+// FIX: Trust first proxy (required for Render.com) - MUST be before rate limiters
+app.set('trust proxy', 1);
+
 // Connect to MongoDB
 const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/service-management';
 mongoose.connect(mongoUri, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -34,7 +37,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Rate limiting
+// Rate limiting (now works correctly with trust proxy setting)
 app.use('/api/', rateLimiters.api);
 app.use(rateLimiters.general);
 
@@ -69,7 +72,7 @@ app.use("*", notFoundHandler);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(` Server running on port ${PORT}`);
-  console.log(` Frontend URL: ${process.env.FRONTEND_URL || "http://localhost:3000"}`);
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Frontend URL: ${process.env.FRONTEND_URL || "http://localhost:3000"}`);
+  console.log(`Trust proxy enabled: ${app.get('trust proxy')}`);
 });
-
