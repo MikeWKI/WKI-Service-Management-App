@@ -111,7 +111,7 @@ export default function QuickLinksPanel() {
 
       {/* Expanded Content */}
       {isExpanded && (
-  <div className="w-80 xl:w-96 p-3 xl:p-4 animate-slide-in-mobile">
+  <div className="w-180 xl:w-96 p-3 xl:p-4 animate-slide-in-mobile">
           <div className="mb-3 xl:mb-4">
             <h3 className="text-base xl:text-lg font-bold text-white mb-1 xl:mb-2 flex items-center">
               <FileText className="w-4 h-4 xl:w-5 xl:h-5 mr-2 text-red-400" />
