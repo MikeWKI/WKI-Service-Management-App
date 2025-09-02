@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Clock, Users, CheckCircle, AlertTriangle, TrendingUp, TrendingDown, BarChart3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -28,7 +28,84 @@ const formatMetric = (value: string | number | undefined, suffix: string = ''): 
 };
 
 // This would be dynamically loaded from uploaded scorecard data
-const getLocationMetrics = (locationId: string): MetricCard[] => {
+const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => {
+  const API_BASE_URL = 'https://wki-service-management-app.onrender.com';
+  
+  try {
+    // First try to fetch from backend
+    const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
+    if (response.ok) {
+      const data = await response.json();
+      let locations: any[] = [];
+      
+      // Handle different response structures
+      if (data && typeof data === 'object') {
+        if ('locations' in data && Array.isArray(data.locations)) {
+          locations = data.locations;
+        } else if ('data' in data && data.data && 'locations' in data.data && Array.isArray(data.data.locations)) {
+          locations = data.data.locations;
+        }
+      }
+      
+      // Find the specific location by matching the locationId with location names
+      const locationMap: Record<string, string> = {
+        'wichita': 'Wichita Kenworth',
+        'emporia': 'Emporia Kenworth',
+        'dodge-city': 'Dodge City Kenworth',
+        'liberal': 'Liberal Kenworth'
+      };
+      
+      const targetLocationName = locationMap[locationId];
+      const locationData = locations.find((loc: any) => 
+        loc.name && loc.name.toLowerCase().includes(locationId.toLowerCase().replace('-', ' '))
+      );
+      
+      if (locationData) {
+        const metrics = locationData;
+        const dwellTime = parseMetric(metrics.dwellTime);
+        const triageTime = parseMetric(metrics.triageTime);
+        const cases = parseMetric(metrics.cases);
+        const satisfaction = parseMetric(metrics.satisfaction || metrics.customerSatisfaction);
+        
+        return [
+          {
+            title: 'Dwell Time',
+            value: formatMetric(dwellTime, ' hrs'),
+            target: '< 72 hrs (optimal efficiency)',
+            status: dwellTime > 0 && dwellTime <= 72 ? 'good' : dwellTime > 72 && dwellTime <= 120 ? 'warning' : 'critical',
+            trend: 'stable',
+            icon: <Clock className="w-6 h-6" />,
+            impact: 'Primary customer satisfaction metric',
+            description: 'Upload monthly scorecard to view current metrics'
+          },
+          {
+            title: 'Triage Time',
+            value: formatMetric(triageTime, ' min'),
+            target: '< 15 min (quick assessment)',
+            status: triageTime > 0 && triageTime <= 15 ? 'good' : triageTime > 15 && triageTime <= 30 ? 'warning' : 'critical',
+            trend: 'stable',
+            icon: <Users className="w-6 h-6" />,
+            impact: 'Service process efficiency indicator',
+            description: 'Upload monthly scorecard to view current metrics'
+          },
+          {
+            title: 'Case Volume',
+            value: formatMetric(cases, ' cases'),
+            target: 'Consistent workload management',
+            status: cases > 0 ? 'good' : 'critical',
+            trend: 'stable',
+            icon: <BarChart3 className="w-6 h-6" />,
+            impact: 'Service capacity utilization',
+            description: 'Upload monthly scorecard to view current metrics'
+          }
+        ];
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching backend metrics:', error);
+  }
+  
+  // Fallback to localStorage
   const storedScorecards = localStorage.getItem('wki-scorecards');
   const scorecards = storedScorecards ? JSON.parse(storedScorecards) : [];
   
@@ -162,7 +239,24 @@ interface LocationMetricsProps {
 }
 
 export default function LocationSpecificMetrics({ locationId, locationName, locationColor }: LocationMetricsProps) {
-  const locationMetrics = getLocationMetrics(locationId);
+  const [locationMetrics, setLocationMetrics] = useState<MetricCard[]>(getDefaultMetrics());
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    const loadMetrics = async () => {
+      try {
+        const metrics = await getLocationMetrics(locationId);
+        setLocationMetrics(metrics);
+      } catch (error) {
+        console.error('Error loading metrics:', error);
+        setLocationMetrics(getDefaultMetrics());
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadMetrics();
+  }, [locationId]);
   
   const getTrendIcon = (trend?: string) => {
     switch (trend) {
@@ -236,21 +330,32 @@ export default function LocationSpecificMetrics({ locationId, locationName, loca
         </Link>
       </div>
 
-      {/* Location Header */}
-      <div className="text-center mb-12">
-        <div className={`w-20 h-20 bg-gradient-to-br ${locationColor} rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl`}>
-          <BarChart3 className="w-10 h-10 text-white" />
+      {/* Loading State */}
+      {isLoading && (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
+          <p className="text-slate-400">Loading metrics...</p>
         </div>
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent mb-4">
-          {locationName} Performance Metrics
-        </h1>
-        <p className="text-xl text-slate-300 mb-2">
-          Service Performance Dashboard & KPI Tracking
-        </p>
-        <p className="text-slate-400">
-          Last Updated: {lastUpdated()}
-        </p>
-      </div>
+      )}
+
+      {/* Main Content - only show when not loading */}
+      {!isLoading && (
+        <>
+          {/* Location Header */}
+          <div className="text-center mb-12">
+            <div className={`w-20 h-20 bg-gradient-to-br ${locationColor} rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl`}>
+              <BarChart3 className="w-10 h-10 text-white" />
+            </div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent mb-4">
+              {locationName} Performance Metrics
+            </h1>
+            <p className="text-xl text-slate-300 mb-2">
+              Service Performance Dashboard & KPI Tracking
+            </p>
+            <p className="text-slate-400">
+              Last Updated: {lastUpdated()}
+            </p>
+          </div>
 
       {/* Metrics Grid */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
@@ -338,6 +443,8 @@ export default function LocationSpecificMetrics({ locationId, locationName, loca
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }
