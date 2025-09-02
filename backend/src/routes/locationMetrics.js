@@ -26,6 +26,14 @@ async function extractServiceMetrics(buffer) {
     const lines = fullText.split('\n').map(l => l.trim()).filter(Boolean);
     console.log(`Total lines in PDF: ${lines.length}`);
     
+    // Location names to search for - moved to top to avoid initialization error
+    const locationNames = [
+      'Wichita Kenworth',
+      'Dodge City Kenworth', 
+      'Liberal Kenworth',
+      'Emporia Kenworth'
+    ];
+    
     // Look for location names in the text
     locationNames.forEach(locationName => {
       const foundLines = lines.filter((line, index) => {
@@ -51,14 +59,6 @@ async function extractServiceMetrics(buffer) {
     });
     
     console.log('=== END RAW PDF DEBUG ===\n');
-    
-    // Location names to search for
-    const locationNames = [
-      'Wichita Kenworth',
-      'Dodge City Kenworth', 
-      'Liberal Kenworth',
-      'Emporia Kenworth'
-    ];
     
     // Extract dealership summary (top portion)
     const dealershipMetrics = extractDealershipMetrics(fullText);
