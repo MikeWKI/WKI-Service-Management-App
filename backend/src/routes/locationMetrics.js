@@ -36,7 +36,7 @@ async function extractServiceMetrics(buffer) {
     // Extract individual location metrics
     const locationMetrics = [];
     locationNames.forEach(locationName => {
-      const locationData = extractLocationMetrics(fullText, locationName);
+      const locationData = extractLocationMetrics(fullText, locationName, locationNames);
       if (locationData) {
         console.log(`Extracted metrics for ${locationName}:`, locationData);
         locationMetrics.push(locationData);
@@ -101,23 +101,53 @@ function extractDealershipMetrics(text) {
   return metrics;
 }
 
-function extractLocationMetrics(text, locationName) {
+function extractLocationMetrics(text, locationName, locationNames) {
   // Find the "Individual Dealer Metrics" table section
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   
-  // Find the line containing this location name
-  const locationLineIndex = lines.findIndex(line => 
-    line.toLowerCase().includes(locationName.toLowerCase())
+  // First, find the table header to establish the column structure
+  const headerIndex = lines.findIndex(line => 
+    line.toLowerCase().includes('vsc case requirements') ||
+    line.toLowerCase().includes('individual dealer metrics')
   );
   
-  if (locationLineIndex === -1) return null;
+  console.log(`Looking for ${locationName}...`);
   
-  // Get the line with the location data
-  const locationLine = lines[locationLineIndex];
+  // Find the line containing this location name - search after the header
+  const startSearchIndex = headerIndex > -1 ? headerIndex : 0;
+  const locationLineIndex = lines.findIndex((line, index) => 
+    index >= startSearchIndex && line.toLowerCase().includes(locationName.toLowerCase())
+  );
   
-  // Extract all numeric values (including percentages and N/A) from the line
-  // This regex matches: numbers, decimals, percentages, and "N/A"
-  const values = locationLine.match(/(\d+(?:\.\d+)?%?|N\/A)/g) || [];
+  if (locationLineIndex === -1) {
+    console.warn(`Location ${locationName} not found in PDF text`);
+    return null;
+  }
+  
+  console.log(`Found ${locationName} at line ${locationLineIndex}: "${lines[locationLineIndex]}"`);
+  
+  // Get the line with the location data and potentially the next few lines
+  let combinedData = lines[locationLineIndex];
+  
+  // Sometimes data spans multiple lines, so combine nearby lines
+  for (let i = locationLineIndex + 1; i < Math.min(locationLineIndex + 3, lines.length); i++) {
+    const nextLine = lines[i];
+    // Stop if we hit another location name or table header
+    if (locationNames.some(loc => nextLine.toLowerCase().includes(loc.toLowerCase())) ||
+        nextLine.toLowerCase().includes('total') ||
+        nextLine.toLowerCase().includes('average')) {
+      break;
+    }
+    combinedData += ' ' + nextLine;
+  }
+  
+  console.log(`Combined data for ${locationName}: "${combinedData}"`);
+  
+  // Extract all numeric values, percentages, and N/A from the combined data
+  // More specific regex to avoid picking up years/irrelevant numbers
+  const values = combinedData.match(/(\b\d{1,2}(?:\.\d+)?%|\bN\/A\b|\b\d{1,2}\.\d+\b)/g) || [];
+  
+  console.log(`Extracted values for ${locationName}:`, values);
   
   // Map location names to IDs for frontend consistency
   const locationIds = {
@@ -126,16 +156,6 @@ function extractLocationMetrics(text, locationName) {
     'Liberal Kenworth': 'liberal',
     'Emporia Kenworth': 'emporia'
   };
-  
-  // If we don't have enough values, try to extract from surrounding lines
-  if (values.length < 11) {
-    // Look at the next few lines for additional data
-    for (let i = locationLineIndex + 1; i < Math.min(locationLineIndex + 3, lines.length); i++) {
-      const additionalValues = lines[i].match(/(\d+(?:\.\d+)?%?|N\/A)/g) || [];
-      values.push(...additionalValues);
-      if (values.length >= 11) break;
-    }
-  }
   
   // W370 Service Scorecard has 11 columns based on your data:
   const metrics = {
@@ -154,6 +174,7 @@ function extractLocationMetrics(text, locationName) {
     rdsYtdDwellAvgDays: values[10] || 'N/A'
   };
   
+  console.log(`Final metrics for ${locationName}:`, metrics);
   return metrics;
 }
 
