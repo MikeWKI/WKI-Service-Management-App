@@ -36,7 +36,7 @@ export default function TechnicianMetrics() {
             </div>
             <p className="text-sm text-slate-300">Proper status progression and QAB usage</p>
             <div className="mt-3 p-2 bg-slate-700/50 rounded text-xs border border-slate-600">
-              <strong className="text-red-400">Impact:</strong> <span className="text-slate-300">Accurate DoS/ATR calculations for PACCAR</span>
+              <strong className="text-red-400">Impact:</strong> <span className="text-slate-300">Accurate case tracking for PACCAR compliance</span>
             </div>
           </div>
         </div>

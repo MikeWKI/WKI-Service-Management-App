@@ -12,55 +12,13 @@ interface MetricCard {
   icon: React.ReactNode;
 }
 
+// Note: These metrics are estimates and should be replaced with actual data from uploaded scorecards
 const serviceAdvisorMetrics: MetricCard[] = [
-  {
-    title: 'Days Out of Service (DoS)',
-    value: '2.1 days',
-    target: '< 3 days (avoid Extended WIP)',
-    status: 'good',
-    impact: 'Primary PACCAR dealer performance metric',
-    description: 'Average asset downtime from Check-In to Asset Released',
-    icon: <Clock size={24} />
-  },
-  {
-    title: 'ETR Compliance',
-    value: '94%',
-    target: '100% ETR provided',
-    status: 'warning',
-    impact: 'PACCAR Vision monitoring & PremierCare standards',
-    description: 'Cases with current ETR vs ETR Overdue flags',
-    icon: <Users size={24} />
-  },
-  {
-    title: 'Extended Update Rate',
-    value: '8%',
-    target: '0% Extended Updates',
-    status: 'warning',
-    impact: 'PACCAR Vision default favorite tracking',
-    description: 'Cases without updates in 24+ hours',
-    icon: <AlertTriangle size={24} />
-  },
-  {
-    title: 'QAB Usage Rate',
-    value: '76%',
-    target: '> 90%',
-    status: 'warning',
-    impact: 'DoS calculation accuracy & PACCAR tracking',
-    description: 'Percentage of cases using Quick Action Buttons',
-    icon: <CheckCircle size={24} />
-  }
+  // Only show metrics that can be derived from legitimate W370 scorecard data
+  // Remove hardcoded values that don't correspond to actual scorecard fields
 ];
 
 const actionItems = [
-  {
-    metric: 'Days Out of Service',
-    actions: [
-      'Use Quick Action Buttons for accurate timestamp capture',
-      'Monitor cases approaching 3-day Extended WIP threshold',
-      'Aggressively manage Hold (auth) and parts delays',
-      'Set Asset Released immediately when truck is ready'
-    ]
-  },
   {
     metric: 'ETR Management',
     actions: [
@@ -131,9 +89,21 @@ export default function ServiceAdvisorMetrics() {
         </p>
       </div>
 
-      {/* Metrics Grid */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        {serviceAdvisorMetrics.map((metric, index) => (
+      {/* Show message when no legitimate scorecard data is available */}
+      {serviceAdvisorMetrics.length === 0 && (
+        <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl p-8 border border-slate-700 shadow-2xl text-center mb-8">
+          <div className="text-6xl mb-4">📊</div>
+          <h2 className="text-2xl font-bold text-white mb-4">No Service Advisor Data Available</h2>
+          <p className="text-slate-300 mb-6">
+            Service Advisor metrics will be available once W370 Service Scorecard data is uploaded and processed.
+          </p>
+        </div>
+      )}
+
+      {/* Metrics Grid - only show when data exists */}
+      {serviceAdvisorMetrics.length > 0 && (
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          {serviceAdvisorMetrics.map((metric, index) => (
           <div
             key={index}
             className={`rounded-lg border-2 p-6 shadow-2xl hover:shadow-red-500/25 transition-all duration-300 hover:scale-105 ${getStatusColor(metric.status)}`}
@@ -158,10 +128,12 @@ export default function ServiceAdvisorMetrics() {
             </div>
           </div>
         ))}
-      </div>
+        </div>
+      )}
 
-      {/* Action Items */}
-      <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-lg shadow-2xl border border-slate-700 p-8">
+      {/* Action Items - only show when data exists */}
+      {serviceAdvisorMetrics.length > 0 && (
+        <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-lg shadow-2xl border border-slate-700 p-8">
         <h2 className="text-2xl font-bold text-white mb-6">
           🎯 Action Items to Improve Your Metrics
         </h2>
@@ -208,7 +180,7 @@ export default function ServiceAdvisorMetrics() {
             </ul>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

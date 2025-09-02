@@ -15,7 +15,7 @@ const roleOptions: RoleOption[] = [
   {
     id: 'service-advisor',
     title: 'Service Advisor',
-    description: 'DoS management, ETR compliance, QAB usage, and PACCAR communication standards',
+    description: 'ETR compliance, QAB usage, and PACCAR communication standards',
     icon: <Users size={32} />,
     color: 'bg-gradient-to-br from-red-600 to-red-700',
     path: '/metrics/service-advisor'

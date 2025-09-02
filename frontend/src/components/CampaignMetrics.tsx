@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Target, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Award, BarChart3 } from 'lucide-react';
+import { Target, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Award, BarChart3, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface CampaignData {
   id: string;
@@ -86,134 +87,8 @@ const parseCampaignData = (backendData: any): CampaignMetricsData | null => {
   }
 };
 
-// Mock data for development/fallback
-const mockCampaignData: CampaignMetricsData = {
-  locations: [
-    {
-      locationName: 'Wichita Kenworth',
-      overallScore: 64,
-      campaigns: [
-        {
-          id: '24kwl-bendix-ec80',
-          name: '24KWL Bendix EC80 ABS ECU Incorrect Signal Processing',
-          locationScore: 59,
-          nationalScore: 56,
-          goal: 100,
-          status: 'good'
-        },
-        {
-          id: '25kwb-exterior-lighting',
-          name: '25KWB T180/T280/T380/T480 Exterior Lighting Programming',
-          locationScore: 100,
-          nationalScore: 57,
-          goal: 100,
-          status: 'excellent'
-        },
-        {
-          id: 'e311-paccar-camshaft',
-          name: 'E311 PACCAR EPA17 MX-13 Prognostic Repair-Camshaft',
-          locationScore: 25,
-          nationalScore: 46,
-          goal: 100,
-          status: 'critical'
-        },
-        {
-          id: 'e316-main-bearing',
-          name: 'E316 PACCAR MX-13 EPA21 Main Bearing Cap Bolts',
-          locationScore: 84,
-          nationalScore: 75,
-          goal: 100,
-          status: 'good'
-        },
-        {
-          id: 'e327-obd-software',
-          name: 'E327 PACCAR MX-11 AND MX-13 OBD Software Update',
-          locationScore: 52,
-          nationalScore: 60,
-          goal: 100,
-          status: 'warning'
-        }
-      ]
-    },
-    {
-      locationName: 'Dodge City Kenworth',
-      overallScore: 76,
-      campaigns: [
-        {
-          id: '24kwl-bendix-ec80',
-          name: '24KWL Bendix EC80 ABS ECU Incorrect Signal Processing',
-          locationScore: 71,
-          nationalScore: 56,
-          goal: 100,
-          status: 'good'
-        },
-        {
-          id: 'e311-paccar-camshaft',
-          name: 'E311 PACCAR EPA17 MX-13 Prognostic Repair-Camshaft',
-          locationScore: 100,
-          nationalScore: 46,
-          goal: 100,
-          status: 'excellent'
-        },
-        {
-          id: 'e316-main-bearing',
-          name: 'E316 PACCAR MX-13 EPA21 Main Bearing Cap Bolts',
-          locationScore: 93,
-          nationalScore: 75,
-          goal: 100,
-          status: 'good'
-        },
-        {
-          id: 'e327-obd-software',
-          name: 'E327 PACCAR MX-11 AND MX-13 OBD Software Update',
-          locationScore: 40,
-          nationalScore: 60,
-          goal: 100,
-          status: 'critical'
-        }
-      ]
-    },
-    {
-      locationName: 'Liberal Kenworth',
-      overallScore: 43,
-      campaigns: [
-        {
-          id: '24kwl-bendix-ec80',
-          name: '24KWL Bendix EC80 ABS ECU Incorrect Signal Processing',
-          locationScore: 39,
-          nationalScore: 56,
-          goal: 100,
-          status: 'critical'
-        },
-        {
-          id: 'e311-paccar-camshaft',
-          name: 'E311 PACCAR EPA17 MX-13 Prognostic Repair-Camshaft',
-          locationScore: 0,
-          nationalScore: 46,
-          goal: 100,
-          status: 'critical'
-        },
-        {
-          id: 'e316-main-bearing',
-          name: 'E316 PACCAR MX-13 EPA21 Main Bearing Cap Bolts',
-          locationScore: 83,
-          nationalScore: 75,
-          goal: 100,
-          status: 'good'
-        },
-        {
-          id: 'e327-obd-software',
-          name: 'E327 PACCAR MX-11 AND MX-13 OBD Software Update',
-          locationScore: 50,
-          nationalScore: 60,
-          goal: 100,
-          status: 'warning'
-        }
-      ]
-    }
-  ],
-  extractedAt: new Date().toISOString()
-};
+// Note: Campaign data should come from legitimate scorecard uploads
+// Mock data removed - only show real data
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -261,14 +136,17 @@ export default function CampaignMetrics() {
           if (parsedData) {
             setCampaignData(parsedData);
           } else {
-            setCampaignData(mockCampaignData);
+            // No legitimate campaign data available
+            setCampaignData(null);
           }
         } else {
-          setCampaignData(mockCampaignData);
+          // No legitimate campaign data available
+          setCampaignData(null);
         }
       } catch (error) {
         console.error('Error fetching campaign data:', error);
-        setCampaignData(mockCampaignData);
+        // No legitimate campaign data available
+        setCampaignData(null);
       } finally {
         setIsLoading(false);
       }
@@ -288,13 +166,35 @@ export default function CampaignMetrics() {
     );
   }
 
+  // Show empty state when no legitimate campaign data is available
   if (!campaignData) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="text-center py-12">
-          <Target className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-          <p className="text-slate-400">No campaign data available</p>
-          <p className="text-slate-500 text-sm mt-2">Upload a monthly scorecard to view campaign completion metrics</p>
+        <div className="flex items-center mb-8">
+          <Link 
+            to="/metrics" 
+            className="flex items-center text-red-400 hover:text-red-300 mr-4 transition-colors"
+          >
+            <ArrowLeft size={24} className="mr-2" />
+            Back to Metrics
+          </Link>
+        </div>
+
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent mb-4">
+            Campaign Completion Metrics
+          </h1>
+          <p className="text-xl text-slate-300">
+            Track campaign completion rates across all locations
+          </p>
+        </div>
+
+        <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl p-8 border border-slate-700 shadow-2xl text-center">
+          <div className="text-6xl mb-4">📊</div>
+          <h2 className="text-2xl font-bold text-white mb-4">No Campaign Data Available</h2>
+          <p className="text-slate-300 mb-6">
+            Campaign completion metrics will be available once W370 Service Scorecard data is uploaded and processed.
+          </p>
         </div>
       </div>
     );

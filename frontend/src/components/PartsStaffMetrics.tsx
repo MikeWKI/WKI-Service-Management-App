@@ -46,15 +46,15 @@ export default function PartsStaffMetrics() {
             <Clock size={24} className="text-white" />
             <span className="text-2xl">⚠️</span>
           </div>
-          <h3 className="text-lg font-semibold mb-2 text-white">Parts-Caused DoS Impact</h3>
+          <h3 className="text-lg font-semibold mb-2 text-white">Parts Impact Tracking</h3>
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <span className="text-2xl font-bold text-white">1.2 days</span>
-              <span className="text-sm text-slate-400">Target: &lt; 1.0 day</span>
+              <span className="text-2xl font-bold text-white">24 hrs</span>
+              <span className="text-sm text-slate-400">Target: &lt; 12 hrs</span>
             </div>
-            <p className="text-sm text-slate-300">Average Days Out of Service attributed to parts delays</p>
+            <p className="text-sm text-slate-300">Average parts acquisition time for repairs</p>
             <div className="mt-3 p-2 bg-slate-700/50 rounded text-xs border border-slate-600">
-              <strong className="text-red-400">Impact:</strong> <span className="text-slate-300">Separated from provider downtime in PACCAR analysis</span>
+              <strong className="text-red-400">Impact:</strong> <span className="text-slate-300">Parts delays tracked separately in PACCAR analysis</span>
             </div>
           </div>
         </div>

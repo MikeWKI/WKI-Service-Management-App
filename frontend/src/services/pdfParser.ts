@@ -6,7 +6,6 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
 export interface DealershipMetrics {
   month: string;
   year: number;
-  daysOutOfService: number;
   etrCompliance: number;
   extendedUpdateRate: number;
   qabUsage: number;
@@ -261,7 +260,6 @@ function extractTableDataFromText(text: string): { [key: string]: string[] } | n
 function extractDealershipMetrics(text: string): any {
   // For now, return default values - you can enhance this later if needed
   const defaults = {
-    daysOutOfService: 0,
     etrCompliance: 0,
     extendedUpdateRate: 0,
     qabUsage: 0,

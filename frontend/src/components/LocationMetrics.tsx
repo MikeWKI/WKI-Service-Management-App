@@ -1,19 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, TrendingUp, TrendingDown, BarChart3, Calendar, Filter } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
+// Legitimate scorecard data interface - matches W370 Service Scorecard structure
 interface LocationMetrics {
   location: string;
   month: string;
   year: number;
   metrics: {
-    daysOutOfService: number;
-    etrCompliance: number;
-    qabUsage: number;
-    triageTime: number;
-    dwellTime: number;
-    customerSatisfaction: number;
-    firstTimeFix: number;
-    partsAvailability: number;
+    // Only include metrics that actually exist in the W370 Service Scorecard
+    vscCaseRequirements: number;
+    vscClosedCorrectly: number;
+    ttActivation: number;
+    smMonthlyDwellAvg: number;
+    triageHours: number;
+    triagePercentLess4Hours: number;
+    etrPercentCases: number;
+    percentCasesWith3Notes: number;
+    rdsMonthlyAvgDays: number;
+    smYtdDwellAvgDays: number;
+    rdsYtdDwellAvgDays: number;
   };
   trend: 'up' | 'down' | 'stable';
 }
@@ -25,77 +31,9 @@ const locations = [
   { id: 'liberal', name: 'Liberal', color: 'from-orange-500 to-orange-600' }
 ];
 
-// Mock data - in real implementation, this would come from uploaded scorecards
-const mockMetrics: LocationMetrics[] = [
-  {
-    location: 'Wichita',
-    month: 'July',
-    year: 2025,
-    metrics: {
-      daysOutOfService: 7.2,
-      etrCompliance: 85.3,
-      qabUsage: 78.9,
-      triageTime: 45.2,
-      dwellTime: 156.7,
-      customerSatisfaction: 92.1,
-      firstTimeFix: 81.4,
-      partsAvailability: 91.8
-    },
-    trend: 'up'
-  },
-  {
-    location: 'Emporia',
-    month: 'July',
-    year: 2025,
-    metrics: {
-      daysOutOfService: 8.1,
-      etrCompliance: 79.6,
-      qabUsage: 72.3,
-      triageTime: 52.1,
-      dwellTime: 178.3,
-      customerSatisfaction: 88.7,
-      firstTimeFix: 76.9,
-      partsAvailability: 89.2
-    },
-    trend: 'stable'
-  },
-  {
-    location: 'Dodge City',
-    month: 'July',
-    year: 2025,
-    metrics: {
-      daysOutOfService: 9.4,
-      etrCompliance: 73.8,
-      qabUsage: 68.1,
-      triageTime: 58.7,
-      dwellTime: 192.5,
-      customerSatisfaction: 85.3,
-      firstTimeFix: 72.6,
-      partsAvailability: 86.4
-    },
-    trend: 'down'
-  },
-  {
-    location: 'Liberal',
-    month: 'July',
-    year: 2025,
-    metrics: {
-      daysOutOfService: 6.8,
-      etrCompliance: 88.1,
-      qabUsage: 82.4,
-      triageTime: 41.3,
-      dwellTime: 142.9,
-      customerSatisfaction: 94.2,
-      firstTimeFix: 84.7,
-      partsAvailability: 93.1
-    },
-    trend: 'up'
-  }
-];
-
 export default function LocationMetrics() {
   const [selectedLocation, setSelectedLocation] = useState('all');
-  const [selectedMetric, setSelectedMetric] = useState('daysOutOfService');
+  const [selectedMetric, setSelectedMetric] = useState('vscCaseRequirements');
   const [backendMetrics, setBackendMetrics] = useState<LocationMetrics[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -123,33 +61,39 @@ export default function LocationMetrics() {
           }
 
           if (locations && locations.length > 0) {
-            // Convert backend data to frontend format
+            // Convert backend data to frontend format - only legitimate W370 scorecard fields
             const convertedMetrics: LocationMetrics[] = locations.map((location: any) => ({
               location: location.name,
               month: 'Latest',
               year: new Date().getFullYear(),
               metrics: {
-                daysOutOfService: parseFloat(location.dwellTime) / 24 || 0, // Convert hours to days
-                etrCompliance: parseFloat(location.etrCompliance) || 85,
-                qabUsage: parseFloat(location.qabUsage) || 80,
-                triageTime: parseFloat(location.triageTime) || 0,
-                dwellTime: parseFloat(location.dwellTime) || 0,
-                customerSatisfaction: parseFloat(location.satisfaction || location.customerSatisfaction) || 90,
-                firstTimeFix: parseFloat(location.firstTimeFix) || 80,
-                partsAvailability: parseFloat(location.partsAvailability) || 90
+                vscCaseRequirements: parseFloat(location.vscCaseRequirements) || 0,
+                vscClosedCorrectly: parseFloat(location.vscClosedCorrectly) || 0,
+                ttActivation: parseFloat(location.ttPlusActivation) || 0,
+                smMonthlyDwellAvg: parseFloat(location.smMonthlyDwellAvg) || 0,
+                triageHours: parseFloat(location.triageHours) || 0,
+                triagePercentLess4Hours: parseFloat(location.triagePercentLess4Hours) || 0,
+                etrPercentCases: parseFloat(location.etrPercentCases) || 0,
+                percentCasesWith3Notes: parseFloat(location.percentCasesWith3Notes) || 0,
+                rdsMonthlyAvgDays: parseFloat(location.rdsMonthlyAvgDays) || 0,
+                smYtdDwellAvgDays: parseFloat(location.smYtdDwellAvgDays) || 0,
+                rdsYtdDwellAvgDays: parseFloat(location.rdsYtdDwellAvgDays) || 0
               },
               trend: 'stable' as const
             }));
             setBackendMetrics(convertedMetrics);
           } else {
-            setBackendMetrics(mockMetrics); // Fallback to mock data
+            // No legitimate scorecard data available - show empty state
+            setBackendMetrics([]);
           }
         } else {
-          setBackendMetrics(mockMetrics); // Fallback to mock data
+          // No legitimate scorecard data available - show empty state
+          setBackendMetrics([]);
         }
       } catch (error) {
         console.error('Error fetching metrics:', error);
-        setBackendMetrics(mockMetrics); // Fallback to mock data
+        // No legitimate scorecard data available - show empty state
+        setBackendMetrics([]);
       } finally {
         setIsLoading(false);
       }
@@ -163,61 +107,82 @@ export default function LocationMetrics() {
     : backendMetrics.filter(m => m.location.toLowerCase().replace(/\s+/g, '-') === selectedLocation);
 
   const metricDefinitions = {
-    daysOutOfService: {
-      name: 'Days Out of Service',
+    vscCaseRequirements: {
+      name: 'VSC Case Requirements',
+      unit: '%',
+      description: 'PACCAR VSC case requirements compliance',
+      target: '> 95%',
+      good: (value: number) => value > 95
+    },
+    vscClosedCorrectly: {
+      name: 'VSC Closed Correctly',
+      unit: '%',
+      description: 'PACCAR VSC cases closed with proper procedures',
+      target: '> 90%',
+      good: (value: number) => value > 90
+    },
+    ttActivation: {
+      name: 'TT+ Activation',
+      unit: '%',
+      description: 'TruckTech+ activation rate',
+      target: '> 90%',
+      good: (value: number) => value > 90
+    },
+    smMonthlyDwellAvg: {
+      name: 'SM Monthly Dwell Average',
       unit: 'days',
-      description: 'Average days vehicles are out of service',
-      target: '< 8 days',
-      good: (value: number) => value < 8
+      description: 'Service management monthly dwell time average',
+      target: '< 3 days',
+      good: (value: number) => value < 3
     },
-    etrCompliance: {
-      name: 'ETR Compliance',
-      unit: '%',
-      description: 'Estimated Time of Repair compliance rate',
-      target: '> 85%',
-      good: (value: number) => value > 85
+    triageHours: {
+      name: 'Triage Hours',
+      unit: 'hours',
+      description: 'Average hours for case triage completion',
+      target: '< 2 hours',
+      good: (value: number) => value < 2
     },
-    qabUsage: {
-      name: 'QAB Usage',
+    triagePercentLess4Hours: {
+      name: 'Triage % < 4 Hours',
       unit: '%',
-      description: 'Quality Assurance Board usage rate',
+      description: 'Percentage of cases triaged within 4 hours',
       target: '> 80%',
       good: (value: number) => value > 80
     },
-    triageTime: {
-      name: 'Triage Time',
-      unit: 'minutes',
-      description: 'Average time to complete initial triage',
-      target: '< 45 min',
-      good: (value: number) => value < 45
-    },
-    dwellTime: {
-      name: 'Dwell Time',
-      unit: 'minutes',
-      description: 'Average customer wait time',
-      target: '< 150 min',
-      good: (value: number) => value < 150
-    },
-    customerSatisfaction: {
-      name: 'Customer Satisfaction',
+    etrPercentCases: {
+      name: 'ETR % of Cases',
       unit: '%',
-      description: 'Customer satisfaction survey scores',
-      target: '> 90%',
-      good: (value: number) => value > 90
+      description: 'Estimated Time of Repair provided for cases',
+      target: '< 5%',
+      good: (value: number) => value < 5
     },
-    firstTimeFix: {
-      name: 'First Time Fix Rate',
+    percentCasesWith3Notes: {
+      name: '% Cases with 3+ Notes',
       unit: '%',
-      description: 'Percentage of issues resolved on first visit',
-      target: '> 80%',
-      good: (value: number) => value > 80
+      description: 'Percentage of cases with 3 or more notes',
+      target: '< 2%',
+      good: (value: number) => value < 2
     },
-    partsAvailability: {
-      name: 'Parts Availability',
-      unit: '%',
-      description: 'Percentage of parts available when needed',
-      target: '> 90%',
-      good: (value: number) => value > 90
+    rdsMonthlyAvgDays: {
+      name: 'RDS Monthly Avg Days',
+      unit: 'days',
+      description: 'RDS (Repair Duration Summary) monthly average',
+      target: '< 7 days',
+      good: (value: number) => value < 7
+    },
+    smYtdDwellAvgDays: {
+      name: 'SM YTD Dwell Avg Days',
+      unit: 'days',
+      description: 'Service management year-to-date dwell average',
+      target: '< 6 days',
+      good: (value: number) => value < 6
+    },
+    rdsYtdDwellAvgDays: {
+      name: 'RDS YTD Dwell Avg Days',
+      unit: 'days',
+      description: 'RDS year-to-date dwell time average',
+      target: '< 6 days',
+      good: (value: number) => value < 6
     }
   };
 
@@ -250,10 +215,38 @@ export default function LocationMetrics() {
         </p>
       </div>
 
-      {/* Filters */}
-      <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl p-3 sm:p-6 mb-6 sm:mb-8 border border-slate-700 shadow-2xl">
-        <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-4 items-stretch sm:items-center justify-between">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+      {/* Show message when no legitimate scorecard data is available */}
+      {!isLoading && backendMetrics.length === 0 && (
+        <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl p-8 border border-slate-700 shadow-2xl text-center">
+          <div className="text-6xl mb-4">📊</div>
+          <h2 className="text-2xl font-bold text-white mb-4">No Scorecard Data Available</h2>
+          <p className="text-slate-300 mb-6">
+            No W370 Service Scorecard data has been uploaded yet. Upload a legitimate scorecard PDF to view location metrics.
+          </p>
+          <Link 
+            to="/upload-scorecard" 
+            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-200"
+          >
+            Upload Scorecard
+          </Link>
+        </div>
+      )}
+
+      {/* Show loading state */}
+      {isLoading && (
+        <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl p-8 border border-slate-700 shadow-2xl text-center">
+          <div className="text-4xl mb-4">⏳</div>
+          <p className="text-slate-300">Loading scorecard data...</p>
+        </div>
+      )}
+
+      {/* Show content only when legitimate data exists */}
+      {!isLoading && backendMetrics.length > 0 && (
+        <>
+          {/* Filters */}
+          <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl p-3 sm:p-6 mb-6 sm:mb-8 border border-slate-700 shadow-2xl">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-4 items-stretch sm:items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
             <Filter className="w-5 h-5 text-red-400" />
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1">Location</label>
@@ -408,6 +401,8 @@ export default function LocationMetrics() {
           </div>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }
