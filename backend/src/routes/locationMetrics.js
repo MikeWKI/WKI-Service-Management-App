@@ -146,60 +146,59 @@ function extractLocationMetrics(text, locationName, locationNames) {
     ];
   }
   
-  // Based on the PDF structure, use the exact expected data for each location
-  // This ensures accurate metrics matching the PDF table
+  // Based on the PDF structure and frontend expectations, map the correct field names
   const expectedData = {
     'Wichita Kenworth': {
       vscCaseRequirements: '96%',
       vscClosedCorrectly: '92%',
-      csiEligibleCases: '99%',
-      customerWaitTime: '2.7',
-      daysToSchedule: '1.9',
-      firstTimeFixRate: '87.5%',
-      hoursPerRO: '1.8',
-      comebacks: '1.3%',
-      internalComebacks: '10.1%',
-      technicianEfficiency: '5.8',
-      overallBranchPerformance: '5.6'
+      ttActivation: '99%',
+      smMonthlyDwellAvg: '2.7',
+      triageHours: '1.9',
+      triagePercentLess4Hours: '87.5%',
+      etrPercentCases: '1.8',
+      percentCasesWith3Notes: '1.3%',
+      rdsMonthlyAvgDays: '10.1%',
+      smYtdDwellAvgDays: '5.8',
+      rdsYtdDwellAvgDays: '5.6'
     },
     'Dodge City Kenworth': {
       vscCaseRequirements: '67%',
       vscClosedCorrectly: '83%',
-      csiEligibleCases: '85%',
-      customerWaitTime: '1.8',
-      daysToSchedule: '2.2',
-      firstTimeFixRate: '19.0%',
-      hoursPerRO: '4.2',
-      comebacks: '0%',
-      internalComebacks: '0%',
-      technicianEfficiency: '6.1',
-      overallBranchPerformance: '5.7'
+      ttActivation: '85%',
+      smMonthlyDwellAvg: '1.8',
+      triageHours: '2.2',
+      triagePercentLess4Hours: '19.0%',
+      etrPercentCases: '4.2',
+      percentCasesWith3Notes: '0%',
+      rdsMonthlyAvgDays: '0%',
+      smYtdDwellAvgDays: '6.1',
+      rdsYtdDwellAvgDays: '5.7'
     },
     'Liberal Kenworth': {
       vscCaseRequirements: '100%',
       vscClosedCorrectly: '100%',
-      csiEligibleCases: '100%',
-      customerWaitTime: '2',
-      daysToSchedule: '2.6',
-      firstTimeFixRate: '89.4%',
-      hoursPerRO: '3.1',
-      comebacks: '0%',
-      internalComebacks: '2.1%',
-      technicianEfficiency: '5.6',
-      overallBranchPerformance: '5.7'
+      ttActivation: '100%',
+      smMonthlyDwellAvg: '2',
+      triageHours: '2.6',
+      triagePercentLess4Hours: '89.4%',
+      etrPercentCases: '3.1',
+      percentCasesWith3Notes: '0%',
+      rdsMonthlyAvgDays: '2.1%',
+      smYtdDwellAvgDays: '5.6',
+      rdsYtdDwellAvgDays: '5.7'
     },
     'Emporia Kenworth': {
       vscCaseRequirements: 'N/A',
       vscClosedCorrectly: 'N/A',
-      csiEligibleCases: 'N/A',
-      customerWaitTime: '1.2',
-      daysToSchedule: '0.8',
-      firstTimeFixRate: '38.8%',
-      hoursPerRO: '9.5',
-      comebacks: '1.0%',
-      internalComebacks: '15.3%',
-      technicianEfficiency: '3.3',
-      overallBranchPerformance: '4.3'
+      ttActivation: 'N/A',
+      smMonthlyDwellAvg: '1.2',
+      triageHours: '0.8',
+      triagePercentLess4Hours: '38.8%',
+      etrPercentCases: '9.5',
+      percentCasesWith3Notes: '1.0%',
+      rdsMonthlyAvgDays: '15.3%',
+      smYtdDwellAvgDays: '3.3',
+      rdsYtdDwellAvgDays: '4.3'
     }
   };
   
@@ -240,15 +239,15 @@ function extractLocationMetrics(text, locationName, locationNames) {
         locationData = {
           vscCaseRequirements: metrics[0] || 'N/A',
           vscClosedCorrectly: metrics[1] || 'N/A', 
-          csiEligibleCases: metrics[2] || 'N/A',
-          customerWaitTime: metrics[3] || 'N/A',
-          daysToSchedule: metrics[4] || 'N/A',
-          firstTimeFixRate: metrics[5] || 'N/A',
-          hoursPerRO: metrics[6] || 'N/A',
-          comebacks: metrics[7] || 'N/A',
-          internalComebacks: metrics[8] || 'N/A',
-          technicianEfficiency: metrics[9] || 'N/A',
-          overallBranchPerformance: metrics[10] || 'N/A'
+          ttActivation: metrics[2] || 'N/A',
+          smMonthlyDwellAvg: metrics[3] || 'N/A',
+          triageHours: metrics[4] || 'N/A',
+          triagePercentLess4Hours: metrics[5] || 'N/A',
+          etrPercentCases: metrics[6] || 'N/A',
+          percentCasesWith3Notes: metrics[7] || 'N/A',
+          rdsMonthlyAvgDays: metrics[8] || 'N/A',
+          smYtdDwellAvgDays: metrics[9] || 'N/A',
+          rdsYtdDwellAvgDays: metrics[10] || 'N/A'
         };
         console.log(`✅ Successfully parsed ${locationName} from PDF`);
         break;

@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import {
   Navigation,
   ProcessWorkflowLayout,
@@ -74,6 +74,10 @@ function App() {
                 <Route path="/metrics/emporia" element={<EmporiaMetrics />} />
                 <Route path="/metrics/dodge-city" element={<DodgeCityMetrics />} />
                 <Route path="/metrics/liberal" element={<LiberalMetrics />} />
+                {/* Handle index.html specifically */}
+                <Route path="/index.html" element={<Navigate to="/" replace />} />
+                {/* Catch-all route - redirect any unmatched routes to home */}
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </div>
             

@@ -68,6 +68,19 @@ const parseNotesStatus = (value: string): 'good' | 'warning' | 'critical' => {
   return 'critical';
 };
 
+// Helper function to add percentage sign if needed
+const addPercentageIfNeeded = (value: string): string => {
+  if (!value || value === 'N/A') return 'N/A';
+  const numericValue = parseFloat(value);
+  if (isNaN(numericValue)) return value;
+  
+  // If the value looks like a percentage (0-100 range) and doesn't already have %
+  if (numericValue >= 0 && numericValue <= 100 && !value.includes('%')) {
+    return `${value}%`;
+  }
+  return value;
+};
+
 // This would be dynamically loaded from uploaded scorecard data
 const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => {
   const API_BASE_URL = 'https://wki-service-management-app.onrender.com';
@@ -104,12 +117,34 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
       if (locationData) {
         const metrics = locationData;
         
+        // Map the old backend field names to the new W370 metrics structure
+        // Based on the console logs, the backend is returning the old field names
+        // but the values are actually the W370 metrics in order
+        console.log('Raw location data from backend:', metrics);
+        
+        // Temporary mapping until backend is updated to use correct field names
+        const mappedMetrics = {
+          vscCaseRequirements: addPercentageIfNeeded(metrics.dwellTime || metrics.vscCaseRequirements || 'N/A'),
+          vscClosedCorrectly: addPercentageIfNeeded(metrics.triageTime || metrics.vscClosedCorrectly || 'N/A'),
+          ttActivation: addPercentageIfNeeded(metrics.cases || metrics.ttActivation || 'N/A'),
+          smMonthlyDwellAvg: metrics.satisfaction || metrics.smMonthlyDwellAvg || 'N/A',
+          triageHours: metrics.triageHours || 'N/A',
+          triagePercentLess4Hours: addPercentageIfNeeded(metrics.triagePercentLess4Hours || 'N/A'),
+          etrPercentCases: addPercentageIfNeeded(metrics.etrPercentCases || 'N/A'),
+          percentCasesWith3Notes: addPercentageIfNeeded(metrics.percentCasesWith3Notes || 'N/A'),
+          rdsMonthlyAvgDays: metrics.rdsMonthlyAvgDays || 'N/A',
+          smYtdDwellAvgDays: metrics.smYtdDwellAvgDays || 'N/A',
+          rdsYtdDwellAvgDays: metrics.rdsYtdDwellAvgDays || 'N/A'
+        };
+        
+        console.log('Mapped metrics:', mappedMetrics);
+        
         return [
           {
             title: 'VSC Case Requirements',
-            value: metrics.vscCaseRequirements || 'N/A',
+            value: mappedMetrics.vscCaseRequirements,
             target: '> 95% (target)',
-            status: parseVscStatus(metrics.vscCaseRequirements),
+            status: parseVscStatus(mappedMetrics.vscCaseRequirements),
             trend: 'stable',
             icon: <CheckCircle className="w-6 h-6" />,
             impact: 'Service case compliance metric',
@@ -117,9 +152,9 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           },
           {
             title: 'VSC Closed Correctly',
-            value: metrics.vscClosedCorrectly || 'N/A',
+            value: mappedMetrics.vscClosedCorrectly,
             target: '> 90% (target)', 
-            status: parseVscStatus(metrics.vscClosedCorrectly),
+            status: parseVscStatus(mappedMetrics.vscClosedCorrectly),
             trend: 'stable',
             icon: <CheckCircle className="w-6 h-6" />,
             impact: 'Case closure accuracy metric',
@@ -127,9 +162,9 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           },
           {
             title: 'TT+ Activation',
-            value: metrics.ttActivation || 'N/A',
+            value: mappedMetrics.ttActivation,
             target: '> 95% (target)',
-            status: parseVscStatus(metrics.ttActivation),
+            status: parseVscStatus(mappedMetrics.ttActivation),
             trend: 'stable',
             icon: <TrendingUp className="w-6 h-6" />,
             impact: 'Technology activation compliance',
@@ -137,9 +172,9 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           },
           {
             title: 'SM Monthly Dwell Avg',
-            value: `${metrics.smMonthlyDwellAvg || 'N/A'} days`,
+            value: `${mappedMetrics.smMonthlyDwellAvg} days`,
             target: '< 3.0 days (target)',
-            status: parseDwellStatus(metrics.smMonthlyDwellAvg),
+            status: parseDwellStatus(mappedMetrics.smMonthlyDwellAvg),
             trend: 'stable',
             icon: <Clock className="w-6 h-6" />,
             impact: 'Service manager dwell time metric',
@@ -147,9 +182,9 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           },
           {
             title: 'Triage Hours',
-            value: `${metrics.triageHours || 'N/A'} hrs`,
+            value: `${mappedMetrics.triageHours} hrs`,
             target: '< 2.0 hrs (target)',
-            status: parseTriageStatus(metrics.triageHours),
+            status: parseTriageStatus(mappedMetrics.triageHours),
             trend: 'stable',
             icon: <Users className="w-6 h-6" />,
             impact: 'Initial assessment time',
@@ -157,9 +192,9 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           },
           {
             title: 'Triage % < 4 Hours',
-            value: metrics.triagePercentLess4Hours || 'N/A',
+            value: mappedMetrics.triagePercentLess4Hours,
             target: '> 80% (target)',
-            status: parseVscStatus(metrics.triagePercentLess4Hours),
+            status: parseVscStatus(mappedMetrics.triagePercentLess4Hours),
             trend: 'stable',
             icon: <TrendingUp className="w-6 h-6" />,
             impact: 'Quick triage performance',
@@ -167,9 +202,9 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           },
           {
             title: 'ETR % of Cases',
-            value: metrics.etrPercentCases || 'N/A',
+            value: mappedMetrics.etrPercentCases,
             target: '> 15% (target)',
-            status: parseEtrStatus(metrics.etrPercentCases),
+            status: parseEtrStatus(mappedMetrics.etrPercentCases),
             trend: 'stable',
             icon: <BarChart3 className="w-6 h-6" />,
             impact: 'Estimated time to repair compliance',
@@ -177,9 +212,9 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           },
           {
             title: '% Cases with 3+ Notes',
-            value: metrics.percentCasesWith3Notes || 'N/A',
+            value: mappedMetrics.percentCasesWith3Notes,
             target: '< 5% (target)',
-            status: parseNotesStatus(metrics.percentCasesWith3Notes),
+            status: parseNotesStatus(mappedMetrics.percentCasesWith3Notes),
             trend: 'stable',
             icon: <AlertTriangle className="w-6 h-6" />,
             impact: 'Case documentation quality',
@@ -187,9 +222,9 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           },
           {
             title: 'RDS Monthly Avg Days',
-            value: `${metrics.rdsMonthlyAvgDays || 'N/A'} days`,
+            value: `${mappedMetrics.rdsMonthlyAvgDays} days`,
             target: '< 6.0 days (target)',
-            status: parseDwellStatus(metrics.rdsMonthlyAvgDays),
+            status: parseDwellStatus(mappedMetrics.rdsMonthlyAvgDays),
             trend: 'stable',
             icon: <Clock className="w-6 h-6" />,
             impact: 'RDS monthly dwell performance',
@@ -197,9 +232,9 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           },
           {
             title: 'SM YTD Dwell Average',
-            value: `${metrics.smYtdDwellAvgDays || 'N/A'} days`,
+            value: `${mappedMetrics.smYtdDwellAvgDays} days`,
             target: '< 6.0 days (target)',
-            status: parseDwellStatus(metrics.smYtdDwellAvgDays),
+            status: parseDwellStatus(mappedMetrics.smYtdDwellAvgDays),
             trend: 'stable',
             icon: <TrendingDown className="w-6 h-6" />,
             impact: 'Service manager year-to-date performance',
@@ -207,9 +242,9 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           },
           {
             title: 'RDS YTD Dwell Average',
-            value: `${metrics.rdsYtdDwellAvgDays || 'N/A'} days`,
+            value: `${mappedMetrics.rdsYtdDwellAvgDays} days`,
             target: '< 6.0 days (target)',
-            status: parseDwellStatus(metrics.rdsYtdDwellAvgDays),
+            status: parseDwellStatus(mappedMetrics.rdsYtdDwellAvgDays),
             trend: 'stable',
             icon: <TrendingDown className="w-6 h-6" />,
             impact: 'RDS year-to-date dwell performance',
