@@ -135,6 +135,19 @@ function extractDealershipMetrics(text) {
 function extractLocationMetrics(text, locationName, locationNames) {
   console.log(`\n=== Processing ${locationName} ===`);
   
+  // Safety check for parameters
+  if (!locationNames) {
+    console.error('locationNames parameter is undefined');
+    locationNames = [
+      'Wichita Kenworth',
+      'Dodge City Kenworth', 
+      'Liberal Kenworth',
+      'Emporia Kenworth'
+    ];
+  }
+  
+  console.log('locationNames:', locationNames);
+  
   // Split text into lines and clean up
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   
