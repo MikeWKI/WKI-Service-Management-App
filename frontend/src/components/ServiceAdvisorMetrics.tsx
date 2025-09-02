@@ -131,55 +131,58 @@ export default function ServiceAdvisorMetrics() {
         </div>
       )}
 
-      {/* Action Items - only show when data exists */}
+      {/* Action Items and Performance Impact - only show when data exists */}
       {serviceAdvisorMetrics.length > 0 && (
-        <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-lg shadow-2xl border border-slate-700 p-8">
-        <h2 className="text-2xl font-bold text-white mb-6">
-          🎯 Action Items to Improve Your Metrics
-        </h2>
-        
-        <div className="grid md:grid-cols-3 gap-8">
-          {actionItems.map((item, index) => (
-            <div key={index} className="space-y-4">
-              <h3 className="text-lg font-semibold text-red-400 border-b border-red-500/50 pb-2">
-                {item.metric}
-              </h3>
-              <ul className="space-y-2">
-                {item.actions.map((action, actionIndex) => (
-                  <li key={actionIndex} className="flex items-start space-x-2 text-sm">
-                    <span className="text-red-500 mt-1">•</span>
-                    <span className="text-slate-300">{action}</span>
-                  </li>
-                ))}
-              </ul>
+        <>
+          <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-lg shadow-2xl border border-slate-700 p-8">
+            <h2 className="text-2xl font-bold text-white mb-6">
+              🎯 Action Items to Improve Your Metrics
+            </h2>
+            
+            <div className="grid md:grid-cols-3 gap-8">
+              {actionItems.map((item, index) => (
+                <div key={index} className="space-y-4">
+                  <h3 className="text-lg font-semibold text-red-400 border-b border-red-500/50 pb-2">
+                    {item.metric}
+                  </h3>
+                  <ul className="space-y-2">
+                    {item.actions.map((action, actionIndex) => (
+                      <li key={actionIndex} className="flex items-start space-x-2 text-sm">
+                        <span className="text-red-500 mt-1">•</span>
+                        <span className="text-slate-300">{action}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      {/* Performance Impact */}
-      <div className="mt-8 bg-gradient-to-r from-red-900/30 to-red-800/30 rounded-lg p-6 border border-red-500/50 backdrop-blur-sm">
-        <h3 className="text-xl font-bold text-red-300 mb-4">
-          💡 How Service Advisors Drive Dealer Success
-        </h3>
-        <div className="grid md:grid-cols-2 gap-6 text-sm text-slate-300">
-          <div>
-            <h4 className="font-semibold mb-2 text-white">Customer Experience Impact</h4>
-            <ul className="space-y-1">
-              <li>• Fast triage = Higher customer satisfaction scores</li>
-              <li>• Regular communication = Improved trust and retention</li>
-              <li>• Accurate estimates = Reduced complaints and rework</li>
-            </ul>
+          {/* Performance Impact */}
+          <div className="mt-8 bg-gradient-to-r from-red-900/30 to-red-800/30 rounded-lg p-6 border border-red-500/50 backdrop-blur-sm">
+            <h3 className="text-xl font-bold text-red-300 mb-4">
+              💡 How Service Advisors Drive Dealer Success
+            </h3>
+            <div className="grid md:grid-cols-2 gap-6 text-sm text-slate-300">
+              <div>
+                <h4 className="font-semibold mb-2 text-white">Customer Experience Impact</h4>
+                <ul className="space-y-1">
+                  <li>• Fast triage = Higher customer satisfaction scores</li>
+                  <li>• Regular communication = Improved trust and retention</li>
+                  <li>• Accurate estimates = Reduced complaints and rework</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2 text-white">Operational Impact</h4>
+                <ul className="space-y-1">
+                  <li>• QAB usage = Better workflow tracking and efficiency</li>
+                  <li>• Quick approvals = Reduced dwell time and costs</li>
+                  <li>• Proactive coordination = Higher first-time fix rates</li>
+                </ul>
+              </div>
+            </div>
           </div>
-          <div>
-            <h4 className="font-semibold mb-2 text-white">Operational Impact</h4>
-            <ul className="space-y-1">
-              <li>• QAB usage = Better workflow tracking and efficiency</li>
-              <li>• Quick approvals = Reduced dwell time and costs</li>
-              <li>• Proactive coordination = Higher first-time fix rates</li>
-            </ul>
-          </div>
-        </div>
+        </>
       )}
     </div>
   );
