@@ -124,23 +124,34 @@ function parseTextContent(text: string): ParsedScorecardData {
 function parseIndividualDealerMetrics(text: string): LocationMetrics[] {
   const locationMetrics: LocationMetrics[] = [];
   
-  // Define the expected data structure based on your PDF
-  const locationData = {
+  console.log('=== PARSING INDIVIDUAL DEALER METRICS ===');
+  
+  // Define the expected data structure based on your PDF (as a fallback)
+  const expectedLocationData = {
     'Wichita Kenworth': ['96%', '92%', '99%', '2.7', '1.9', '87.9%', '1.8', '1.3%', '10.1%', '5.8', '5.6'],
     'Dodge City Kenworth': ['67%', '83%', '85%', '1.8', '2.2', '19.0%', '4.2', '0%', '0%', '6.1', '5.7'],
     'Liberal Kenworth': ['100%', '100%', '100%', '2', '2.6', '89.4%', '3.1', '0%', '2.1%', '5.6', '5.7'],
     'Emporia Kenworth': ['N/A', 'N/A', 'N/A', '1.2', '0.8', '38.8%', '9.5', '1.0%', '15.3%', '3.3', '4.3']
   };
 
-  // Try to extract actual data from PDF text, fall back to known structure
-  const extractedData = extractTableDataFromText(text) || locationData;
+  // Try to extract actual data from PDF text first
+  const extractedData = extractTableDataFromText(text);
   
-  Object.entries(extractedData).forEach(([locationName, values]) => {
+  console.log('Extracted data from PDF:', extractedData);
+  
+  // Use extracted data if available, otherwise fall back to expected structure
+  const dataToUse = extractedData || expectedLocationData;
+  
+  console.log('Using data structure:', dataToUse);
+  
+  Object.entries(dataToUse).forEach(([locationName, values]) => {
     const locationId = locationNameMap[locationName.toLowerCase()] || 
                      locationName.toLowerCase().replace(/\s+/g, '-').replace('kenworth', '').trim().replace(/^-/, '');
     
+    console.log(`Processing ${locationName} -> ${locationId}:`, values);
+    
     if (values && values.length >= 11) {
-      locationMetrics.push({
+      const locationMetric: LocationMetrics = {
         locationName,
         locationId,
         vscCaseRequirements: values[0] || 'N/A',
@@ -155,9 +166,21 @@ function parseIndividualDealerMetrics(text: string): LocationMetrics[] {
         smYtdDwellAvgDays: values[9] || 'N/A',
         rdsYtdDwellAvgDays: values[10] || 'N/A',
         caseCount: 0 // This would need separate extraction logic
-      });
+      };
+      
+      locationMetrics.push(locationMetric);
+      console.log(`✅ Added location metric for ${locationName}`);
+    } else {
+      console.log(`❌ Insufficient data for ${locationName} (${values?.length || 0} values)`);
     }
   });
+  
+  console.log('=== FINAL LOCATION METRICS ===');
+  console.log('Total locations processed:', locationMetrics.length);
+  locationMetrics.forEach(loc => {
+    console.log(`${loc.locationName}: VSC Requirements=${loc.vscCaseRequirements}, VSC Closed=${loc.vscClosedCorrectly}, TT+=${loc.ttActivation}`);
+  });
+  console.log('=== END PARSING ===');
   
   return locationMetrics;
 }
@@ -167,11 +190,22 @@ function extractTableDataFromText(text: string): { [key: string]: string[] } | n
     const locationData: { [key: string]: string[] } = {};
     const locationNames = ['wichita kenworth', 'dodge city kenworth', 'liberal kenworth', 'emporia kenworth'];
     
+    console.log('=== EXTRACTING TABLE DATA FROM PDF ===');
+    console.log('Full text snippet:', text.substring(0, 500));
+    
     // Look for the "Individual Dealer Metrics" section
     const metricsSection = text.toLowerCase();
     const individualDealerIndex = metricsSection.indexOf('individual dealer metrics');
     
+    console.log('Found "Individual Dealer Metrics" at index:', individualDealerIndex);
+    
     if (individualDealerIndex === -1) {
+      console.log('❌ Could not find "Individual Dealer Metrics" section');
+      // Try alternate patterns
+      const altIndex = metricsSection.indexOf('dealer metrics') || metricsSection.indexOf('kenworth');
+      if (altIndex !== -1) {
+        console.log('Found alternative section at index:', altIndex);
+      }
       return null;
     }
     
@@ -179,25 +213,43 @@ function extractTableDataFromText(text: string): { [key: string]: string[] } | n
     const afterMetrics = text.substring(individualDealerIndex);
     const lines = afterMetrics.split('\n');
     
+    console.log('Lines in metrics section:', lines.slice(0, 10));
+    
     locationNames.forEach(locationName => {
+      console.log(`\n--- Processing: ${locationName} ---`);
+      
+      // Look for the location name in the text
       const locationLine = lines.find(line => 
         line.toLowerCase().includes(locationName)
       );
       
       if (locationLine) {
-        // Extract values after the location name
+        console.log('Found location line:', locationLine);
+        
+        // Extract the clean location name
         const cleanName = locationName.split(' ').map(word => 
           word.charAt(0).toUpperCase() + word.slice(1)
         ).join(' ');
         
-        // Use regex to extract all numeric values and percentages
+        // Use regex to extract all numeric values and percentages, including N/A
         const values = locationLine.match(/(\d+(?:\.\d+)?%?|N\/A)/g);
+        
+        console.log(`Extracted values for ${cleanName}:`, values);
         
         if (values && values.length >= 11) {
           locationData[cleanName] = values.slice(0, 11); // Take first 11 values
+          console.log(`✅ Stored ${values.length} values for ${cleanName}`);
+        } else {
+          console.log(`❌ Insufficient values found for ${cleanName} (found: ${values?.length || 0}, needed: 11)`);
         }
+      } else {
+        console.log(`❌ Location line not found for: ${locationName}`);
       }
     });
+    
+    console.log('=== FINAL EXTRACTED DATA ===');
+    console.log('locationData:', locationData);
+    console.log('=== END EXTRACTION ===');
     
     return Object.keys(locationData).length > 0 ? locationData : null;
   } catch (error) {

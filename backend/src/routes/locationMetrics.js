@@ -31,15 +31,21 @@ async function extractServiceMetrics(buffer) {
     
     // Extract dealership summary (top portion)
     const dealershipMetrics = extractDealershipMetrics(fullText);
+    console.log('Extracted dealership metrics:', dealershipMetrics);
     
     // Extract individual location metrics
     const locationMetrics = [];
     locationNames.forEach(locationName => {
       const locationData = extractLocationMetrics(fullText, locationName);
       if (locationData) {
+        console.log(`Extracted metrics for ${locationName}:`, locationData);
         locationMetrics.push(locationData);
+      } else {
+        console.warn(`No metrics found for ${locationName}`);
       }
     });
+    
+    console.log(`Total locations processed: ${locationMetrics.length}`);
     
     return {
       dealership: dealershipMetrics,
@@ -54,21 +60,39 @@ async function extractServiceMetrics(buffer) {
 }
 
 function extractDealershipMetrics(text) {
-  // Extract key metrics from the top dealership section
+  // Extract W370 dealership-wide metrics from the top section
   const metrics = {};
   
-  // Common patterns for service metrics
+  // Look for the dealership summary table (usually appears before individual locations)
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  
+  // Find lines that might contain dealership totals/averages
+  // Look for patterns that appear before the "Individual Dealer Metrics" section
+  const dealershipSection = lines.slice(0, lines.findIndex(line => 
+    line.toLowerCase().includes('individual') || 
+    line.toLowerCase().includes('dealer metrics')
+  ));
+  
+  // Extract dealership metrics from the summary section
+  const dealershipData = dealershipSection.join(' ');
+  
+  // Extract key dealership metrics using patterns
   const patterns = {
-    dwellTime: /dwell.*?time.*?(\d+\.?\d*)/i,
-    triageTime: /triage.*?time.*?(\d+\.?\d*)/i,
-    customerSatisfaction: /customer.*?satisfaction.*?(\d+\.?\d*)%?/i,
-    serviceEfficiency: /service.*?efficiency.*?(\d+\.?\d*)%?/i,
-    totalCases: /total.*?cases.*?(\d+)/i,
-    completedCases: /completed.*?cases.*?(\d+)/i
+    vscCaseRequirements: /vsc.*?case.*?requirements.*?(\d+(?:\.\d+)?%?)/i,
+    vscClosedCorrectly: /vsc.*?closed.*?correctly.*?(\d+(?:\.\d+)?%?)/i,
+    ttActivation: /tt.*?activation.*?(\d+(?:\.\d+)?%?)/i,
+    smMonthlyDwellAvg: /sm.*?monthly.*?dwell.*?(\d+(?:\.\d+)?)/i,
+    triageHours: /triage.*?hours.*?(\d+(?:\.\d+)?)/i,
+    triagePercentLess4Hours: /triage.*?4.*?hours.*?(\d+(?:\.\d+)?%?)/i,
+    etrPercentCases: /etr.*?percent.*?cases.*?(\d+(?:\.\d+)?%?)/i,
+    percentCasesWith3Notes: /3.*?notes.*?(\d+(?:\.\d+)?%?)/i,
+    rdsMonthlyAvgDays: /rds.*?monthly.*?(\d+(?:\.\d+)?)/i,
+    smYtdDwellAvgDays: /sm.*?ytd.*?dwell.*?(\d+(?:\.\d+)?)/i,
+    rdsYtdDwellAvgDays: /rds.*?ytd.*?dwell.*?(\d+(?:\.\d+)?)/i
   };
   
   Object.keys(patterns).forEach(key => {
-    const match = text.match(patterns[key]);
+    const match = dealershipData.match(patterns[key]);
     if (match) {
       metrics[key] = match[1];
     }
@@ -78,24 +102,57 @@ function extractDealershipMetrics(text) {
 }
 
 function extractLocationMetrics(text, locationName) {
-  // Find the section for this location
-  const locationIndex = text.toLowerCase().indexOf(locationName.toLowerCase());
-  if (locationIndex === -1) return null;
+  // Find the "Individual Dealer Metrics" table section
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   
-  // Extract text around this location (next 500 characters)
-  const locationSection = text.substring(locationIndex, locationIndex + 500);
+  // Find the line containing this location name
+  const locationLineIndex = lines.findIndex(line => 
+    line.toLowerCase().includes(locationName.toLowerCase())
+  );
   
-  const metrics = { name: locationName };
+  if (locationLineIndex === -1) return null;
   
-  // Extract numbers that appear after the location name
-  const numbers = locationSection.match(/\d+\.?\d*/g);
-  if (numbers && numbers.length > 0) {
-    // Map common positions to metric names
-    metrics.dwellTime = numbers[0] || null;
-    metrics.triageTime = numbers[1] || null;
-    metrics.cases = numbers[2] || null;
-    metrics.satisfaction = numbers[3] || null;
+  // Get the line with the location data
+  const locationLine = lines[locationLineIndex];
+  
+  // Extract all numeric values (including percentages and N/A) from the line
+  // This regex matches: numbers, decimals, percentages, and "N/A"
+  const values = locationLine.match(/(\d+(?:\.\d+)?%?|N\/A)/g) || [];
+  
+  // Map location names to IDs for frontend consistency
+  const locationIds = {
+    'Wichita Kenworth': 'wichita',
+    'Dodge City Kenworth': 'dodge-city', 
+    'Liberal Kenworth': 'liberal',
+    'Emporia Kenworth': 'emporia'
+  };
+  
+  // If we don't have enough values, try to extract from surrounding lines
+  if (values.length < 11) {
+    // Look at the next few lines for additional data
+    for (let i = locationLineIndex + 1; i < Math.min(locationLineIndex + 3, lines.length); i++) {
+      const additionalValues = lines[i].match(/(\d+(?:\.\d+)?%?|N\/A)/g) || [];
+      values.push(...additionalValues);
+      if (values.length >= 11) break;
+    }
   }
+  
+  // W370 Service Scorecard has 11 columns based on your data:
+  const metrics = {
+    name: locationName,
+    locationId: locationIds[locationName] || locationName.toLowerCase().replace(/\s+/g, '-'),
+    vscCaseRequirements: values[0] || 'N/A',
+    vscClosedCorrectly: values[1] || 'N/A',
+    ttActivation: values[2] || 'N/A',
+    smMonthlyDwellAvg: values[3] || 'N/A',
+    triageHours: values[4] || 'N/A',
+    triagePercentLess4Hours: values[5] || 'N/A',
+    etrPercentCases: values[6] || 'N/A',
+    percentCasesWith3Notes: values[7] || 'N/A',
+    rdsMonthlyAvgDays: values[8] || 'N/A',
+    smYtdDwellAvgDays: values[9] || 'N/A',
+    rdsYtdDwellAvgDays: values[10] || 'N/A'
+  };
   
   return metrics;
 }
