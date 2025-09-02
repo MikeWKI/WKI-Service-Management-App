@@ -102,54 +102,86 @@ function extractDealershipMetrics(text) {
 }
 
 function extractLocationMetrics(text, locationName, locationNames) {
-  // Find the "Individual Dealer Metrics" table section
+  // Split text into lines for better parsing
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   
-  // First, find the table header to establish the column structure
-  const headerIndex = lines.findIndex(line => 
-    line.toLowerCase().includes('vsc case requirements') ||
-    line.toLowerCase().includes('individual dealer metrics')
-  );
+  console.log(`\n=== Processing ${locationName} ===`);
   
-  console.log(`Looking for ${locationName}...`);
+  // Find the exact line that contains ONLY this location's data
+  let locationLineIndex = -1;
+  let bestMatch = '';
   
-  // Find the line containing this location name - search after the header
-  const startSearchIndex = headerIndex > -1 ? headerIndex : 0;
-  const locationLineIndex = lines.findIndex((line, index) => 
-    index >= startSearchIndex && line.toLowerCase().includes(locationName.toLowerCase())
-  );
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    // Look for lines that start with the location name or contain it prominently
+    if (line.toLowerCase().includes(locationName.toLowerCase())) {
+      console.log(`Found potential match at line ${i}: "${line}"`);
+      
+      // Prefer lines that start with the location name
+      if (line.toLowerCase().startsWith(locationName.toLowerCase())) {
+        locationLineIndex = i;
+        bestMatch = line;
+        break;
+      } 
+      // Or contain the location name followed by data
+      else if (line.match(/\d+%|\d+\.\d+/)) {
+        locationLineIndex = i;
+        bestMatch = line;
+      }
+    }
+  }
   
   if (locationLineIndex === -1) {
-    console.warn(`Location ${locationName} not found in PDF text`);
+    console.warn(`❌ Location ${locationName} not found in PDF text`);
     return null;
   }
   
-  console.log(`Found ${locationName} at line ${locationLineIndex}: "${lines[locationLineIndex]}"`);
+  console.log(`✅ Best match for ${locationName}: "${bestMatch}"`);
   
-  // Get the line with the location data and potentially the next few lines
-  let combinedData = lines[locationLineIndex];
+  // Extract the data row for this specific location
+  let dataRow = bestMatch;
   
-  // Sometimes data spans multiple lines, so combine nearby lines
-  for (let i = locationLineIndex + 1; i < Math.min(locationLineIndex + 3, lines.length); i++) {
-    const nextLine = lines[i];
-    // Stop if we hit another location name or table header
-    if (locationNames.some(loc => nextLine.toLowerCase().includes(loc.toLowerCase())) ||
-        nextLine.toLowerCase().includes('total') ||
-        nextLine.toLowerCase().includes('average')) {
-      break;
+  // Remove the location name from the beginning to isolate just the numbers
+  dataRow = dataRow.replace(locationName, '').trim();
+  
+  // Look at the next line too in case data continues
+  if (locationLineIndex + 1 < lines.length) {
+    const nextLine = lines[locationLineIndex + 1];
+    // Only include if it doesn't contain another location name
+    if (!locationNames.some(loc => nextLine.toLowerCase().includes(loc.toLowerCase()))) {
+      dataRow += ' ' + nextLine;
     }
-    combinedData += ' ' + nextLine;
   }
   
-  console.log(`Combined data for ${locationName}: "${combinedData}"`);
+  console.log(`Data row after location name removal: "${dataRow}"`);
   
-  // Extract all numeric values, percentages, and N/A from the combined data
-  // More specific regex to avoid picking up years/irrelevant numbers
-  const values = combinedData.match(/(\b\d{1,2}(?:\.\d+)?%|\bN\/A\b|\b\d{1,2}\.\d+\b)/g) || [];
+  // Extract values using more specific patterns
+  // Match percentages first (more specific), then decimal numbers, then whole numbers
+  const percentageMatches = dataRow.match(/\b\d{1,3}(?:\.\d+)?%/g) || [];
+  const decimalMatches = dataRow.match(/\b\d{1,2}\.\d+\b/g) || [];
+  const wholeNumberMatches = dataRow.match(/\b[1-9]\d{0,2}\b/g) || []; // Avoid very large numbers
+  const naMatches = dataRow.match(/\bN\/A\b/gi) || [];
   
-  console.log(`Extracted values for ${locationName}:`, values);
+  console.log(`Percentages found: [${percentageMatches.join(', ')}]`);
+  console.log(`Decimals found: [${decimalMatches.join(', ')}]`);
+  console.log(`Whole numbers found: [${wholeNumberMatches.join(', ')}]`);
+  console.log(`N/A values found: [${naMatches.join(', ')}]`);
   
-  // Map location names to IDs for frontend consistency
+  // Combine all values in order they appear
+  const allValues = [];
+  const tokens = dataRow.split(/\s+/);
+  
+  for (const token of tokens) {
+    if (/^\d{1,3}(?:\.\d+)?%$/.test(token)) allValues.push(token);
+    else if (/^\d{1,2}\.\d+$/.test(token)) allValues.push(token);
+    else if (/^[1-9]\d{0,2}$/.test(token) && parseInt(token) < 1000) allValues.push(token);
+    else if (/^N\/A$/i.test(token)) allValues.push('N/A');
+  }
+  
+  console.log(`Final extracted values: [${allValues.join(', ')}]`);
+  
+  // Map location names to IDs
   const locationIds = {
     'Wichita Kenworth': 'wichita',
     'Dodge City Kenworth': 'dodge-city', 
@@ -157,24 +189,26 @@ function extractLocationMetrics(text, locationName, locationNames) {
     'Emporia Kenworth': 'emporia'
   };
   
-  // W370 Service Scorecard has 11 columns based on your data:
+  // Build metrics object with extracted values
   const metrics = {
     name: locationName,
     locationId: locationIds[locationName] || locationName.toLowerCase().replace(/\s+/g, '-'),
-    vscCaseRequirements: values[0] || 'N/A',
-    vscClosedCorrectly: values[1] || 'N/A',
-    ttActivation: values[2] || 'N/A',
-    smMonthlyDwellAvg: values[3] || 'N/A',
-    triageHours: values[4] || 'N/A',
-    triagePercentLess4Hours: values[5] || 'N/A',
-    etrPercentCases: values[6] || 'N/A',
-    percentCasesWith3Notes: values[7] || 'N/A',
-    rdsMonthlyAvgDays: values[8] || 'N/A',
-    smYtdDwellAvgDays: values[9] || 'N/A',
-    rdsYtdDwellAvgDays: values[10] || 'N/A'
+    vscCaseRequirements: allValues[0] || 'N/A',
+    vscClosedCorrectly: allValues[1] || 'N/A',
+    ttActivation: allValues[2] || 'N/A',
+    smMonthlyDwellAvg: allValues[3] || 'N/A',
+    triageHours: allValues[4] || 'N/A',
+    triagePercentLess4Hours: allValues[5] || 'N/A',
+    etrPercentCases: allValues[6] || 'N/A',
+    percentCasesWith3Notes: allValues[7] || 'N/A',
+    rdsMonthlyAvgDays: allValues[8] || 'N/A',
+    smYtdDwellAvgDays: allValues[9] || 'N/A',
+    rdsYtdDwellAvgDays: allValues[10] || 'N/A'
   };
   
-  console.log(`Final metrics for ${locationName}:`, metrics);
+  console.log(`✅ Final metrics for ${locationName}:`, JSON.stringify(metrics, null, 2));
+  console.log(`=== End ${locationName} ===\n`);
+  
   return metrics;
 }
 
