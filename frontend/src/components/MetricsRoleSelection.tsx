@@ -148,6 +148,14 @@ export default function MetricsRoleSelection() {
             <Upload className="w-5 h-5 mr-2" />
             Upload Monthly Scorecards
           </Link>
+
+          <Link 
+            to="/metrics/campaigns"
+            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-medium rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200 shadow-lg hover:shadow-purple-500/25"
+          >
+            <BarChart3 className="w-5 h-5 mr-2" />
+            Campaign Completion Metrics
+          </Link>
           
           <Link 
             to="/location-metrics"

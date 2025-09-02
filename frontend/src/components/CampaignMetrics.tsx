@@ -1,0 +1,473 @@
+import React, { useState, useEffect } from 'react';
+import { Target, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Award, BarChart3 } from 'lucide-react';
+
+interface CampaignData {
+  id: string;
+  name: string;
+  locationScore: number;
+  nationalScore: number;
+  goal: number;
+  status: 'excellent' | 'good' | 'warning' | 'critical';
+}
+
+interface LocationCampaignData {
+  locationName: string;
+  campaigns: CampaignData[];
+  overallScore: number;
+}
+
+interface CampaignMetricsData {
+  locations: LocationCampaignData[];
+  extractedAt: string;
+}
+
+// Backend API base URL
+const API_BASE_URL = 'https://wki-service-management-app.onrender.com';
+
+// Helper function to determine status based on performance vs national and goal
+const getStatusFromScores = (locationScore: number, nationalScore: number, goal: number = 100): 'excellent' | 'good' | 'warning' | 'critical' => {
+  if (locationScore >= goal) return 'excellent';
+  if (locationScore >= nationalScore * 0.9) return 'good';
+  if (locationScore >= nationalScore * 0.7) return 'warning';
+  return 'critical';
+};
+
+// Helper function to parse campaign data from backend
+const parseCampaignData = (backendData: any): CampaignMetricsData | null => {
+  try {
+    // Look for campaign data in the response
+    let campaignData = null;
+    
+    if (backendData?.campaigns) {
+      campaignData = backendData.campaigns;
+    } else if (backendData?.data?.campaigns) {
+      campaignData = backendData.data.campaigns;
+    } else if (backendData?.locations) {
+      // Try to extract campaign data from location metrics
+      const locations: LocationCampaignData[] = [];
+      
+      backendData.locations.forEach((location: any) => {
+        if (location.campaigns) {
+          const campaigns: CampaignData[] = location.campaigns.map((camp: any) => ({
+            id: camp.id || camp.name?.replace(/\s+/g, '-').toLowerCase() || 'unknown',
+            name: camp.name || 'Unknown Campaign',
+            locationScore: parseFloat(camp.locationScore) || 0,
+            nationalScore: parseFloat(camp.nationalScore) || 0,
+            goal: parseFloat(camp.goal) || 100,
+            status: getStatusFromScores(
+              parseFloat(camp.locationScore) || 0,
+              parseFloat(camp.nationalScore) || 0,
+              parseFloat(camp.goal) || 100
+            )
+          }));
+          
+          const overallScore = campaigns.reduce((sum, camp) => sum + camp.locationScore, 0) / campaigns.length;
+          
+          locations.push({
+            locationName: location.name,
+            campaigns,
+            overallScore
+          });
+        }
+      });
+      
+      if (locations.length > 0) {
+        return {
+          locations,
+          extractedAt: backendData.extractedAt || new Date().toISOString()
+        };
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error parsing campaign data:', error);
+    return null;
+  }
+};
+
+// Mock data for development/fallback
+const mockCampaignData: CampaignMetricsData = {
+  locations: [
+    {
+      locationName: 'Wichita Kenworth',
+      overallScore: 64,
+      campaigns: [
+        {
+          id: '24kwl-bendix-ec80',
+          name: '24KWL Bendix EC80 ABS ECU Incorrect Signal Processing',
+          locationScore: 59,
+          nationalScore: 56,
+          goal: 100,
+          status: 'good'
+        },
+        {
+          id: '25kwb-exterior-lighting',
+          name: '25KWB T180/T280/T380/T480 Exterior Lighting Programming',
+          locationScore: 100,
+          nationalScore: 57,
+          goal: 100,
+          status: 'excellent'
+        },
+        {
+          id: 'e311-paccar-camshaft',
+          name: 'E311 PACCAR EPA17 MX-13 Prognostic Repair-Camshaft',
+          locationScore: 25,
+          nationalScore: 46,
+          goal: 100,
+          status: 'critical'
+        },
+        {
+          id: 'e316-main-bearing',
+          name: 'E316 PACCAR MX-13 EPA21 Main Bearing Cap Bolts',
+          locationScore: 84,
+          nationalScore: 75,
+          goal: 100,
+          status: 'good'
+        },
+        {
+          id: 'e327-obd-software',
+          name: 'E327 PACCAR MX-11 AND MX-13 OBD Software Update',
+          locationScore: 52,
+          nationalScore: 60,
+          goal: 100,
+          status: 'warning'
+        }
+      ]
+    },
+    {
+      locationName: 'Dodge City Kenworth',
+      overallScore: 76,
+      campaigns: [
+        {
+          id: '24kwl-bendix-ec80',
+          name: '24KWL Bendix EC80 ABS ECU Incorrect Signal Processing',
+          locationScore: 71,
+          nationalScore: 56,
+          goal: 100,
+          status: 'good'
+        },
+        {
+          id: 'e311-paccar-camshaft',
+          name: 'E311 PACCAR EPA17 MX-13 Prognostic Repair-Camshaft',
+          locationScore: 100,
+          nationalScore: 46,
+          goal: 100,
+          status: 'excellent'
+        },
+        {
+          id: 'e316-main-bearing',
+          name: 'E316 PACCAR MX-13 EPA21 Main Bearing Cap Bolts',
+          locationScore: 93,
+          nationalScore: 75,
+          goal: 100,
+          status: 'good'
+        },
+        {
+          id: 'e327-obd-software',
+          name: 'E327 PACCAR MX-11 AND MX-13 OBD Software Update',
+          locationScore: 40,
+          nationalScore: 60,
+          goal: 100,
+          status: 'critical'
+        }
+      ]
+    },
+    {
+      locationName: 'Liberal Kenworth',
+      overallScore: 43,
+      campaigns: [
+        {
+          id: '24kwl-bendix-ec80',
+          name: '24KWL Bendix EC80 ABS ECU Incorrect Signal Processing',
+          locationScore: 39,
+          nationalScore: 56,
+          goal: 100,
+          status: 'critical'
+        },
+        {
+          id: 'e311-paccar-camshaft',
+          name: 'E311 PACCAR EPA17 MX-13 Prognostic Repair-Camshaft',
+          locationScore: 0,
+          nationalScore: 46,
+          goal: 100,
+          status: 'critical'
+        },
+        {
+          id: 'e316-main-bearing',
+          name: 'E316 PACCAR MX-13 EPA21 Main Bearing Cap Bolts',
+          locationScore: 83,
+          nationalScore: 75,
+          goal: 100,
+          status: 'good'
+        },
+        {
+          id: 'e327-obd-software',
+          name: 'E327 PACCAR MX-11 AND MX-13 OBD Software Update',
+          locationScore: 50,
+          nationalScore: 60,
+          goal: 100,
+          status: 'warning'
+        }
+      ]
+    }
+  ],
+  extractedAt: new Date().toISOString()
+};
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'excellent':
+      return 'from-green-600 to-green-700 border-green-500';
+    case 'good':
+      return 'from-blue-600 to-blue-700 border-blue-500';
+    case 'warning':
+      return 'from-yellow-600 to-yellow-700 border-yellow-500';
+    case 'critical':
+      return 'from-red-600 to-red-700 border-red-500';
+    default:
+      return 'from-gray-600 to-gray-700 border-gray-500';
+  }
+};
+
+const getStatusIcon = (status: string) => {
+  switch (status) {
+    case 'excellent':
+      return <Award className="w-5 h-5 text-green-300" />;
+    case 'good':
+      return <CheckCircle className="w-5 h-5 text-blue-300" />;
+    case 'warning':
+      return <AlertTriangle className="w-5 h-5 text-yellow-300" />;
+    case 'critical':
+      return <TrendingDown className="w-5 h-5 text-red-300" />;
+    default:
+      return <BarChart3 className="w-5 h-5 text-gray-300" />;
+  }
+};
+
+export default function CampaignMetrics() {
+  const [campaignData, setCampaignData] = useState<CampaignMetricsData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedLocation, setSelectedLocation] = useState<string>('all');
+
+  useEffect(() => {
+    const fetchCampaignData = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
+        if (response.ok) {
+          const data = await response.json();
+          const parsedData = parseCampaignData(data);
+          
+          if (parsedData) {
+            setCampaignData(parsedData);
+          } else {
+            setCampaignData(mockCampaignData);
+          }
+        } else {
+          setCampaignData(mockCampaignData);
+        }
+      } catch (error) {
+        console.error('Error fetching campaign data:', error);
+        setCampaignData(mockCampaignData);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCampaignData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
+          <p className="text-slate-400">Loading campaign metrics...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!campaignData) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="text-center py-12">
+          <Target className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+          <p className="text-slate-400">No campaign data available</p>
+          <p className="text-slate-500 text-sm mt-2">Upload a monthly scorecard to view campaign completion metrics</p>
+        </div>
+      </div>
+    );
+  }
+
+  const filteredLocations = selectedLocation === 'all' 
+    ? campaignData.locations 
+    : campaignData.locations.filter(loc => 
+        loc.locationName.toLowerCase().replace(/\s+/g, '-') === selectedLocation
+      );
+
+  // Calculate overall statistics
+  const allCampaigns = campaignData.locations.flatMap(loc => loc.campaigns);
+  const totalCampaigns = allCampaigns.length;
+  const excellentCount = allCampaigns.filter(c => c.status === 'excellent').length;
+  const criticalCount = allCampaigns.filter(c => c.status === 'critical').length;
+  const avgScore = allCampaigns.reduce((sum, c) => sum + c.locationScore, 0) / totalCampaigns;
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      {/* Header */}
+      <div className="text-center mb-8">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent mb-4">
+          Campaign Completion Metrics
+        </h1>
+        <p className="text-xl text-slate-300 mb-2">
+          Service Campaign Performance Tracking
+        </p>
+        <p className="text-slate-400">
+          Last Updated: {new Date(campaignData.extractedAt).toLocaleDateString()}
+        </p>
+      </div>
+
+      {/* Summary Statistics */}
+      <div className="grid md:grid-cols-4 gap-6 mb-8">
+        <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-xl p-6 border border-slate-700">
+          <div className="flex items-center justify-between mb-2">
+            <Target className="w-8 h-8 text-blue-400" />
+            <span className="text-2xl font-bold text-white">{totalCampaigns}</span>
+          </div>
+          <p className="text-slate-300 font-medium">Total Campaigns</p>
+          <p className="text-slate-400 text-sm">Across all locations</p>
+        </div>
+
+        <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-xl p-6 border border-slate-700">
+          <div className="flex items-center justify-between mb-2">
+            <Award className="w-8 h-8 text-green-400" />
+            <span className="text-2xl font-bold text-green-400">{excellentCount}</span>
+          </div>
+          <p className="text-slate-300 font-medium">At Goal (100%)</p>
+          <p className="text-slate-400 text-sm">{((excellentCount / totalCampaigns) * 100).toFixed(1)}% of campaigns</p>
+        </div>
+
+        <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-xl p-6 border border-slate-700">
+          <div className="flex items-center justify-between mb-2">
+            <TrendingDown className="w-8 h-8 text-red-400" />
+            <span className="text-2xl font-bold text-red-400">{criticalCount}</span>
+          </div>
+          <p className="text-slate-300 font-medium">Critical Performance</p>
+          <p className="text-slate-400 text-sm">{((criticalCount / totalCampaigns) * 100).toFixed(1)}% need attention</p>
+        </div>
+
+        <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-xl p-6 border border-slate-700">
+          <div className="flex items-center justify-between mb-2">
+            <BarChart3 className="w-8 h-8 text-yellow-400" />
+            <span className="text-2xl font-bold text-white">{avgScore.toFixed(1)}%</span>
+          </div>
+          <p className="text-slate-300 font-medium">Average Score</p>
+          <p className="text-slate-400 text-sm">Overall completion rate</p>
+        </div>
+      </div>
+
+      {/* Location Filter */}
+      <div className="mb-8">
+        <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-xl p-4 border border-slate-700">
+          <div className="flex flex-wrap gap-2">
+            <span className="text-slate-300 font-medium mr-4">Filter by Location:</span>
+            <button
+              onClick={() => setSelectedLocation('all')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                selectedLocation === 'all'
+                  ? 'bg-red-600 text-white'
+                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              }`}
+            >
+              All Locations
+            </button>
+            {campaignData.locations.map(location => (
+              <button
+                key={location.locationName}
+                onClick={() => setSelectedLocation(location.locationName.toLowerCase().replace(/\s+/g, '-'))}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  selectedLocation === location.locationName.toLowerCase().replace(/\s+/g, '-')
+                    ? 'bg-red-600 text-white'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                {location.locationName.replace(' Kenworth', '')}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Campaign Data by Location */}
+      <div className="space-y-8">
+        {filteredLocations.map((location) => (
+          <div key={location.locationName} className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl p-6 border border-slate-700 shadow-2xl">
+            {/* Location Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-2">{location.locationName}</h2>
+                <p className="text-slate-400">
+                  Overall Score: <span className={`font-bold ${
+                    location.overallScore >= 80 ? 'text-green-400' : 
+                    location.overallScore >= 60 ? 'text-yellow-400' : 'text-red-400'
+                  }`}>
+                    {location.overallScore.toFixed(1)}%
+                  </span>
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-slate-400 text-sm">Campaigns</p>
+                <p className="text-2xl font-bold text-white">{location.campaigns.length}</p>
+              </div>
+            </div>
+
+            {/* Campaigns Grid */}
+            <div className="grid gap-4">
+              {location.campaigns.map((campaign) => (
+                <div key={campaign.id} className={`bg-gradient-to-r ${getStatusColor(campaign.status)} rounded-xl p-4 border-2`}>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center mb-2">
+                        {getStatusIcon(campaign.status)}
+                        <h3 className="text-white font-semibold ml-2 text-sm">{campaign.name}</h3>
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <p className="text-white/80">Location Score</p>
+                          <p className="text-2xl font-bold text-white">{campaign.locationScore}%</p>
+                        </div>
+                        <div>
+                          <p className="text-white/80">National Average</p>
+                          <p className="text-lg font-semibold text-white/90">{campaign.nationalScore}%</p>
+                        </div>
+                        <div>
+                          <p className="text-white/80">Goal</p>
+                          <p className="text-lg font-semibold text-white/90">{campaign.goal}%</p>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-3">
+                        <div className="bg-white/20 rounded-full h-2">
+                          <div 
+                            className="bg-white rounded-full h-2 transition-all duration-500"
+                            style={{ width: `${Math.min(campaign.locationScore, 100)}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-xs text-white/70 mt-1">
+                          <span>0%</span>
+                          <span>Goal: {campaign.goal}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

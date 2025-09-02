@@ -19,3 +19,4 @@ export { default as EmporiaMetrics } from './EmporiaMetrics';
 export { default as DodgeCityMetrics } from './DodgeCityMetrics';
 export { default as LiberalMetrics } from './LiberalMetrics';
 export { default as LocationSpecificMetrics } from './LocationSpecificMetrics';
+export { default as CampaignMetrics } from './CampaignMetrics';

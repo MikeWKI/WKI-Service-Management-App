@@ -12,6 +12,7 @@ interface DealershipMetrics {
   etrCompliance?: number;
   firstTimeFix?: number;
   caseCount?: number;
+  campaigns?: CampaignData[];
 }
 
 interface LocationMetrics {
@@ -24,6 +25,15 @@ interface LocationMetrics {
   firstTimeFix?: string;
   partsAvailability?: string;
   workOrderAccuracy?: string;
+  campaigns?: CampaignData[];
+}
+
+interface CampaignData {
+  id: string;
+  name: string;
+  locationScore: number;
+  nationalScore: number;
+  goal: number;
 }
 
 interface DealershipScorecard {

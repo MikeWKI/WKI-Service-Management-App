@@ -18,7 +18,8 @@ import {
   WichitaMetrics,
   EmporiaMetrics,
   DodgeCityMetrics,
-  LiberalMetrics
+  LiberalMetrics,
+  CampaignMetrics
 } from "./components";
 import QuickLinksPanel from "./components/QuickLinksPanel";
 import FixedThemeToggle from "./components/FixedThemeToggle";
@@ -66,6 +67,7 @@ function App() {
                 <Route path="/metrics/service-advisor" element={<ServiceAdvisorMetrics />} />
                 <Route path="/metrics/parts-staff" element={<PartsStaffMetrics />} />
                 <Route path="/metrics/technician" element={<TechnicianMetrics />} />
+                <Route path="/metrics/campaigns" element={<CampaignMetrics />} />
                 <Route path="/scorecard-manager" element={<ScorecardManager />} />
                 <Route path="/location-metrics" element={<LocationMetrics />} />
                 <Route path="/metrics/wichita" element={<WichitaMetrics />} />
@@ -76,7 +78,7 @@ function App() {
             </div>
             
             {/* Quick Links fixed to right side for desktop */}
-            <div className="hidden lg:flex fixed top-1/2 right-4 -translate-y-1/2 z-30 flex-col items-center justify-start w-[110px] xl:w-[130px] 2xl:w-[150px]">
+            <div className="hidden lg:flex fixed top-1/2 right-4 -translate-y-1/2 z-30 flex-col items-center justify-start w-[60px] xl:w-[70px] 2xl:w-[80px]">
               <span className="writing-mode-vertical-rl text-orientation-mixed text-xs font-bold tracking-wider text-slate-400 mb-2 select-none">
                 Quick Links
               </span>
@@ -85,9 +87,11 @@ function App() {
               </div>
             </div>
           </div>
-          {/* Quick Links for mobile (below content) */}
-          <div className="block lg:hidden w-full max-w-full sm:max-w-7xl mx-auto px-1 sm:px-4 lg:px-8 mt-2">
-            <QuickLinksPanel />
+          {/* Quick Links for mobile (integrated in navigation) */}
+          <div className="block lg:hidden w-full bg-slate-800 border-t border-slate-700">
+            <div className="max-w-full sm:max-w-7xl mx-auto px-1 sm:px-4">
+              <QuickLinksPanel />
+            </div>
           </div>
           <Footer />
         </div>

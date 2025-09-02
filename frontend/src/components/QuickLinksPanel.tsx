@@ -90,20 +90,25 @@ export default function QuickLinksPanel() {
   };
 
   return (
-    <div>
+    <div className="lg:w-full">
       {/* Toggle Button */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full p-2 xl:p-3 flex items-center justify-center hover:bg-slate-700/50 transition-colors duration-200 relative"
+        className="w-full p-2 xl:p-3 flex items-center justify-center hover:bg-slate-700/50 transition-colors duration-200 relative lg:rounded-lg"
         aria-label={isExpanded ? 'Minimize Quick Links' : 'Expand Quick Links'}
       >
         {isExpanded ? (
-          <ChevronRight className="w-4 h-4 xl:w-5 xl:h-5 text-slate-300" />
+          <div className="flex items-center lg:flex-col lg:space-y-1">
+            <span className="text-xs font-semibold text-slate-200 mr-2 lg:mr-0 lg:mb-1">Quick Links</span>
+            <ChevronRight className="w-4 h-4 xl:w-5 xl:h-5 text-slate-300 lg:hidden" />
+            <ChevronLeft className="w-4 h-4 xl:w-5 xl:h-5 text-slate-300 hidden lg:block" />
+          </div>
         ) : (
-          <div className="flex flex-col items-center space-y-1">
-            <Link className="w-4 h-4 xl:w-5 xl:h-5 text-yellow-400 animate-bounce" />
+          <div className="flex items-center lg:flex-col lg:space-y-1">
+            <span className="text-xs font-semibold text-slate-300 mr-2 lg:mr-0 lg:mb-1">Quick Links</span>
             <div className="flex items-center">
-              <ChevronLeft className="w-3 h-3 xl:w-4 xl:h-4 text-slate-300" />
+              <Link className="w-4 h-4 xl:w-5 xl:h-5 text-yellow-400 animate-bounce lg:mb-1" />
+              <ChevronLeft className="w-3 h-3 xl:w-4 xl:h-4 text-slate-300 ml-1 lg:ml-0" />
             </div>
           </div>
         )}
@@ -111,11 +116,11 @@ export default function QuickLinksPanel() {
 
       {/* Expanded Content */}
       {isExpanded && (
-  <div className="w-180 xl:w-96 p-3 xl:p-4 animate-slide-in-mobile">
-          <div className="mb-3 xl:mb-4">
-            <h3 className="text-base xl:text-lg font-bold text-white mb-1 xl:mb-2 flex items-center">
-              <FileText className="w-4 h-4 xl:w-5 xl:h-5 mr-2 text-red-400" />
+        <div className="lg:fixed lg:top-1/2 lg:right-4 lg:-translate-y-1/2 w-full lg:w-80 xl:w-96 p-3 xl:p-4 lg:bg-slate-900 lg:border lg:border-slate-700 lg:rounded-lg lg:shadow-2xl lg:z-40 max-h-96 lg:max-h-[80vh] overflow-hidden">
+          <div className="mb-3 xl:mb-4 hidden lg:block">
+            <h3 className="text-base xl:text-lg font-bold text-slate-100 mb-1 xl:mb-2 flex items-center">
               Quick Links
+              <FileText className="w-4 h-4 xl:w-5 xl:h-5 ml-2 text-red-400" />
             </h3>
             <p className="text-xs text-slate-400">Reference Documents & Tools</p>
           </div>
@@ -150,7 +155,7 @@ export default function QuickLinksPanel() {
           </div>
 
           {/* Document Links */}
-          <div className="space-y-2 max-h-80 xl:max-h-96 overflow-y-auto">
+          <div className="space-y-2 max-h-60 lg:max-h-80 xl:max-h-96 overflow-y-auto">
             {filteredDocuments.length > 0 ? (
               filteredDocuments.map((doc: ReferenceDocument) => (
                 <button
@@ -187,7 +192,7 @@ export default function QuickLinksPanel() {
           </div>
 
           {/* Footer */}
-          <div className="mt-4 pt-3 border-t border-slate-700/50">
+          <div className="mt-4 pt-3 border-t border-slate-700/50 hidden lg:block">
             <p className="text-xs text-slate-500 text-center">
               {filteredDocuments.length} reference{filteredDocuments.length !== 1 ? 's' : ''} available
             </p>

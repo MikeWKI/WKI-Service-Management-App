@@ -27,6 +27,47 @@ const formatMetric = (value: string | number | undefined, suffix: string = ''): 
   return `${parsed.toFixed(1)}${suffix}`;
 };
 
+// Status parsing helper functions for new metrics
+const parseVscStatus = (value: string): 'good' | 'warning' | 'critical' => {
+  if (!value || value === 'N/A') return 'critical';
+  const numValue = parseFloat(value.replace('%', ''));
+  if (numValue >= 95) return 'good';
+  if (numValue >= 80) return 'warning';
+  return 'critical';
+};
+
+const parseDwellStatus = (value: string): 'good' | 'warning' | 'critical' => {
+  if (!value || value === 'N/A') return 'critical';
+  const numValue = parseFloat(value);
+  if (numValue <= 3.0) return 'good';
+  if (numValue <= 5.0) return 'warning';
+  return 'critical';
+};
+
+const parseTriageStatus = (value: string): 'good' | 'warning' | 'critical' => {
+  if (!value || value === 'N/A') return 'critical';
+  const numValue = parseFloat(value);
+  if (numValue <= 2.0) return 'good';
+  if (numValue <= 3.0) return 'warning';
+  return 'critical';
+};
+
+const parseEtrStatus = (value: string): 'good' | 'warning' | 'critical' => {
+  if (!value || value === 'N/A') return 'critical';
+  const numValue = parseFloat(value.replace('%', ''));
+  if (numValue >= 15) return 'good';
+  if (numValue >= 10) return 'warning';
+  return 'critical';
+};
+
+const parseNotesStatus = (value: string): 'good' | 'warning' | 'critical' => {
+  if (!value || value === 'N/A') return 'critical';
+  const numValue = parseFloat(value.replace('%', ''));
+  if (numValue <= 5) return 'good';
+  if (numValue <= 10) return 'warning';
+  return 'critical';
+};
+
 // This would be dynamically loaded from uploaded scorecard data
 const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => {
   const API_BASE_URL = 'https://wki-service-management-app.onrender.com';
@@ -62,40 +103,116 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
       
       if (locationData) {
         const metrics = locationData;
-        const dwellTime = parseMetric(metrics.dwellTime);
-        const triageTime = parseMetric(metrics.triageTime);
-        const cases = parseMetric(metrics.cases);
-        const satisfaction = parseMetric(metrics.satisfaction || metrics.customerSatisfaction);
         
         return [
           {
-            title: 'Dwell Time',
-            value: formatMetric(dwellTime, ' hrs'),
-            target: '< 72 hrs (optimal efficiency)',
-            status: dwellTime > 0 && dwellTime <= 72 ? 'good' : dwellTime > 72 && dwellTime <= 120 ? 'warning' : 'critical',
+            title: 'VSC Case Requirements',
+            value: metrics.vscCaseRequirements || 'N/A',
+            target: '> 95% (target)',
+            status: parseVscStatus(metrics.vscCaseRequirements),
+            trend: 'stable',
+            icon: <CheckCircle className="w-6 h-6" />,
+            impact: 'Service case compliance metric',
+            description: 'Upload monthly scorecard to view current metrics'
+          },
+          {
+            title: 'VSC Closed Correctly',
+            value: metrics.vscClosedCorrectly || 'N/A',
+            target: '> 90% (target)', 
+            status: parseVscStatus(metrics.vscClosedCorrectly),
+            trend: 'stable',
+            icon: <CheckCircle className="w-6 h-6" />,
+            impact: 'Case closure accuracy metric',
+            description: 'Upload monthly scorecard to view current metrics'
+          },
+          {
+            title: 'TT+ Activation',
+            value: metrics.ttActivation || 'N/A',
+            target: '> 95% (target)',
+            status: parseVscStatus(metrics.ttActivation),
+            trend: 'stable',
+            icon: <TrendingUp className="w-6 h-6" />,
+            impact: 'Technology activation compliance',
+            description: 'Upload monthly scorecard to view current metrics'
+          },
+          {
+            title: 'SM Monthly Dwell Avg',
+            value: `${metrics.smMonthlyDwellAvg || 'N/A'} days`,
+            target: '< 3.0 days (target)',
+            status: parseDwellStatus(metrics.smMonthlyDwellAvg),
             trend: 'stable',
             icon: <Clock className="w-6 h-6" />,
-            impact: 'Primary customer satisfaction metric',
+            impact: 'Service manager dwell time metric',
             description: 'Upload monthly scorecard to view current metrics'
           },
           {
-            title: 'Triage Time',
-            value: formatMetric(triageTime, ' min'),
-            target: '< 15 min (quick assessment)',
-            status: triageTime > 0 && triageTime <= 15 ? 'good' : triageTime > 15 && triageTime <= 30 ? 'warning' : 'critical',
+            title: 'Triage Hours',
+            value: `${metrics.triageHours || 'N/A'} hrs`,
+            target: '< 2.0 hrs (target)',
+            status: parseTriageStatus(metrics.triageHours),
             trend: 'stable',
             icon: <Users className="w-6 h-6" />,
-            impact: 'Service process efficiency indicator',
+            impact: 'Initial assessment time',
             description: 'Upload monthly scorecard to view current metrics'
           },
           {
-            title: 'Case Volume',
-            value: formatMetric(cases, ' cases'),
-            target: 'Consistent workload management',
-            status: cases > 0 ? 'good' : 'critical',
+            title: 'Triage % < 4 Hours',
+            value: metrics.triagePercentLess4Hours || 'N/A',
+            target: '> 80% (target)',
+            status: parseVscStatus(metrics.triagePercentLess4Hours),
+            trend: 'stable',
+            icon: <TrendingUp className="w-6 h-6" />,
+            impact: 'Quick triage performance',
+            description: 'Upload monthly scorecard to view current metrics'
+          },
+          {
+            title: 'ETR % of Cases',
+            value: metrics.etrPercentCases || 'N/A',
+            target: '> 15% (target)',
+            status: parseEtrStatus(metrics.etrPercentCases),
             trend: 'stable',
             icon: <BarChart3 className="w-6 h-6" />,
-            impact: 'Service capacity utilization',
+            impact: 'Estimated time to repair compliance',
+            description: 'Upload monthly scorecard to view current metrics'
+          },
+          {
+            title: '% Cases with 3+ Notes',
+            value: metrics.percentCasesWith3Notes || 'N/A',
+            target: '< 5% (target)',
+            status: parseNotesStatus(metrics.percentCasesWith3Notes),
+            trend: 'stable',
+            icon: <AlertTriangle className="w-6 h-6" />,
+            impact: 'Case documentation quality',
+            description: 'Upload monthly scorecard to view current metrics'
+          },
+          {
+            title: 'RDS Monthly Avg Days',
+            value: `${metrics.rdsMonthlyAvgDays || 'N/A'} days`,
+            target: '< 6.0 days (target)',
+            status: parseDwellStatus(metrics.rdsMonthlyAvgDays),
+            trend: 'stable',
+            icon: <Clock className="w-6 h-6" />,
+            impact: 'RDS monthly dwell performance',
+            description: 'Upload monthly scorecard to view current metrics'
+          },
+          {
+            title: 'SM YTD Dwell Average',
+            value: `${metrics.smYtdDwellAvgDays || 'N/A'} days`,
+            target: '< 6.0 days (target)',
+            status: parseDwellStatus(metrics.smYtdDwellAvgDays),
+            trend: 'stable',
+            icon: <TrendingDown className="w-6 h-6" />,
+            impact: 'Service manager year-to-date performance',
+            description: 'Upload monthly scorecard to view current metrics'
+          },
+          {
+            title: 'RDS YTD Dwell Average',
+            value: `${metrics.rdsYtdDwellAvgDays || 'N/A'} days`,
+            target: '< 6.0 days (target)',
+            status: parseDwellStatus(metrics.rdsYtdDwellAvgDays),
+            trend: 'stable',
+            icon: <TrendingDown className="w-6 h-6" />,
+            impact: 'RDS year-to-date dwell performance',
             description: 'Upload monthly scorecard to view current metrics'
           }
         ];
@@ -120,74 +237,86 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
 
   const metrics = locationScorecard.metrics;
   
-  // Map backend data to expected metrics with safe parsing
-  const dwellTime = parseMetric(metrics.dwellTime);
-  const triageTime = parseMetric(metrics.triageTime);
-  const cases = parseMetric(metrics.cases);
-  const satisfaction = parseMetric(metrics.satisfaction || metrics.customerSatisfaction);
-  const etrCompliance = parseMetric(metrics.etrCompliance) || 85; // Default fallback
-  const firstTimeFix = parseMetric(metrics.firstTimeFix) || 80; // Default fallback
-  
+  // Return the new W370 Service Scorecard metrics
   return [
     {
-      title: 'Dwell Time',
-      value: formatMetric(dwellTime, ' hrs'),
-      target: '< 2.5 hrs (optimal efficiency)',
-      status: dwellTime < 2.5 ? 'good' : dwellTime < 4 ? 'warning' : 'critical',
-      impact: 'Primary customer satisfaction metric',
-      description: 'Average time customers wait for service',
+      title: 'VSC Case Requirements',
+      value: metrics.vscCaseRequirements || 'N/A',
+      target: '> 95% (target)',
+      status: parseVscStatus(metrics.vscCaseRequirements),
+      impact: 'Service case compliance metric',
+      description: 'Percentage of VSC case requirements met',
+      icon: <CheckCircle size={24} />,
+      trend: locationScorecard.trend
+    },
+    {
+      title: 'VSC Closed Correctly', 
+      value: metrics.vscClosedCorrectly || 'N/A',
+      target: '> 90% (target)',
+      status: parseVscStatus(metrics.vscClosedCorrectly),
+      impact: 'Case closure accuracy metric',
+      description: 'Percentage of VSC cases closed correctly',
+      icon: <CheckCircle size={24} />,
+      trend: locationScorecard.trend
+    },
+    {
+      title: 'TT+ Activation',
+      value: metrics.ttActivation || 'N/A',
+      target: '> 95% (target)',
+      status: parseVscStatus(metrics.ttActivation),
+      impact: 'Technology activation compliance',
+      description: 'TruckTech Plus activation percentage',
+      icon: <TrendingUp size={24} />,
+      trend: locationScorecard.trend
+    },
+    {
+      title: 'SM Monthly Dwell Average',
+      value: `${metrics.smMonthlyDwellAvg || 'N/A'} days`,
+      target: '< 3.0 days (target)',
+      status: parseDwellStatus(metrics.smMonthlyDwellAvg),
+      impact: 'Service manager dwell time',
+      description: 'Average dwell time managed by service manager',
       icon: <Clock size={24} />,
       trend: locationScorecard.trend
     },
     {
-      title: 'Triage Time', 
-      value: formatMetric(triageTime, ' min'),
-      target: '< 15 min (quick assessment)',
-      status: triageTime < 15 ? 'good' : triageTime < 30 ? 'warning' : 'critical',
-      impact: 'Service process efficiency indicator',
-      description: 'Time to initial service assessment',
+      title: 'Triage Hours',
+      value: `${metrics.triageHours || 'N/A'} hrs`,
+      target: '< 2.0 hrs (target)',
+      status: parseTriageStatus(metrics.triageHours),
+      impact: 'Initial assessment efficiency',
+      description: 'Time to complete initial triage assessment',
       icon: <Users size={24} />,
       trend: locationScorecard.trend
     },
     {
-      title: 'Case Volume',
-      value: formatMetric(cases, ''),
-      target: 'Consistent workload management',
-      status: cases > 0 ? 'good' : 'warning',
-      impact: 'Service capacity utilization',
-      description: 'Total service cases handled',
+      title: 'Triage % < 4 Hours',
+      value: metrics.triagePercentLess4Hours || 'N/A',
+      target: '> 80% (target)',
+      status: parseVscStatus(metrics.triagePercentLess4Hours),
+      impact: 'Quick triage performance',
+      description: 'Percentage of cases triaged within 4 hours',
+      icon: <TrendingUp size={24} />,
+      trend: locationScorecard.trend
+    },
+    {
+      title: 'ETR % of Cases',
+      value: metrics.etrPercentCases || 'N/A',
+      target: '> 15% (target)',
+      status: parseEtrStatus(metrics.etrPercentCases),
+      impact: 'ETR compliance rate',
+      description: 'Percentage of cases with ETR provided',
       icon: <BarChart3 size={24} />,
       trend: locationScorecard.trend
     },
     {
-      title: 'Customer Satisfaction',
-      value: formatMetric(satisfaction, satisfaction > 10 ? '%' : '/5'),
-      target: satisfaction > 10 ? '> 95%' : '> 4.5/5',
-      status: (satisfaction > 10 ? satisfaction >= 95 : satisfaction >= 4.5) ? 'good' : 
-              (satisfaction > 10 ? satisfaction >= 90 : satisfaction >= 4) ? 'warning' : 'critical',
-      impact: 'Customer retention and brand reputation',
-      description: 'Customer satisfaction survey scores',
-      icon: <Users size={24} />,
-      trend: locationScorecard.trend
-    },
-    {
-      title: 'ETR Compliance',
-      value: formatMetric(etrCompliance, '%'),
-      target: '> 95%',
-      status: etrCompliance >= 95 ? 'good' : etrCompliance >= 85 ? 'warning' : 'critical',
-      impact: 'Service promise reliability',
-      description: 'Estimated time to repair accuracy',
-      icon: <CheckCircle size={24} />,
-      trend: locationScorecard.trend
-    },
-    {
-      title: 'First Time Fix Rate',
-      value: formatMetric(firstTimeFix, '%'),
-      target: '> 85%',
-      status: firstTimeFix >= 85 ? 'good' : firstTimeFix >= 75 ? 'warning' : 'critical',
-      impact: 'Operational efficiency and customer satisfaction',
-      description: 'Percentage of issues resolved on first visit',
-      icon: <CheckCircle size={24} />,
+      title: '% Cases with 3+ Notes',
+      value: metrics.percentCasesWith3Notes || 'N/A',
+      target: '< 5% (target)',
+      status: parseNotesStatus(metrics.percentCasesWith3Notes),
+      impact: 'Case documentation quality',
+      description: 'Cases requiring extensive documentation',
+      icon: <AlertTriangle size={24} />,
       trend: locationScorecard.trend
     }
   ];
@@ -195,40 +324,76 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
 
 const getDefaultMetrics = (): MetricCard[] => [
   {
-    title: 'Dwell Time',
+    title: 'VSC Case Requirements',
     value: 'No data',
-    target: '< 2.5 hrs (optimal efficiency)',
+    target: '> 95% (target)',
     status: 'warning',
-    impact: 'Primary customer satisfaction metric',
+    impact: 'Service case compliance metric',
+    description: 'Upload monthly scorecard to view current metrics',
+    icon: <CheckCircle size={24} />
+  },
+  {
+    title: 'VSC Closed Correctly',
+    value: 'No data',
+    target: '> 90% (target)',
+    status: 'warning',
+    impact: 'Case closure accuracy metric',
+    description: 'Upload monthly scorecard to view current metrics',
+    icon: <CheckCircle size={24} />
+  },
+  {
+    title: 'TT+ Activation',
+    value: 'No data',
+    target: '> 95% (target)',
+    status: 'warning',
+    impact: 'Technology activation compliance',
+    description: 'Upload monthly scorecard to view current metrics',
+    icon: <TrendingUp size={24} />
+  },
+  {
+    title: 'SM Monthly Dwell Average',
+    value: 'No data',
+    target: '< 3.0 days (target)',
+    status: 'warning',
+    impact: 'Service manager dwell time',
     description: 'Upload monthly scorecard to view current metrics',
     icon: <Clock size={24} />
   },
   {
-    title: 'Triage Time',
+    title: 'Triage Hours',
     value: 'No data',
-    target: '< 15 min (quick assessment)',
+    target: '< 2.0 hrs (target)',
     status: 'warning',
-    impact: 'Service process efficiency indicator', 
+    impact: 'Initial assessment efficiency',
     description: 'Upload monthly scorecard to view current metrics',
     icon: <Users size={24} />
   },
   {
-    title: 'Case Volume',
+    title: 'Triage % < 4 Hours',
     value: 'No data',
-    target: 'Consistent workload management',
+    target: '> 80% (target)',
     status: 'warning',
-    impact: 'Service capacity utilization',
+    impact: 'Quick triage performance',
+    description: 'Upload monthly scorecard to view current metrics',
+    icon: <TrendingUp size={24} />
+  },
+  {
+    title: 'ETR % of Cases',
+    value: 'No data',
+    target: '> 15% (target)',
+    status: 'warning',
+    impact: 'ETR compliance rate',
     description: 'Upload monthly scorecard to view current metrics',
     icon: <BarChart3 size={24} />
   },
   {
-    title: 'Customer Satisfaction',
+    title: '% Cases with 3+ Notes',
     value: 'No data',
-    target: '> 95%',
+    target: '< 5% (target)',
     status: 'warning',
-    impact: 'Customer retention and brand reputation',
+    impact: 'Case documentation quality',
     description: 'Upload monthly scorecard to view current metrics',
-    icon: <Users size={24} />
+    icon: <AlertTriangle size={24} />
   }
 ];
 
