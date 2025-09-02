@@ -256,26 +256,36 @@ function extractLocationMetrics(text, locationName, locationNames) {
     }
   }
   
-  // If parsing failed, use expected data
+  // If parsing failed, use expected data (hardcoded from your W370 PDF)
   if (!locationData) {
     console.log(`⚠️ Could not parse ${locationName} from PDF, using expected data`);
     locationData = expectedData[locationName];
   }
-  
+
   if (!locationData) {
     console.error(`❌ No data available for ${locationName}`);
     return null;
   }
-  
-  
+
   console.log(`✅ Final metrics for ${locationName}:`, locationData);
   console.log(`=== End ${locationName} ===\n`);
-  
-  // Return data with location ID for frontend
+
+  // Return data with location ID for frontend compatibility  
   return {
     name: locationName,
-    locationId: locationName.toLowerCase().replace(/\s+/g, '-').replace('kenworth', ''),
-    ...locationData
+    locationId: locationName.toLowerCase().replace(/\s+/g, '-').replace('-kenworth', ''),
+    // Spread the metrics directly at the top level for frontend compatibility
+    vscCaseRequirements: locationData.vscCaseRequirements,
+    vscClosedCorrectly: locationData.vscClosedCorrectly,
+    ttActivation: locationData.ttActivation,
+    smMonthlyDwellAvg: locationData.smMonthlyDwellAvg,
+    triageHours: locationData.triageHours,
+    triagePercentLess4Hours: locationData.triagePercentLess4Hours,
+    etrPercentCases: locationData.etrPercentCases,
+    percentCasesWith3Notes: locationData.percentCasesWith3Notes,
+    rdsMonthlyAvgDays: locationData.rdsMonthlyAvgDays,
+    smYtdDwellAvgDays: locationData.smYtdDwellAvgDays,
+    rdsYtdDwellAvgDays: locationData.rdsYtdDwellAvgDays
   };
 }
 

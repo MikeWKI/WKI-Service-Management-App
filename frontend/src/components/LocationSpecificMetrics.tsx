@@ -68,6 +68,14 @@ const parseNotesStatus = (value: string): 'good' | 'warning' | 'critical' => {
   return 'critical';
 };
 
+const parseRdsStatus = (value: string): 'good' | 'warning' | 'critical' => {
+  if (!value || value === 'N/A') return 'critical';
+  const numValue = parseFloat(value);
+  if (numValue <= 6.0) return 'good';
+  if (numValue <= 8.0) return 'warning';
+  return 'critical';
+};
+
 // Helper function to add percentage sign if needed
 const addPercentageIfNeeded = (value: string): string => {
   if (!value || value === 'N/A') return 'N/A';
@@ -133,14 +141,67 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
         const locationName = metrics.name || metrics.locationName;
         let completeData = [];
         
+        // Based on the W370 Service Scorecard PDF - corrected column mapping
+        // The table columns are: VSC Case Req, VSC Closed Correctly, TT+ Activation, SM Monthly Dwell, Average Days, SM YTD Dwell, Cases <4Hrs, Triage Hrs, SM Avg Triage, ETR %, % Cases 3+ Notes, RDS Monthly, SM YTD, RDS YTD
+        
         if (locationName === 'Wichita Kenworth') {
-          completeData = ['96%', '92%', '99%', '2.7', '1.9', '87.9%', '1.8', '1.3%', '10.1%', '5.8', '5.6'];
+          // From the PDF: 96%, 92%, 99%, 2.7, 1.9, 87.9%, 1.8, 1.3%, 10.1%, 5.8, 5.6
+          // But these need to be mapped to the correct positions based on the actual column headers
+          completeData = [
+            '96%',    // VSC Case Requirements
+            '92%',    // VSC Closed Correctly  
+            '99%',    // TT+ Activation
+            '2.7',    // SM Monthly Dwell Avg
+            '1.9',    // Average Days (Triage Hours)
+            '87.9%',  // Triage % < 4 Hours (was position 6 in your data)
+            '1.8',    // ETR % of Cases
+            '1.3%',   // % Cases with 3+ Notes
+            '10.1',   // RDS Monthly Avg Days  
+            '5.8',    // SM YTD Dwell Average Days
+            '5.6'     // RDS YTD Dwell Average Days
+          ];
         } else if (locationName === 'Dodge City Kenworth') {
-          completeData = ['67%', '83%', '85%', '1.8', '2.2', '19.0%', '4.2', '0%', '0%', '6.1', '5.7'];
+          completeData = [
+            '67%',    // VSC Case Requirements
+            '83%',    // VSC Closed Correctly
+            '85%',    // TT+ Activation 
+            '1.8',    // SM Monthly Dwell Avg
+            '2.2',    // Triage Hours
+            '19.0%',  // Triage % < 4 Hours
+            '4.2',    // ETR % of Cases
+            '0%',     // % Cases with 3+ Notes
+            '0',      // RDS Monthly Avg Days
+            '6.1',    // SM YTD Dwell Average
+            '5.7'     // RDS YTD Dwell Average
+          ];
         } else if (locationName === 'Liberal Kenworth') {
-          completeData = ['100%', '100%', '100%', '2', '2.6', '89.4%', '3.1', '0%', '2.1%', '5.6', '5.7'];
+          completeData = [
+            '100%',   // VSC Case Requirements
+            '100%',   // VSC Closed Correctly
+            '100%',   // TT+ Activation
+            '2',      // SM Monthly Dwell Avg 
+            '2.6',    // Triage Hours
+            '89.4%',  // Triage % < 4 Hours
+            '3.1',    // ETR % of Cases
+            '0%',     // % Cases with 3+ Notes
+            '2.1',    // RDS Monthly Avg Days
+            '5.6',    // SM YTD Dwell Average
+            '5.7'     // RDS YTD Dwell Average
+          ];
         } else if (locationName === 'Emporia Kenworth') {
-          completeData = ['N/A', 'N/A', 'N/A', '1.2', '0.8', '38.8%', '9.5', '1.0%', '15.3%', '3.3', '4.3'];
+          completeData = [
+            'N/A',    // VSC Case Requirements
+            'N/A',    // VSC Closed Correctly
+            'N/A',    // TT+ Activation
+            '1.2',    // SM Monthly Dwell Avg
+            '0.8',    // Triage Hours  
+            '38.8%',  // Triage % < 4 Hours
+            '9.5',    // ETR % of Cases
+            '1.0%',   // % Cases with 3+ Notes
+            '15.3',   // RDS Monthly Avg Days
+            '3.3',    // SM YTD Dwell Average
+            '4.3'     // RDS YTD Dwell Average
+          ];
         } else {
           // Fallback to backend data if available
           completeData = [
@@ -231,7 +292,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           },
           {
             title: 'ETR % of Cases',
-            value: mappedMetrics.etrPercentCases,
+            value: `${mappedMetrics.etrPercentCases}%`,
             target: '> 15% (target)',
             status: parseEtrStatus(mappedMetrics.etrPercentCases),
             trend: 'stable',
@@ -253,7 +314,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
             title: 'RDS Monthly Avg Days',
             value: `${mappedMetrics.rdsMonthlyAvgDays} days`,
             target: '< 6.0 days (target)',
-            status: parseDwellStatus(mappedMetrics.rdsMonthlyAvgDays),
+            status: parseRdsStatus(mappedMetrics.rdsMonthlyAvgDays),
             trend: 'stable',
             icon: <Clock className="w-6 h-6" />,
             impact: 'RDS monthly dwell performance',
@@ -263,7 +324,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
             title: 'SM YTD Dwell Average',
             value: `${mappedMetrics.smYtdDwellAvgDays} days`,
             target: '< 6.0 days (target)',
-            status: parseDwellStatus(mappedMetrics.smYtdDwellAvgDays),
+            status: parseRdsStatus(mappedMetrics.smYtdDwellAvgDays),
             trend: 'stable',
             icon: <TrendingDown className="w-6 h-6" />,
             impact: 'Service manager year-to-date performance',
@@ -273,7 +334,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
             title: 'RDS YTD Dwell Average',
             value: `${mappedMetrics.rdsYtdDwellAvgDays} days`,
             target: '< 6.0 days (target)',
-            status: parseDwellStatus(mappedMetrics.rdsYtdDwellAvgDays),
+            status: parseRdsStatus(mappedMetrics.rdsYtdDwellAvgDays),
             trend: 'stable',
             icon: <TrendingDown className="w-6 h-6" />,
             impact: 'RDS year-to-date dwell performance',
@@ -306,13 +367,13 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
   let completeData = [];
   
   if (locationName.toLowerCase().includes('wichita')) {
-    completeData = ['96%', '92%', '99%', '2.7', '1.9', '87.9%', '1.8', '1.3%', '10.1%', '5.8', '5.6'];
+    completeData = ['96%', '92%', '99%', '2.7', '1.9', '87.9%', '1.8', '1.3%', '10.1', '5.8', '5.6'];
   } else if (locationName.toLowerCase().includes('dodge')) {
-    completeData = ['67%', '83%', '85%', '1.8', '2.2', '19.0%', '4.2', '0%', '0%', '6.1', '5.7'];
+    completeData = ['67%', '83%', '85%', '1.8', '2.2', '19.0%', '4.2', '0%', '0', '6.1', '5.7'];
   } else if (locationName.toLowerCase().includes('liberal')) {
-    completeData = ['100%', '100%', '100%', '2', '2.6', '89.4%', '3.1', '0%', '2.1%', '5.6', '5.7'];
+    completeData = ['100%', '100%', '100%', '2', '2.6', '89.4%', '3.1', '0%', '2.1', '5.6', '5.7'];
   } else if (locationName.toLowerCase().includes('emporia')) {
-    completeData = ['N/A', 'N/A', 'N/A', '1.2', '0.8', '38.8%', '9.5', '1.0%', '15.3%', '3.3', '4.3'];
+    completeData = ['N/A', 'N/A', 'N/A', '1.2', '0.8', '38.8%', '9.5', '1.0%', '15.3', '3.3', '4.3'];
   } else {
     // Fallback to stored metrics if available
     completeData = [
@@ -394,7 +455,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
     },
     {
       title: 'ETR % of Cases',
-      value: completeData[6],
+      value: `${completeData[6]}%`,
       target: '> 15% (target)',
       status: parseEtrStatus(completeData[6]),
       impact: 'ETR compliance rate',
@@ -416,7 +477,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
       title: 'RDS Monthly Avg Days',
       value: `${completeData[8]} days`,
       target: '< 6.0 days (target)',
-      status: parseDwellStatus(completeData[8]),
+      status: parseRdsStatus(completeData[8]),
       impact: 'RDS monthly dwell performance',
       description: 'Remote diagnostic service dwell time',
       icon: <Clock size={24} />,
@@ -426,7 +487,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
       title: 'SM YTD Dwell Average',
       value: `${completeData[9]} days`,
       target: '< 6.0 days (target)',
-      status: parseDwellStatus(completeData[9]),
+      status: parseRdsStatus(completeData[9]),
       impact: 'Service manager year-to-date performance',
       description: 'Year-to-date average dwell time',
       icon: <TrendingDown size={24} />,
@@ -436,7 +497,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
       title: 'RDS YTD Dwell Average',
       value: `${completeData[10]} days`,
       target: '< 6.0 days (target)',
-      status: parseDwellStatus(completeData[10]),
+      status: parseRdsStatus(completeData[10]),
       impact: 'RDS year-to-date dwell performance',
       description: 'Year-to-date RDS dwell performance',
       icon: <TrendingDown size={24} />,
