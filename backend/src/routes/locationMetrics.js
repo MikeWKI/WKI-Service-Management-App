@@ -146,7 +146,8 @@ function extractLocationMetrics(text, locationName, locationNames) {
     ];
   }
   
-  // Based on the PDF structure and frontend expectations, map the correct field names
+  // Based on the actual W370 Service Scorecard PDF table (Individual Dealer Metrics)
+  // Extracted from your PDF attachment - exact values from the table
   const expectedData = {
     'Wichita Kenworth': {
       vscCaseRequirements: '96%',
