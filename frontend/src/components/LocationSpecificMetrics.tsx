@@ -227,17 +227,17 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
         }
         
         const mappedMetrics = {
-          vscCaseRequirements: completeData[0],
-          vscClosedCorrectly: completeData[1],
-          ttActivation: completeData[2], 
-          smMonthlyDwellAvg: completeData[3],
-          triageHours: completeData[4],
-          triagePercentLess4Hours: completeData[5],
-          etrPercentCases: completeData[6],
-          percentCasesWith3Notes: completeData[7],
-          rdsMonthlyAvgDays: completeData[8],
-          smYtdDwellAvgDays: completeData[9],
-          rdsYtdDwellAvgDays: completeData[10]
+          vscCaseRequirements: completeData[0],      // Position 0: VSC Case Requirements
+          vscClosedCorrectly: completeData[1],       // Position 1: VSC Closed Correctly
+          ttActivation: completeData[2],             // Position 2: TT+ Activation
+          smMonthlyDwellAvg: completeData[3],        // Position 3: SM Monthly Dwell Avg
+          smYtdDwellAvgDays: completeData[4],        // Position 4: SM YTD Dwell Avg Days (MOVED UP)
+          triageHours: completeData[5],              // Position 5: Triage Hours (MOVED DOWN)
+          triagePercentLess4Hours: completeData[6],  // Position 6: Triage % < 4 Hours (MOVED DOWN)
+          etrPercentCases: completeData[7],          // Position 7: ETR % of Cases (MOVED DOWN)
+          percentCasesWith3Notes: completeData[8],   // Position 8: % Cases with 3+ Notes (MOVED DOWN)
+          rdsMonthlyAvgDays: completeData[9],        // Position 9: RDS Monthly Avg Days (MOVED DOWN)
+          rdsYtdDwellAvgDays: completeData[10]       // Position 10: RDS YTD Dwell Avg Days
         };
         
         console.log('Mapped metrics for', locationName, ':', mappedMetrics);
