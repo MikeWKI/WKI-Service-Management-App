@@ -436,6 +436,17 @@ Expected one of these structures:
       setTimeout(() => {
         setIsUploading(false);
         setUploadProgress(0);
+        
+        // Dispatch custom event to notify other components about new data
+        window.dispatchEvent(new CustomEvent('scorecardUploaded', { 
+          detail: { 
+            dealership, 
+            locations, 
+            extractedAt,
+            timestamp: new Date().getTime()
+          } 
+        }));
+        
         alert(`Successfully uploaded and processed ${file.name}!\n\nExtracted data for:\n- WKI Dealership\n- ${(locations ? locations.length : 0)} locations`);
       }, 500);
 

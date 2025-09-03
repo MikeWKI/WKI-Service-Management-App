@@ -160,8 +160,8 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
             getFieldValue('ttActivation', '99%'),            // 3. TT+ Activation
             getFieldValue('smMonthlyDwellAvg', '2.7'),       // 4. SM Monthly Dwell Avg
             getFieldValue('smYtdDwellAvgDays', '5.8'),       // 5. SM YTD Dwell Avg Days
-            getFieldValue('triageHours', '1.9'),             // 6. Triage Hours
-            getFieldValue('triagePercentLess4Hours', '87.9%'), // 7. Triage % < 4 Hours
+            getFieldValue('triagePercentLess4Hours', '87.9%'), // 6. Triage % < 4 Hours (SWAPPED)
+            getFieldValue('triageHours', '1.9'),             // 7. Triage Hours (SWAPPED)
             getFieldValue('etrPercentCases', '1.8'),         // 8. ETR % of Cases
             getFieldValue('percentCasesWith3Notes', '1.3%'), // 9. % Cases with 3+ Notes
             getFieldValue('rdsMonthlyAvgDays', '10.1%'),     // 10. RDS Monthly Avg Days
@@ -174,8 +174,8 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
             getFieldValue('ttActivation', '85%'),            // 3. TT+ Activation 
             getFieldValue('smMonthlyDwellAvg', '1.8'),       // 4. SM Monthly Dwell Avg
             getFieldValue('smYtdDwellAvgDays', '6.1'),       // 5. SM YTD Dwell Avg Days
-            getFieldValue('triageHours', '2.2'),             // 6. Triage Hours
-            getFieldValue('triagePercentLess4Hours', '19.0%'), // 7. Triage % < 4 Hours
+            getFieldValue('triagePercentLess4Hours', '19.0%'), // 6. Triage % < 4 Hours (SWAPPED)
+            getFieldValue('triageHours', '2.2'),             // 7. Triage Hours (SWAPPED)
             getFieldValue('etrPercentCases', '4.2'),         // 8. ETR % of Cases
             getFieldValue('percentCasesWith3Notes', '0%'),   // 9. % Cases with 3+ Notes
             getFieldValue('rdsMonthlyAvgDays', '0%'),        // 10. RDS Monthly Avg Days
@@ -188,8 +188,8 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
             getFieldValue('ttActivation', '100%'),           // 3. TT+ Activation
             getFieldValue('smMonthlyDwellAvg', '2'),         // 4. SM Monthly Dwell Avg 
             getFieldValue('smYtdDwellAvgDays', '5.6'),       // 5. SM YTD Dwell Avg Days
-            getFieldValue('triageHours', '2.6'),             // 6. Triage Hours
-            getFieldValue('triagePercentLess4Hours', '89.4%'), // 7. Triage % < 4 Hours
+            getFieldValue('triagePercentLess4Hours', '89.4%'), // 6. Triage % < 4 Hours (SWAPPED)
+            getFieldValue('triageHours', '2.6'),             // 7. Triage Hours (SWAPPED)
             getFieldValue('etrPercentCases', '3.1'),         // 8. ETR % of Cases
             getFieldValue('percentCasesWith3Notes', '0%'),   // 9. % Cases with 3+ Notes
             getFieldValue('rdsMonthlyAvgDays', '2.1%'),      // 10. RDS Monthly Avg Days
@@ -202,8 +202,8 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
             getFieldValue('ttActivation', 'N/A'),            // 3. TT+ Activation
             getFieldValue('smMonthlyDwellAvg', '1.2'),       // 4. SM Monthly Dwell Avg
             getFieldValue('smYtdDwellAvgDays', '3.3'),       // 5. SM YTD Dwell Avg Days
-            getFieldValue('triageHours', '0.8'),             // 6. Triage Hours  
-            getFieldValue('triagePercentLess4Hours', '38.8%'), // 7. Triage % < 4 Hours
+            getFieldValue('triagePercentLess4Hours', '38.8%'), // 6. Triage % < 4 Hours (SWAPPED)
+            getFieldValue('triageHours', '0.8'),             // 7. Triage Hours (SWAPPED)
             getFieldValue('etrPercentCases', '9.5'),         // 8. ETR % of Cases
             getFieldValue('percentCasesWith3Notes', '1.0%'), // 9. % Cases with 3+ Notes
             getFieldValue('rdsMonthlyAvgDays', '15.3%'),     // 10. RDS Monthly Avg Days
@@ -231,12 +231,12 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           vscClosedCorrectly: completeData[1],       // Position 1: VSC Closed Correctly
           ttActivation: completeData[2],             // Position 2: TT+ Activation
           smMonthlyDwellAvg: completeData[3],        // Position 3: SM Monthly Dwell Avg
-          smYtdDwellAvgDays: completeData[4],        // Position 4: SM YTD Dwell Avg Days (MOVED UP)
-          triageHours: completeData[5],              // Position 5: Triage Hours (MOVED DOWN)
-          triagePercentLess4Hours: completeData[6],  // Position 6: Triage % < 4 Hours (MOVED DOWN)
-          etrPercentCases: completeData[7],          // Position 7: ETR % of Cases (MOVED DOWN)
-          percentCasesWith3Notes: completeData[8],   // Position 8: % Cases with 3+ Notes (MOVED DOWN)
-          rdsMonthlyAvgDays: completeData[9],        // Position 9: RDS Monthly Avg Days (MOVED DOWN)
+          smYtdDwellAvgDays: completeData[4],        // Position 4: SM YTD Dwell Avg Days
+          triagePercentLess4Hours: completeData[5],  // Position 5: Triage % < 4 Hours (SWAPPED)
+          triageHours: completeData[6],              // Position 6: Triage Hours (SWAPPED)
+          etrPercentCases: completeData[7],          // Position 7: ETR % of Cases
+          percentCasesWith3Notes: completeData[8],   // Position 8: % Cases with 3+ Notes
+          rdsMonthlyAvgDays: completeData[9],        // Position 9: RDS Monthly Avg Days
           rdsYtdDwellAvgDays: completeData[10]       // Position 10: RDS YTD Dwell Avg Days
         };
         
@@ -303,23 +303,23 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
             description: 'Upload monthly scorecard to view current metrics'
           },
           {
-            title: 'Triage Hours', // Position 6
-            value: `${mappedMetrics.triageHours} hrs`,
-            target: '< 2.0 hrs (target)',
-            status: parseTriageStatus(mappedMetrics.triageHours),
-            trend: 'stable',
-            icon: <Users className="w-6 h-6" />,
-            impact: 'Initial assessment time',
-            description: 'Upload monthly scorecard to view current metrics'
-          },
-          {
-            title: 'Triage % < 4 Hours', // Position 7
+            title: 'Triage % < 4 Hours', // Position 6 (SWAPPED)
             value: mappedMetrics.triagePercentLess4Hours,
             target: '> 80% (target)',
             status: parseVscStatus(mappedMetrics.triagePercentLess4Hours),
             trend: 'stable',
             icon: <TrendingUp className="w-6 h-6" />,
             impact: 'Quick triage performance',
+            description: 'Upload monthly scorecard to view current metrics'
+          },
+          {
+            title: 'Triage Hours', // Position 7 (SWAPPED)
+            value: `${mappedMetrics.triageHours} hrs`,
+            target: '< 2.0 hrs (target)',
+            status: parseTriageStatus(mappedMetrics.triageHours),
+            trend: 'stable',
+            icon: <Users className="w-6 h-6" />,
+            impact: 'Initial assessment time',
             description: 'Upload monthly scorecard to view current metrics'
           },
           {

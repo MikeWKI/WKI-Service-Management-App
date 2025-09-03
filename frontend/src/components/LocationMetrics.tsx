@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { MapPin, TrendingUp, TrendingDown, BarChart3, Calendar, Filter } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { MapPin, TrendingUp, TrendingDown, BarChart3, Calendar, Filter, RefreshCw, Building } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 // Legitimate scorecard data interface - matches W370 Service Scorecard structure
@@ -24,6 +24,13 @@ interface LocationMetrics {
   trend: 'up' | 'down' | 'stable';
 }
 
+// Dealership-level metrics interface
+interface DealershipMetrics {
+  triageHours: number;
+  triagePercentLess4Hours: number;
+  percentCasesWith3Notes: number;
+}
+
 const locations = [
   { id: 'wichita', name: 'Wichita', color: 'from-blue-500 to-blue-600' },
   { id: 'emporia', name: 'Emporia', color: 'from-green-500 to-green-600' },
@@ -35,73 +42,112 @@ export default function LocationMetrics() {
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [selectedMetric, setSelectedMetric] = useState('vscCaseRequirements');
   const [backendMetrics, setBackendMetrics] = useState<LocationMetrics[]>([]);
+  const [dealershipMetrics, setDealershipMetrics] = useState<DealershipMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
   // Backend API base URL
   const API_BASE_URL = 'https://wki-service-management-app.onrender.com';
 
-  // Fetch data from backend on mount
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
-        if (response.ok) {
-          const data = await response.json();
-          let dealership: any, locations: any[] = [], extractedAt: string;
-          
-          // Handle different response structures
-          if (data && typeof data === 'object') {
-            if ('dealership' in data && 'locations' in data) {
-              ({ dealership, locations, extractedAt } = data);
-            } else if ('data' in data && data.data && typeof data.data === 'object') {
-              if ('dealership' in data.data && 'locations' in data.data) {
-                ({ dealership, locations, extractedAt } = data.data);
-              }
+  // Fetch data from backend
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
+      if (response.ok) {
+        const data = await response.json();
+        let dealership: any, locations: any[] = [], extractedAt: string | undefined;
+        
+        // Handle different response structures
+        if (data && typeof data === 'object') {
+          if ('dealership' in data && 'locations' in data) {
+            ({ dealership, locations, extractedAt } = data);
+          } else if ('data' in data && data.data && typeof data.data === 'object') {
+            if ('dealership' in data.data && 'locations' in data.data) {
+              ({ dealership, locations, extractedAt } = data.data);
             }
           }
+        }
 
-          if (locations && locations.length > 0) {
-            // Convert backend data to frontend format - only legitimate W370 scorecard fields
-            const convertedMetrics: LocationMetrics[] = locations.map((location: any) => ({
-              location: location.name,
-              month: 'Latest',
-              year: new Date().getFullYear(),
-              metrics: {
-                vscCaseRequirements: parseFloat(location.vscCaseRequirements) || 0,
-                vscClosedCorrectly: parseFloat(location.vscClosedCorrectly) || 0,
-                ttActivation: parseFloat(location.ttPlusActivation) || 0,
-                smMonthlyDwellAvg: parseFloat(location.smMonthlyDwellAvg) || 0,
-                triageHours: parseFloat(location.triageHours) || 0,
-                triagePercentLess4Hours: parseFloat(location.triagePercentLess4Hours) || 0,
-                etrPercentCases: parseFloat(location.etrPercentCases) || 0,
-                percentCasesWith3Notes: parseFloat(location.percentCasesWith3Notes) || 0,
-                rdsMonthlyAvgDays: parseFloat(location.rdsMonthlyAvgDays) || 0,
-                smYtdDwellAvgDays: parseFloat(location.smYtdDwellAvgDays) || 0,
-                rdsYtdDwellAvgDays: parseFloat(location.rdsYtdDwellAvgDays) || 0
-              },
-              trend: 'stable' as const
-            }));
-            setBackendMetrics(convertedMetrics);
-          } else {
-            // No legitimate scorecard data available - show empty state
-            setBackendMetrics([]);
-          }
+        if (locations && locations.length > 0) {
+          // Convert backend data to frontend format - only legitimate W370 scorecard fields
+          const convertedMetrics: LocationMetrics[] = locations.map((location: any) => ({
+            location: location.name,
+            month: 'Latest',
+            year: new Date().getFullYear(),
+            metrics: {
+              vscCaseRequirements: parseFloat(location.vscCaseRequirements?.toString().replace('%', '')) || 0,
+              vscClosedCorrectly: parseFloat(location.vscClosedCorrectly?.toString().replace('%', '')) || 0,
+              ttActivation: parseFloat(location.ttActivation?.toString().replace('%', '')) || 0,
+              smMonthlyDwellAvg: parseFloat(location.smMonthlyDwellAvg) || 0,
+              triageHours: parseFloat(location.triageHours) || 0,
+              triagePercentLess4Hours: parseFloat(location.triagePercentLess4Hours?.toString().replace('%', '')) || 0,
+              etrPercentCases: parseFloat(location.etrPercentCases) || 0,
+              percentCasesWith3Notes: parseFloat(location.percentCasesWith3Notes?.toString().replace('%', '')) || 0,
+              rdsMonthlyAvgDays: parseFloat(location.rdsMonthlyAvgDays?.toString().replace('%', '')) || 0,
+              smYtdDwellAvgDays: parseFloat(location.smYtdDwellAvgDays) || 0,
+              rdsYtdDwellAvgDays: parseFloat(location.rdsYtdDwellAvgDays) || 0
+            },
+            trend: 'stable' as const
+          }));
+          setBackendMetrics(convertedMetrics);
         } else {
           // No legitimate scorecard data available - show empty state
           setBackendMetrics([]);
         }
-      } catch (error) {
-        console.error('Error fetching metrics:', error);
+
+        // Set dealership-level metrics if available
+        if (dealership) {
+          setDealershipMetrics({
+            triageHours: parseFloat(dealership.triageHours) || 0,
+            triagePercentLess4Hours: parseFloat(dealership.triagePercentLess4Hours?.toString().replace('%', '')) || 0,
+            percentCasesWith3Notes: parseFloat(dealership.percentCasesWith3Notes?.toString().replace('%', '')) || 0
+          });
+        } else {
+          setDealershipMetrics(null);
+        }
+
+        if (extractedAt) {
+          setLastUpdated(new Date(extractedAt).toLocaleString());
+        }
+      } else {
         // No legitimate scorecard data available - show empty state
         setBackendMetrics([]);
-      } finally {
-        setIsLoading(false);
+        setDealershipMetrics(null);
       }
-    };
-
-    fetchData();
+    } catch (error) {
+      console.error('Error fetching metrics:', error);
+      // No legitimate scorecard data available - show empty state
+      setBackendMetrics([]);
+      setDealershipMetrics(null);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
+  // Fetch data on mount
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Auto-refresh data every 30 seconds to catch new uploads
+  useEffect(() => {
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
+
+  // Listen for scorecard upload events for immediate refresh
+  useEffect(() => {
+    const handleScorecardUpload = () => {
+      console.log('LocationMetrics: New scorecard uploaded, refreshing data...');
+      fetchData();
+    };
+
+    window.addEventListener('scorecardUploaded', handleScorecardUpload);
+    return () => {
+      window.removeEventListener('scorecardUploaded', handleScorecardUpload);
+    };
+  }, [fetchData]);
   const filteredMetrics = selectedLocation === 'all' 
     ? backendMetrics 
     : backendMetrics.filter(m => m.location.toLowerCase().replace(/\s+/g, '-') === selectedLocation);
@@ -243,6 +289,66 @@ export default function LocationMetrics() {
       {/* Show content only when legitimate data exists */}
       {!isLoading && backendMetrics.length > 0 && (
         <>
+          {/* Dealership Summary */}
+          {dealershipMetrics && (
+            <div className="bg-gradient-to-br from-blue-800 via-blue-900 to-blue-800 rounded-2xl p-6 mb-8 border border-blue-700 shadow-2xl">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
+                    <Building className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">Dealership Summary</h2>
+                    <p className="text-blue-200">Overall WKI performance metrics</p>
+                  </div>
+                </div>
+                <button
+                  onClick={fetchData}
+                  disabled={isLoading}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                  <span>Refresh</span>
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-xl p-4 border border-slate-700">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-medium text-slate-400">Triage Hours</h3>
+                    <div className={`w-3 h-3 rounded-full ${dealershipMetrics.triageHours < 2 ? 'bg-green-500' : dealershipMetrics.triageHours < 4 ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
+                  </div>
+                  <div className="text-2xl font-bold text-white mb-1">{dealershipMetrics.triageHours} hrs</div>
+                  <div className="text-xs text-slate-400">Target: &lt; 2 hrs</div>
+                </div>
+                
+                <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-xl p-4 border border-slate-700">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-medium text-slate-400">Triage % &lt; 4 Hours</h3>
+                    <div className={`w-3 h-3 rounded-full ${dealershipMetrics.triagePercentLess4Hours > 80 ? 'bg-green-500' : dealershipMetrics.triagePercentLess4Hours > 60 ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
+                  </div>
+                  <div className="text-2xl font-bold text-white mb-1">{dealershipMetrics.triagePercentLess4Hours}%</div>
+                  <div className="text-xs text-slate-400">Target: &gt; 80%</div>
+                </div>
+                
+                <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-xl p-4 border border-slate-700">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-medium text-slate-400">% Cases with 3+ Notes</h3>
+                    <div className={`w-3 h-3 rounded-full ${dealershipMetrics.percentCasesWith3Notes < 2 ? 'bg-green-500' : dealershipMetrics.percentCasesWith3Notes < 5 ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
+                  </div>
+                  <div className="text-2xl font-bold text-white mb-1">{dealershipMetrics.percentCasesWith3Notes}%</div>
+                  <div className="text-xs text-slate-400">Target: &lt; 2%</div>
+                </div>
+              </div>
+              
+              {lastUpdated && (
+                <div className="mt-4 text-xs text-blue-200 text-center">
+                  Last updated: {lastUpdated}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Filters */}
           <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl p-3 sm:p-6 mb-6 sm:mb-8 border border-slate-700 shadow-2xl">
             <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-4 items-stretch sm:items-center justify-between">
