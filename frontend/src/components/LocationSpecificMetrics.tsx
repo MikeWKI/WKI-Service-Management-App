@@ -148,7 +148,9 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
         
         // Use backend data when available, fallback to hardcoded values otherwise
         const getFieldValue = (backendField: string, fallbackValue: string) => {
-          return metrics[backendField] || fallbackValue;
+          const value = metrics[backendField];
+          console.log(`Getting field ${backendField}: backend has "${value}", using "${value || fallbackValue}"`);
+          return value || fallbackValue;
         };
         
         if (locationName === 'Wichita Kenworth') {
@@ -157,9 +159,9 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
             getFieldValue('vscClosedCorrectly', '92%'),      // VSC Closed Correctly  
             getFieldValue('ttPlusActivation', '99%'),        // TT+ Activation
             getFieldValue('smMonthlyDwellAvg', '2.7'),       // SM Monthly Dwell Avg
-            getFieldValue('triageHours', '1.9'),             // Triage Hours
-            getFieldValue('triagePercentLess4Hours', '87.9%'), // Triage % < 4 Hours
-            getFieldValue('etrPercentCases', '1.8'),         // ETR % of Cases
+            getFieldValue('triageHours', '1.9'),             // Triage Hours - THIS SHOULD WORK
+            getFieldValue('triagePercentLess4Hours', '87.9%'), // Triage % < 4 Hours - THIS SHOULD WORK
+            getFieldValue('etrPercentCases', '1.8'),         // ETR % of Cases - THIS SHOULD WORK
             getFieldValue('percentCasesWith3Notes', '1.3%'), // % Cases with 3+ Notes
             getFieldValue('rdsMonthlyAvgDays', '10.1'),      // RDS Monthly Avg Days  
             getFieldValue('smYtdDwellAvgDays', '5.8'),       // SM YTD Dwell Average Days
@@ -239,6 +241,15 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
         };
         
         console.log('Mapped metrics for', locationName, ':', mappedMetrics);
+        console.log('Card mapping check:');
+        console.log('- VSC Case Requirements card will show:', mappedMetrics.vscCaseRequirements);
+        console.log('- VSC Closed Correctly card will show:', mappedMetrics.vscClosedCorrectly);
+        console.log('- TT+ Activation card will show:', mappedMetrics.ttActivation);
+        console.log('- SM Monthly Dwell Avg card will show:', mappedMetrics.smMonthlyDwellAvg);
+        console.log('- Triage Hours card will show:', mappedMetrics.triageHours);
+        console.log('- Triage % < 4 Hours card will show:', mappedMetrics.triagePercentLess4Hours);
+        console.log('- ETR % of Cases card will show:', mappedMetrics.etrPercentCases);
+        console.log('- % Cases with 3+ Notes card will show:', mappedMetrics.percentCasesWith3Notes);
         
         return [
           {
@@ -303,7 +314,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           },
           {
             title: 'ETR % of Cases',
-            value: `${mappedMetrics.etrPercentCases}%`,
+            value: mappedMetrics.etrPercentCases.includes('%') ? mappedMetrics.etrPercentCases : `${mappedMetrics.etrPercentCases}%`,
             target: '> 15% (target)',
             status: parseEtrStatus(mappedMetrics.etrPercentCases),
             trend: 'stable',
