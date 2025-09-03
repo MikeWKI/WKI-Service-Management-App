@@ -157,13 +157,13 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           completeData = [
             getFieldValue('vscCaseRequirements', '96%'),     // VSC Case Requirements
             getFieldValue('vscClosedCorrectly', '92%'),      // VSC Closed Correctly  
-            getFieldValue('ttPlusActivation', '99%'),        // TT+ Activation
+            getFieldValue('ttActivation', '99%'),            // TT+ Activation
             getFieldValue('smMonthlyDwellAvg', '2.7'),       // SM Monthly Dwell Avg
             getFieldValue('triageHours', '1.9'),             // Triage Hours - THIS SHOULD WORK
             getFieldValue('triagePercentLess4Hours', '87.9%'), // Triage % < 4 Hours - THIS SHOULD WORK
             getFieldValue('etrPercentCases', '1.8'),         // ETR % of Cases - THIS SHOULD WORK
             getFieldValue('percentCasesWith3Notes', '1.3%'), // % Cases with 3+ Notes
-            getFieldValue('rdsMonthlyAvgDays', '10.1'),      // RDS Monthly Avg Days  
+            getFieldValue('rdsMonthlyAvgDays', '10.1%'),     // RDS Monthly Avg Days  
             getFieldValue('smYtdDwellAvgDays', '5.8'),       // SM YTD Dwell Average Days
             getFieldValue('rdsYtdDwellAvgDays', '5.6')       // RDS YTD Dwell Average Days
           ];
@@ -171,13 +171,13 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           completeData = [
             getFieldValue('vscCaseRequirements', '67%'),     // VSC Case Requirements
             getFieldValue('vscClosedCorrectly', '83%'),      // VSC Closed Correctly
-            getFieldValue('ttPlusActivation', '85%'),        // TT+ Activation 
+            getFieldValue('ttActivation', '85%'),            // TT+ Activation 
             getFieldValue('smMonthlyDwellAvg', '1.8'),       // SM Monthly Dwell Avg
             getFieldValue('triageHours', '2.2'),             // Triage Hours
             getFieldValue('triagePercentLess4Hours', '19.0%'), // Triage % < 4 Hours
             getFieldValue('etrPercentCases', '4.2'),         // ETR % of Cases
             getFieldValue('percentCasesWith3Notes', '0%'),   // % Cases with 3+ Notes
-            getFieldValue('rdsMonthlyAvgDays', '0'),         // RDS Monthly Avg Days
+            getFieldValue('rdsMonthlyAvgDays', '0%'),        // RDS Monthly Avg Days
             getFieldValue('smYtdDwellAvgDays', '6.1'),       // SM YTD Dwell Average
             getFieldValue('rdsYtdDwellAvgDays', '5.7')       // RDS YTD Dwell Average
           ];
@@ -185,13 +185,13 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           completeData = [
             getFieldValue('vscCaseRequirements', '100%'),    // VSC Case Requirements
             getFieldValue('vscClosedCorrectly', '100%'),     // VSC Closed Correctly
-            getFieldValue('ttPlusActivation', '100%'),       // TT+ Activation
+            getFieldValue('ttActivation', '100%'),           // TT+ Activation
             getFieldValue('smMonthlyDwellAvg', '2'),         // SM Monthly Dwell Avg 
             getFieldValue('triageHours', '2.6'),             // Triage Hours
             getFieldValue('triagePercentLess4Hours', '89.4%'), // Triage % < 4 Hours
             getFieldValue('etrPercentCases', '3.1'),         // ETR % of Cases
             getFieldValue('percentCasesWith3Notes', '0%'),   // % Cases with 3+ Notes
-            getFieldValue('rdsMonthlyAvgDays', '2.1'),       // RDS Monthly Avg Days
+            getFieldValue('rdsMonthlyAvgDays', '2.1%'),      // RDS Monthly Avg Days
             getFieldValue('smYtdDwellAvgDays', '5.6'),       // SM YTD Dwell Average
             getFieldValue('rdsYtdDwellAvgDays', '5.7')       // RDS YTD Dwell Average
           ];
@@ -199,22 +199,22 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           completeData = [
             getFieldValue('vscCaseRequirements', 'N/A'),     // VSC Case Requirements
             getFieldValue('vscClosedCorrectly', 'N/A'),      // VSC Closed Correctly
-            getFieldValue('ttPlusActivation', 'N/A'),        // TT+ Activation
+            getFieldValue('ttActivation', 'N/A'),            // TT+ Activation
             getFieldValue('smMonthlyDwellAvg', '1.2'),       // SM Monthly Dwell Avg
             getFieldValue('triageHours', '0.8'),             // Triage Hours  
             getFieldValue('triagePercentLess4Hours', '38.8%'), // Triage % < 4 Hours
             getFieldValue('etrPercentCases', '9.5'),         // ETR % of Cases
             getFieldValue('percentCasesWith3Notes', '1.0%'), // % Cases with 3+ Notes
-            getFieldValue('rdsMonthlyAvgDays', '2.3'),       // RDS Monthly Avg Days
-            getFieldValue('smYtdDwellAvgDays', '6.7'),       // SM YTD Dwell Average 
-            getFieldValue('rdsYtdDwellAvgDays', '5.7')       // RDS YTD Dwell Average
+            getFieldValue('rdsMonthlyAvgDays', '15.3%'),     // RDS Monthly Avg Days
+            getFieldValue('smYtdDwellAvgDays', '3.3'),       // SM YTD Dwell Average 
+            getFieldValue('rdsYtdDwellAvgDays', '4.3')       // RDS YTD Dwell Average
           ];
         } else {
           // Fallback to backend data if available
           completeData = [
             getFieldValue('vscCaseRequirements', addPercentageIfNeeded(metrics.dwellTime || 'N/A')),
             getFieldValue('vscClosedCorrectly', addPercentageIfNeeded(metrics.triageTime || 'N/A')), 
-            getFieldValue('ttPlusActivation', addPercentageIfNeeded(metrics.cases || 'N/A')),
+            getFieldValue('ttActivation', addPercentageIfNeeded(metrics.cases || 'N/A')),
             getFieldValue('smMonthlyDwellAvg', metrics.satisfaction || 'N/A'),
             getFieldValue('triageHours', 'N/A'),
             getFieldValue('triagePercentLess4Hours', 'N/A'),
