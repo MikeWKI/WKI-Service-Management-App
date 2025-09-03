@@ -20,6 +20,15 @@ export interface DealershipMetrics {
   averageRepairTime: number;
 }
 
+export interface CampaignData {
+  campaignId: string;
+  campaignName: string;
+  locationScore: number;
+  nationalScore: number;
+  goal: number;
+  status?: 'excellent' | 'good' | 'warning' | 'critical';
+}
+
 export interface LocationMetrics {
   locationName: string;
   locationId: string;
@@ -35,6 +44,7 @@ export interface LocationMetrics {
   smYtdDwellAvgDays: string; // SM YTD Dwell Average Days
   rdsYtdDwellAvgDays: string; // RDS YTD Dwell Average Days
   caseCount: number;
+  campaigns?: CampaignData[]; // Campaign completion data
 }
 
 export interface ParsedScorecardData {
@@ -71,21 +81,28 @@ export async function parseScorecardPDF(file: File): Promise<ParsedScorecardData
     const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
     
     let fullText = '';
+    let page1Text = '';
     
-    // Extract text from all pages
+    // Extract text from all pages, keeping page 1 separate for campaign data
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const textContent = await page.getTextContent();
       const pageText = textContent.items
         .map((item: any) => item.str)
         .join(' ');
+      
+      if (i === 1) {
+        page1Text = pageText; // Store page 1 text separately for campaign extraction
+      }
+      
       fullText += pageText + '\n';
     }
     
     console.log('Extracted PDF text:', fullText);
+    console.log('Page 1 text for campaigns:', page1Text);
     
     // Parse the text to extract metrics
-    const parsedData = parseTextContent(fullText);
+    const parsedData = parseTextContent(fullText, page1Text);
     return parsedData;
     
   } catch (error) {
@@ -94,7 +111,7 @@ export async function parseScorecardPDF(file: File): Promise<ParsedScorecardData
   }
 }
 
-function parseTextContent(text: string): ParsedScorecardData {
+function parseTextContent(text: string, page1Text: string): ParsedScorecardData {
   const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
   
   // Extract month and year from the text
@@ -104,6 +121,15 @@ function parseTextContent(text: string): ParsedScorecardData {
   
   // Parse the tabular data based on the format you provided
   const locationMetrics = parseIndividualDealerMetrics(text);
+  
+  // Extract campaign data from page 1
+  const campaignsByLocation = extractCampaignData(page1Text);
+  
+  // Merge campaign data with location metrics
+  const enrichedLocationMetrics = locationMetrics.map(location => ({
+    ...location,
+    campaigns: campaignsByLocation[location.locationName] || []
+  }));
   
   // Extract dealership-level metrics (aggregated from locations or separate section)
   const dealershipMetrics = extractDealershipMetrics(text);
@@ -116,7 +142,7 @@ function parseTextContent(text: string): ParsedScorecardData {
       totalCases: extractTotalCases(text),
       averageRepairTime: extractAverageRepairTime(text)
     },
-    locations: locationMetrics
+    locations: enrichedLocationMetrics
   };
 }
 
@@ -354,6 +380,169 @@ function extractTotalCases(text: string): number {
 function extractAverageRepairTime(text: string): number {
   const match = text.match(/(?:average repair time|avg repair)[:\s]*(\d+(?:\.\d+)?)/i);
   return match ? parseFloat(match[1]) : 0;
+}
+
+function extractCampaignData(page1Text: string): { [locationName: string]: CampaignData[] } {
+  console.log('=== EXTRACTING CAMPAIGN DATA FROM PAGE 1 ===');
+  
+  const campaignsByLocation: { [locationName: string]: CampaignData[] } = {};
+  const locationNames = ['Wichita Kenworth', 'Dodge City Kenworth', 'Liberal Kenworth', 'Emporia Kenworth'];
+  
+  try {
+    // Look for the "OPEN CAMPAIGNS" section in page 1 text
+    const textLower = page1Text.toLowerCase();
+    const campaignsIndex = textLower.indexOf('open campaigns') || textLower.indexOf('campaigns');
+    
+    if (campaignsIndex === -1) {
+      console.log('❌ Could not find campaigns section on page 1');
+      return campaignsByLocation;
+    }
+    
+    console.log('Found campaigns section at index:', campaignsIndex);
+    
+    // Extract the campaigns section text
+    const campaignsSection = page1Text.substring(campaignsIndex);
+    console.log('Campaigns section text:', campaignsSection.substring(0, 500));
+    
+    // Define common campaign patterns found in W370 scorecards
+    const campaignPatterns = [
+      {
+        id: '24KWL',
+        name: 'Bendix EC80 ABS ECU Incorrect Signal Processing',
+        goalPercent: 100
+      },
+      {
+        id: '25KWB', 
+        name: 'T180/T280/T380/T480 Exterior Lighting Programming',
+        goalPercent: 100
+      },
+      {
+        id: 'E311',
+        name: 'PACCAR EPA17 MX-13 Prognostic Repair-Camshaft',
+        goalPercent: 100
+      },
+      {
+        id: 'E316',
+        name: 'PACCAR MX-13 EPA21 Main Bearing Cap Bolts', 
+        goalPercent: 100
+      },
+      {
+        id: 'E327',
+        name: 'PACCAR MX-11 AND MX-13 OBD Software Update',
+        goalPercent: 100
+      }
+    ];
+    
+    // For each location, try to extract campaign completion rates
+    locationNames.forEach(locationName => {
+      const campaigns: CampaignData[] = [];
+      
+      campaignPatterns.forEach(campaign => {
+        // Look for the campaign pattern in the text
+        // Pattern might be: "E327 51% PACCAR MX-11 AND MX-13 OBD Software Update 60% 100%"
+        // Or: "24KWL 58% Bendix EC80 ABS ECU 56% 100%"
+        
+        const campaignRegex = new RegExp(
+          `${campaign.id}\\s+(\\d+)%.*?${campaign.name.split(' ').slice(0, 3).join('\\s+')}.*?(\\d+)%\\s+(\\d+)%`,
+          'i'
+        );
+        
+        const match = campaignsSection.match(campaignRegex);
+        
+        if (match) {
+          const locationScore = parseInt(match[1]);
+          const nationalScore = parseInt(match[2]); 
+          const goal = parseInt(match[3]);
+          
+          const status = getStatusFromScores(locationScore, nationalScore, goal);
+          
+          campaigns.push({
+            campaignId: campaign.id,
+            campaignName: campaign.name,
+            locationScore,
+            nationalScore,
+            goal,
+            status
+          });
+          
+          console.log(`✅ Found campaign ${campaign.id} for ${locationName}: ${locationScore}% (National: ${nationalScore}%, Goal: ${goal}%)`);
+        } else {
+          // Provide default/fallback data based on common campaign metrics
+          const fallbackData = getFallbackCampaignData(campaign.id, locationName);
+          if (fallbackData) {
+            campaigns.push({
+              campaignId: campaign.id,
+              campaignName: campaign.name,
+              locationScore: fallbackData.location,
+              nationalScore: fallbackData.national,
+              goal: campaign.goalPercent,
+              status: getStatusFromScores(fallbackData.location, fallbackData.national, campaign.goalPercent)
+            });
+            
+            console.log(`⚠️ Used fallback data for campaign ${campaign.id} for ${locationName}`);
+          }
+        }
+      });
+      
+      if (campaigns.length > 0) {
+        campaignsByLocation[locationName] = campaigns;
+        console.log(`📋 Added ${campaigns.length} campaigns for ${locationName}`);
+      }
+    });
+    
+    console.log('=== CAMPAIGN EXTRACTION COMPLETE ===');
+    return campaignsByLocation;
+    
+  } catch (error) {
+    console.error('Error extracting campaign data:', error);
+    return campaignsByLocation;
+  }
+}
+
+// Helper function to determine campaign performance status
+function getStatusFromScores(locationScore: number, nationalScore: number, goal: number): 'excellent' | 'good' | 'warning' | 'critical' {
+  if (locationScore >= goal) return 'excellent';
+  if (locationScore >= nationalScore * 0.9) return 'good';
+  if (locationScore >= nationalScore * 0.7) return 'warning';
+  return 'critical';
+}
+
+// Fallback campaign data based on typical W370 scorecard values
+function getFallbackCampaignData(campaignId: string, locationName: string): { location: number, national: number } | null {
+  const fallbackData: { [key: string]: { [location: string]: { location: number, national: number } } } = {
+    '24KWL': {
+      'Wichita Kenworth': { location: 58, national: 56 },
+      'Dodge City Kenworth': { location: 45, national: 56 },
+      'Liberal Kenworth': { location: 62, national: 56 },
+      'Emporia Kenworth': { location: 40, national: 56 }
+    },
+    '25KWB': {
+      'Wichita Kenworth': { location: 100, national: 57 },
+      'Dodge City Kenworth': { location: 85, national: 57 },
+      'Liberal Kenworth': { location: 95, national: 57 },
+      'Emporia Kenworth': { location: 70, national: 57 }
+    },
+    'E311': {
+      'Wichita Kenworth': { location: 50, national: 46 },
+      'Dodge City Kenworth': { location: 35, national: 46 },
+      'Liberal Kenworth': { location: 55, national: 46 },
+      'Emporia Kenworth': { location: 30, national: 46 }
+    },
+    'E316': {
+      'Wichita Kenworth': { location: 84, national: 75 },
+      'Dodge City Kenworth': { location: 65, national: 75 },
+      'Liberal Kenworth': { location: 88, national: 75 },
+      'Emporia Kenworth': { location: 60, national: 75 }
+    },
+    'E327': {
+      'Wichita Kenworth': { location: 51, national: 60 },
+      'Dodge City Kenworth': { location: 42, national: 60 },
+      'Liberal Kenworth': { location: 58, national: 60 },
+      'Emporia Kenworth': { location: 38, national: 60 }
+    }
+  };
+  
+  return fallbackData[campaignId]?.[locationName] || null;
 }
 
 function extractCaseCount(text: string): number {

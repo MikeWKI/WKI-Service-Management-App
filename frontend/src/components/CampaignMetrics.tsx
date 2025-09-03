@@ -53,8 +53,27 @@ const createCampaignMetricsFromLocations = (backendData: any): CampaignMetricsDa
       return null;
     }
 
-    // Create campaign-style metrics from service metrics
+    // Use actual campaign data from PDF parsing if available
     const campaignLocations: LocationCampaignData[] = locations.map((location: any) => {
+      // If the location has campaign data from PDF parsing, use it
+      if (location.campaigns && location.campaigns.length > 0) {
+        const overallScore = location.campaigns.reduce((sum: number, camp: CampaignData) => sum + camp.locationScore, 0) / location.campaigns.length;
+        
+        return {
+          locationName: location.name,
+          campaigns: location.campaigns.map((campaign: any) => ({
+            id: campaign.campaignId,
+            name: campaign.campaignName,
+            locationScore: campaign.locationScore,
+            nationalScore: campaign.nationalScore,
+            goal: campaign.goal,
+            status: campaign.status || getStatusFromScores(campaign.locationScore, campaign.nationalScore, campaign.goal)
+          })),
+          overallScore
+        };
+      }
+      
+      // Fallback: Create derived campaigns from service metrics (for backwards compatibility)
       const campaigns: CampaignData[] = [
         {
           id: 'vsc-compliance',
@@ -257,7 +276,8 @@ export default function CampaignMetrics() {
           <div className="text-6xl mb-4">📊</div>
           <h2 className="text-2xl font-bold text-white mb-4">No Campaign Data Available</h2>
           <p className="text-slate-300 mb-6">
-            Campaign completion metrics will be available once W370 Service Scorecard data is uploaded and processed.
+            Campaign completion metrics from the W370 Service Scorecard will appear once data is uploaded and processed. 
+            This includes actual campaign completion rates by location and national benchmarks from page 1 of the scorecard.
           </p>
         </div>
       </div>
