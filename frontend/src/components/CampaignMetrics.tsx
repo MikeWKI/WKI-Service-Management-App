@@ -35,29 +35,73 @@ const convertBackendCampaignData = (campaignData: any, extractedAt: string): Cam
     }
     
     // Check if we have the new detailed campaign structure from pages 2-3
-    if (campaignData.locations && Array.isArray(campaignData.locations)) {
-      // New structure with detailed campaigns by location
-      const locations: LocationCampaignData[] = campaignData.locations.map((location: any) => {
-        const campaigns: CampaignData[] = location.campaigns.map((campaign: any) => ({
-          id: campaign.code || campaign.id,
-          name: campaign.name || campaign.description,
-          locationScore: parseFloat(campaign.closeRate?.replace('%', '')) || 0,
-          nationalScore: parseFloat(campaign.nationalRate?.replace('%', '')) || 0,
-          goal: parseFloat(campaign.goal?.replace('%', '')) || 100,
+    if (campaignData.locations && typeof campaignData.locations === 'object') {
+      // New structure with detailed campaigns by location from pages 2-3
+      const locations: LocationCampaignData[] = Object.entries(campaignData.locations).map(([locationName, locationCampaigns]: [string, any]) => {
+        const campaigns: CampaignData[] = Object.entries(locationCampaigns).map(([campaignName, campaignData]: [string, any]) => ({
+          id: campaignName.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+          name: campaignName,
+          locationScore: parseFloat(campaignData.closeRate?.replace('%', '')) || 0,
+          nationalScore: parseFloat(campaignData.nationalRate?.replace('%', '')) || 0,
+          goal: parseFloat(campaignData.goal?.replace('%', '')) || 100,
           status: getStatusFromScores(
-            parseFloat(campaign.closeRate?.replace('%', '')) || 0,
-            parseFloat(campaign.nationalRate?.replace('%', '')) || 0,
-            parseFloat(campaign.goal?.replace('%', '')) || 100
+            parseFloat(campaignData.closeRate?.replace('%', '')) || 0,
+            parseFloat(campaignData.nationalRate?.replace('%', '')) || 0,
+            parseFloat(campaignData.goal?.replace('%', '')) || 100
           )
         }));
         
         const overallScore = campaigns.reduce((sum, camp) => sum + camp.locationScore, 0) / campaigns.length;
         
         return {
-          locationName: location.name,
+          locationName,
           campaigns,
           overallScore
         };
+      });
+      
+      return {
+        locations,
+        extractedAt
+      };
+    }
+    
+    // Check if we have campaign summary data
+    if (campaignData.summary && campaignData.campaigns) {
+      // Convert campaigns object to location-based structure
+      const locations: LocationCampaignData[] = [];
+      const locationMap: { [key: string]: CampaignData[] } = {};
+      
+      // Process each campaign and organize by location
+      Object.entries(campaignData.campaigns).forEach(([campaignName, campaign]: [string, any]) => {
+        Object.entries(campaign.locations || {}).forEach(([locationName, closeRate]: [string, any]) => {
+          if (!locationMap[locationName]) {
+            locationMap[locationName] = [];
+          }
+          
+          locationMap[locationName].push({
+            id: campaignName.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+            name: campaignName,
+            locationScore: parseFloat(closeRate.replace('%', '')) || 0,
+            nationalScore: parseFloat(campaign.nationalRate?.replace('%', '')) || 0,
+            goal: parseFloat(campaign.goal?.replace('%', '')) || 100,
+            status: getStatusFromScores(
+              parseFloat(closeRate.replace('%', '')) || 0,
+              parseFloat(campaign.nationalRate?.replace('%', '')) || 0,
+              parseFloat(campaign.goal?.replace('%', '')) || 100
+            )
+          });
+        });
+      });
+      
+      // Convert to final structure
+      Object.entries(locationMap).forEach(([locationName, campaigns]) => {
+        const overallScore = campaigns.reduce((sum, camp) => sum + camp.locationScore, 0) / campaigns.length;
+        locations.push({
+          locationName,
+          campaigns,
+          overallScore
+        });
       });
       
       return {
@@ -456,7 +500,7 @@ export default function CampaignMetrics() {
           <h2 className="text-2xl font-bold text-white mb-4">No Campaign Data Available</h2>
           <p className="text-slate-300 mb-6">
             Campaign completion metrics from pages 2-3 of the W370 Service Scorecard will appear once uploaded. 
-            This includes specific campaign codes (24KWL, E311, E316, E327, etc.), close rates by location, national averages, and goal tracking for campaign performance across all Kenworth dealerships.
+            This includes specific campaigns like Bendix EC80 ABS ECU, PACCAR MX-13 repairs, and TT+ Lighting Programming, with close rates by location, national averages, and goal tracking for campaign performance across all Kenworth dealerships.
           </p>
         </div>
       </div>
