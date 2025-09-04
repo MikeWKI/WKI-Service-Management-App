@@ -25,6 +25,85 @@ interface CampaignMetricsData {
 // Backend API base URL
 const API_BASE_URL = 'https://wki-service-management-app.onrender.com';
 
+// Helper function to convert backend campaign data to frontend format
+const convertBackendCampaignData = (campaignCompletionRates: any, extractedAt: string): CampaignMetricsData | null => {
+  try {
+    console.log('Converting backend campaign data:', campaignCompletionRates);
+    
+    if (!campaignCompletionRates) {
+      return null;
+    }
+    
+    // Create campaigns based on the backend data structure
+    const campaigns: CampaignData[] = [
+      {
+        id: 'cases-closed-correctly',
+        name: 'Cases Closed Correctly',
+        locationScore: parseFloat(campaignCompletionRates.casesClosedCorrectly?.replace('%', '')) || 0,
+        nationalScore: parseFloat(campaignCompletionRates.nationalAverage?.replace('%', '')) || 100,
+        goal: parseFloat(campaignCompletionRates.goal?.replace('%', '')) || 100,
+        status: getStatusFromScores(
+          parseFloat(campaignCompletionRates.casesClosedCorrectly?.replace('%', '')) || 0,
+          parseFloat(campaignCompletionRates.nationalAverage?.replace('%', '')) || 100,
+          parseFloat(campaignCompletionRates.goal?.replace('%', '')) || 100
+        )
+      },
+      {
+        id: 'cases-meeting-requirements',
+        name: 'Cases Meeting Requirements',
+        locationScore: parseFloat(campaignCompletionRates.casesMeetingRequirements?.replace('%', '')) || 0,
+        nationalScore: parseFloat(campaignCompletionRates.nationalAverage?.replace('%', '')) || 100,
+        goal: parseFloat(campaignCompletionRates.goal?.replace('%', '')) || 100,
+        status: getStatusFromScores(
+          parseFloat(campaignCompletionRates.casesMeetingRequirements?.replace('%', '')) || 0,
+          parseFloat(campaignCompletionRates.nationalAverage?.replace('%', '')) || 100,
+          parseFloat(campaignCompletionRates.goal?.replace('%', '')) || 100
+        )
+      },
+      {
+        id: 'overall-completion',
+        name: 'Overall Campaign Completion',
+        locationScore: parseFloat(campaignCompletionRates.overallCompletionRate?.replace('%', '')) || 0,
+        nationalScore: parseFloat(campaignCompletionRates.nationalAverage?.replace('%', '')) || 100,
+        goal: parseFloat(campaignCompletionRates.goal?.replace('%', '')) || 100,
+        status: getStatusFromScores(
+          parseFloat(campaignCompletionRates.overallCompletionRate?.replace('%', '')) || 0,
+          parseFloat(campaignCompletionRates.nationalAverage?.replace('%', '')) || 100,
+          parseFloat(campaignCompletionRates.goal?.replace('%', '')) || 100
+        )
+      },
+      {
+        id: 'customer-satisfaction',
+        name: 'Customer Satisfaction',
+        locationScore: parseFloat(campaignCompletionRates.customerSatisfaction?.replace('%', '')) || 0,
+        nationalScore: 85, // Typical benchmark for customer satisfaction
+        goal: 95,
+        status: getStatusFromScores(
+          parseFloat(campaignCompletionRates.customerSatisfaction?.replace('%', '')) || 0,
+          85,
+          95
+        )
+      }
+    ];
+    
+    // Calculate overall score
+    const overallScore = campaigns.reduce((sum, camp) => sum + camp.locationScore, 0) / campaigns.length;
+    
+    return {
+      locations: [{
+        locationName: 'All Locations', // Backend data represents aggregate
+        campaigns,
+        overallScore
+      }],
+      extractedAt
+    };
+    
+  } catch (error) {
+    console.error('Error converting backend campaign data:', error);
+    return null;
+  }
+};
+
 // Helper function to determine status based on performance vs national and goal
 const getStatusFromScores = (locationScore: number, nationalScore: number, goal: number = 100): 'excellent' | 'good' | 'warning' | 'critical' => {
   if (locationScore >= goal) return 'excellent';
@@ -183,65 +262,76 @@ export default function CampaignMetrics() {
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
-  // Fetch campaign data from backend and local storage
+  // Fetch campaign data from the new backend endpoint
   const fetchCampaignData = useCallback(async () => {
     setIsLoading(true);
     try {
-      // First, check if we have locally parsed campaign data
-      const localCampaignData = localStorage.getItem('campaignData');
-      if (localCampaignData) {
-        try {
-          const parsedLocalData = JSON.parse(localCampaignData);
-          console.log('Found local campaign data:', parsedLocalData);
-          
-          if (parsedLocalData && parsedLocalData.locations) {
-            // Convert local data to the expected format
-            const campaignMetrics: CampaignMetricsData = {
-              locations: parsedLocalData.locations.map((location: any) => ({
-                locationName: location.locationName,
-                campaigns: location.campaigns || [],
-                overallScore: location.campaigns ? 
-                  location.campaigns.reduce((sum: number, camp: any) => sum + camp.locationScore, 0) / location.campaigns.length : 0
-              })),
-              extractedAt: parsedLocalData.extractedAt
-            };
-            
-            setCampaignData(campaignMetrics);
-            setLastUpdated(new Date(parsedLocalData.extractedAt).toLocaleString());
-            setIsLoading(false);
-            return;
-          }
-        } catch (localParseError) {
-          console.warn('Error parsing local campaign data:', localParseError);
-        }
-      }
+      // First, try the dedicated campaign endpoint
+      console.log('Fetching from dedicated campaign endpoint...');
+      let campaignResponse = null;
       
-      // Fallback to backend data
-      console.log('No local campaign data found, fetching from backend...');
+      try {
+        campaignResponse = await fetch(`${API_BASE_URL}/api/locationMetrics/campaigns`);
+        if (campaignResponse.ok) {
+          const campaignData = await campaignResponse.json();
+          console.log('Campaign endpoint response:', campaignData);
+          
+          if (campaignData.success && campaignData.data && campaignData.data.campaignCompletionRates) {
+            const { campaignCompletionRates, extractedAt, month, year, fileName } = campaignData.data;
+            
+            // Convert backend campaign data to frontend format
+            const convertedData = convertBackendCampaignData(campaignCompletionRates, extractedAt);
+            
+            if (convertedData) {
+              setCampaignData(convertedData);
+              setLastUpdated(new Date(extractedAt).toLocaleString());
+              setIsLoading(false);
+              return;
+            }
+          }
+        }
+      } catch (campaignError) {
+        console.warn('Dedicated campaign endpoint failed, trying main endpoint:', campaignError);
+      }
+
+      // Fallback: Check main endpoint for campaign data in dealership metrics
+      console.log('Fetching from main locationMetrics endpoint...');
       const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
       if (response.ok) {
         const data = await response.json();
-        console.log('Raw backend data for campaigns:', data);
+        console.log('Main endpoint response:', data);
         
+        // Check if campaign data is included in dealership metrics
+        if (data.success && data.data && data.data.dealership && data.data.dealership.campaignCompletionRates) {
+          const { campaignCompletionRates, extractedAt } = data.data;
+          
+          const convertedData = convertBackendCampaignData(campaignCompletionRates, extractedAt);
+          
+          if (convertedData) {
+            setCampaignData(convertedData);
+            setLastUpdated(new Date(extractedAt).toLocaleString());
+            setIsLoading(false);
+            return;
+          }
+        }
+        
+        // Final fallback: Use existing location-based approach
         const parsedData = createCampaignMetricsFromLocations(data);
-        console.log('Parsed campaign data:', parsedData);
+        console.log('Fallback parsed campaign data:', parsedData);
         
         if (parsedData) {
           setCampaignData(parsedData);
           setLastUpdated(new Date(parsedData.extractedAt).toLocaleString());
         } else {
-          // No legitimate campaign data available
           setCampaignData(null);
           setLastUpdated(null);
         }
       } else {
-        // No legitimate campaign data available
         setCampaignData(null);
         setLastUpdated(null);
       }
     } catch (error) {
       console.error('Error fetching campaign data:', error);
-      // No legitimate campaign data available
       setCampaignData(null);
       setLastUpdated(null);
     } finally {
@@ -263,12 +353,6 @@ export default function CampaignMetrics() {
     return () => {
       window.removeEventListener('scorecardUploaded', handleScorecardUploaded);
     };
-  }, [fetchCampaignData]);
-
-  // Auto-refresh data every 30 seconds to catch new uploads
-  useEffect(() => {
-    const interval = setInterval(fetchCampaignData, 30000);
-    return () => clearInterval(interval);
   }, [fetchCampaignData]);
 
   // Listen for scorecard upload events for immediate refresh
@@ -322,8 +406,8 @@ export default function CampaignMetrics() {
           <div className="text-6xl mb-4">📊</div>
           <h2 className="text-2xl font-bold text-white mb-4">No Campaign Data Available</h2>
           <p className="text-slate-300 mb-6">
-            Campaign completion metrics from the W370 Service Scorecard will appear once data is uploaded and processed. 
-            This includes actual campaign completion rates by location and national benchmarks from page 1 of the scorecard.
+            Campaign completion metrics from the "OPEN CAMPAIGNS - Completion Rate" section of page 1 will appear once a W370 Service Scorecard is uploaded. 
+            This includes actual completion rates, national averages, and goal tracking for campaign performance.
           </p>
         </div>
       </div>
