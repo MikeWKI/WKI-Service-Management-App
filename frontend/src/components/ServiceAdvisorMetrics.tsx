@@ -11,6 +11,11 @@ interface MetricCard {
   description: string;
   icon: React.ReactNode;
   location: string;
+  locations?: Array<{
+    location: string;
+    value: string;
+    status: 'good' | 'warning' | 'critical';
+  }>;
 }
 
 interface LocationMetrics {
@@ -45,6 +50,14 @@ const parseVscStatus = (value: string): 'good' | 'warning' | 'critical' => {
   return 'critical';
 };
 
+const parseDwellStatus = (value: string): 'good' | 'warning' | 'critical' => {
+  if (!value || value === 'N/A') return 'critical';
+  const numValue = parseFloat(value);
+  if (numValue <= 3.0) return 'good';
+  if (numValue <= 5.0) return 'warning';
+  return 'critical';
+};
+
 const getServiceAdvisorMetrics = async (): Promise<MetricCard[]> => {
   const API_BASE_URL = 'https://wki-service-management-app.onrender.com';
   
@@ -52,7 +65,13 @@ const getServiceAdvisorMetrics = async (): Promise<MetricCard[]> => {
     const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
     if (response.ok) {
       const apiResponse = await response.json();
-      const metrics: MetricCard[] = [];
+      
+      // Initialize combined metrics for all locations
+      const combinedMetrics = {
+        etr: { title: 'ETR % of Cases', values: [] as any[], icon: <Target className="w-6 h-6" />, target: '> 15% (target)', impact: 'Customer satisfaction and service transparency', description: 'Percentage of cases with accurate estimated time of repair provided to customers' },
+        dwell: { title: 'SM Monthly Dwell Avg', values: [] as any[], icon: <Clock className="w-6 h-6" />, target: '< 3.0 days (target)', impact: 'Workflow efficiency and customer wait times', description: 'Average time trucks spend at dealership - affects customer satisfaction and operational efficiency' },
+        notes: { title: '% Cases with 3+ Notes', values: [] as any[], icon: <MessageSquare className="w-6 h-6" />, target: '< 5% (target)', impact: 'Customer engagement and case documentation quality', description: 'Cases requiring extensive documentation indicating communication complexity' }
+      };
       
       // Handle the nested data structure
       if (apiResponse.success && apiResponse.data && apiResponse.data.locations) {
@@ -62,44 +81,66 @@ const getServiceAdvisorMetrics = async (): Promise<MetricCard[]> => {
           
           // ETR % of Cases
           const etrValue = locationData.etrPercentCases || 'N/A';
-          metrics.push({
-            title: 'ETR % of Cases',
+          combinedMetrics.etr.values.push({
+            location: locationName,
             value: etrValue.includes('%') ? etrValue : `${etrValue}%`,
-            target: '> 15% (target)',
-            status: parseEtrStatus(etrValue),
-            impact: 'Customer satisfaction and service transparency',
-            description: 'Percentage of cases with accurate estimated time of repair provided to customers',
-            icon: <Target className="w-6 h-6" />,
-            location: locationName
+            status: parseEtrStatus(etrValue)
           });
 
-          // QAB Usage (Customer Communication) - using VSC Case Requirements as proxy
-          const qabValue = locationData.vscCaseRequirements || 'N/A';
-          metrics.push({
-            title: 'QAB Usage Metrics',
-            value: qabValue,
-            target: '> 95% (target)',
-            status: parseVscStatus(qabValue),
-            impact: 'Workflow efficiency and case tracking accuracy',
-            description: 'Proper use of QAB system for case management and customer updates',
-            icon: <BarChart3 className="w-6 h-6" />,
-            location: locationName
+          // SM Monthly Dwell Avg
+          const dwellValue = locationData.smMonthlyDwellAvg || 'N/A';
+          combinedMetrics.dwell.values.push({
+            location: locationName,
+            value: dwellValue === 'N/A' ? dwellValue : `${dwellValue} days`,
+            status: parseDwellStatus(dwellValue)
           });
 
-          // Customer Communication (% Cases with 3+ Notes)
-          const commValue = locationData.percentCasesWith3Notes || 'N/A';
-          metrics.push({
-            title: 'Customer Communication',
-            value: commValue.includes('%') ? commValue : `${commValue}%`,
-            target: '< 5% (target)',
-            status: parseNotesStatus(commValue),
-            impact: 'Customer engagement and case documentation quality',
-            description: 'Cases requiring extensive documentation indicating communication gaps',
-            icon: <MessageSquare className="w-6 h-6" />,
-            location: locationName
+          // % Cases with 3+ Notes
+          const notesValue = locationData.percentCasesWith3Notes || 'N/A';
+          combinedMetrics.notes.values.push({
+            location: locationName,
+            value: notesValue.includes('%') ? notesValue : `${notesValue}%`,
+            status: parseNotesStatus(notesValue)
           });
         });
       }
+      
+      // Convert to MetricCard format with combined location data
+      const metrics: MetricCard[] = [
+        {
+          title: combinedMetrics.etr.title,
+          value: '', // Will be handled differently in rendering
+          target: combinedMetrics.etr.target,
+          status: 'good', // Will be determined by individual locations
+          impact: combinedMetrics.etr.impact,
+          description: combinedMetrics.etr.description,
+          icon: combinedMetrics.etr.icon,
+          location: 'All Locations',
+          locations: combinedMetrics.etr.values
+        },
+        {
+          title: combinedMetrics.dwell.title,
+          value: '',
+          target: combinedMetrics.dwell.target,
+          status: 'good',
+          impact: combinedMetrics.dwell.impact,
+          description: combinedMetrics.dwell.description,
+          icon: combinedMetrics.dwell.icon,
+          location: 'All Locations',
+          locations: combinedMetrics.dwell.values
+        },
+        {
+          title: combinedMetrics.notes.title,
+          value: '',
+          target: combinedMetrics.notes.target,
+          status: 'good',
+          impact: combinedMetrics.notes.impact,
+          description: combinedMetrics.notes.description,
+          icon: combinedMetrics.notes.icon,
+          location: 'All Locations',
+          locations: combinedMetrics.notes.values
+        }
+      ];
       
       return metrics;
     }
@@ -227,22 +268,34 @@ export default function ServiceAdvisorMetrics() {
       {/* Metrics Grid - only show when data exists */}
       {metrics.length > 0 && (
         <>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
             {metrics.map((metric, index) => (
               <div
                 key={index}
-                className={`${getStatusColor(metric.status)} rounded-lg border-2 p-6 shadow-2xl hover:shadow-lg transition-all duration-300 hover:scale-105`}
+                className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg border-2 border-slate-600 p-6 shadow-2xl hover:shadow-lg transition-all duration-300 hover:scale-105"
               >
                 <div className="flex items-center justify-between mb-4">
                   {metric.icon}
-                  <span className="text-2xl">{getStatusIcon(metric.status)}</span>
+                  <span className="text-2xl">📊</span>
                 </div>
-                <h3 className="text-lg font-semibold mb-2 text-white">{metric.title}</h3>
-                <div className="text-sm text-slate-400 mb-2">{metric.location}</div>
+                <h3 className="text-lg font-semibold mb-4 text-white">{metric.title}</h3>
+                
+                {/* Location-specific values */}
+                <div className="space-y-3 mb-4">
+                  {metric.locations?.map((loc, locIndex) => (
+                    <div key={locIndex} className="flex items-center justify-between p-2 bg-slate-700/30 rounded">
+                      <span className="text-sm text-slate-300">{loc.location}</span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-lg font-bold text-white">{loc.value}</span>
+                        <span className="text-lg">{getStatusIcon(loc.status)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-2xl font-bold text-white">{metric.value}</span>
-                    <span className="text-sm text-slate-400">{metric.target}</span>
+                    <span className="text-sm text-slate-400">Target: {metric.target}</span>
                   </div>
                   <p className="text-sm text-slate-300">{metric.description}</p>
                   <div className="mt-3 p-2 bg-slate-700/50 rounded text-xs border border-slate-600">
