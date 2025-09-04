@@ -169,45 +169,45 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           ];
         } else if (locationName === 'Dodge City Kenworth') {
           completeData = [
-            getFieldValue('vscCaseRequirements', '67%'),     // 1. VSC Case Requirements
-            getFieldValue('vscClosedCorrectly', '83%'),      // 2. VSC Closed Correctly
-            getFieldValue('ttActivation', '85%'),            // 3. TT+ Activation 
-            getFieldValue('smMonthlyDwellAvg', '1.8'),       // 4. SM Monthly Dwell Avg
-            getFieldValue('smYtdDwellAvgDays', '6.1'),       // 5. SM YTD Dwell Avg Days
-            getFieldValue('triagePercentLess4Hours', '19.0%'), // 6. Triage % < 4 Hours (SWAPPED)
-            getFieldValue('triageHours', '2.2'),             // 7. Triage Hours (SWAPPED)
-            getFieldValue('etrPercentCases', '4.2'),         // 8. ETR % of Cases
-            getFieldValue('percentCasesWith3Notes', '0%'),   // 9. % Cases with 3+ Notes
-            getFieldValue('rdsMonthlyAvgDays', '0%'),        // 10. RDS Monthly Avg Days
-            getFieldValue('rdsYtdDwellAvgDays', '5.7')       // 11. RDS YTD Dwell Avg Days
+            getFieldValue('vscCaseRequirements', '67%'),       // 1. VSC Case Requirements
+            getFieldValue('vscClosedCorrectly', '83%'),        // 2. VSC Closed Correctly
+            getFieldValue('ttActivation', '85%'),              // 3. TT+ Activation 
+            getFieldValue('smMonthlyDwellAvg', '1.8'),         // 4. SM Monthly Dwell Avg
+            getFieldValue('triageHours', '6.1'),               // 5. SM YTD Dwell Avg Days (backend triageHours field)
+            getFieldValue('triagePercentLess4Hours', '19.0%'), // 6. Triage % < 4 Hours
+            getFieldValue('etrPercentCases', '2.2'),           // 7. SM Average Triage Hours (backend etrPercentCases field)
+            getFieldValue('percentCasesWith3Notes', '4.2'),    // 8. ETR % of Cases (backend percentCasesWith3Notes field)
+            getFieldValue('rdsMonthlyAvgDays', '0%'),          // 9. % Cases with 3+ Notes (backend rdsMonthlyAvgDays field)
+            getFieldValue('smYtdDwellAvgDays', '0%'),          // 10. RDS Dwell Monthly Avg Days (backend smYtdDwellAvgDays field)
+            getFieldValue('rdsYtdDwellAvgDays', '5.7')         // 11. RDS YTD Dwell Avg Days
           ];
         } else if (locationName === 'Liberal Kenworth') {
           completeData = [
-            getFieldValue('vscCaseRequirements', '100%'),    // 1. VSC Case Requirements
-            getFieldValue('vscClosedCorrectly', '100%'),     // 2. VSC Closed Correctly
-            getFieldValue('ttActivation', '100%'),           // 3. TT+ Activation
-            getFieldValue('smMonthlyDwellAvg', '2'),         // 4. SM Monthly Dwell Avg 
-            getFieldValue('smYtdDwellAvgDays', '5.6'),       // 5. SM YTD Dwell Avg Days
-            getFieldValue('triagePercentLess4Hours', '89.4%'), // 6. Triage % < 4 Hours (SWAPPED)
-            getFieldValue('triageHours', '2.6'),             // 7. Triage Hours (SWAPPED)
-            getFieldValue('etrPercentCases', '3.1'),         // 8. ETR % of Cases
-            getFieldValue('percentCasesWith3Notes', '0%'),   // 9. % Cases with 3+ Notes
-            getFieldValue('rdsMonthlyAvgDays', '2.1%'),      // 10. RDS Monthly Avg Days
-            getFieldValue('rdsYtdDwellAvgDays', '5.7')       // 11. RDS YTD Dwell Avg Days
+            getFieldValue('vscCaseRequirements', '100%'),      // 1. VSC Case Requirements
+            getFieldValue('vscClosedCorrectly', '100%'),       // 2. VSC Closed Correctly
+            getFieldValue('ttActivation', '100%'),             // 3. TT+ Activation
+            getFieldValue('smMonthlyDwellAvg', '2'),           // 4. SM Monthly Dwell Avg 
+            getFieldValue('triageHours', '5.6'),               // 5. SM YTD Dwell Avg Days (backend triageHours field)
+            getFieldValue('triagePercentLess4Hours', '89.4%'), // 6. Triage % < 4 Hours
+            getFieldValue('etrPercentCases', '2.6'),           // 7. SM Average Triage Hours (backend etrPercentCases field)
+            getFieldValue('percentCasesWith3Notes', '3.1'),    // 8. ETR % of Cases (backend percentCasesWith3Notes field)
+            getFieldValue('rdsMonthlyAvgDays', '0%'),          // 9. % Cases with 3+ Notes (backend rdsMonthlyAvgDays field)
+            getFieldValue('smYtdDwellAvgDays', '2.1%'),        // 10. RDS Dwell Monthly Avg Days (backend smYtdDwellAvgDays field)
+            getFieldValue('rdsYtdDwellAvgDays', '5.7')         // 11. RDS YTD Dwell Avg Days
           ];
         } else if (locationName === 'Emporia Kenworth') {
           completeData = [
-            getFieldValue('vscCaseRequirements', 'N/A'),     // 1. VSC Case Requirements
-            getFieldValue('vscClosedCorrectly', 'N/A'),      // 2. VSC Closed Correctly
-            getFieldValue('ttActivation', 'N/A'),            // 3. TT+ Activation
-            getFieldValue('smMonthlyDwellAvg', '1.2'),       // 4. SM Monthly Dwell Avg
-            getFieldValue('smYtdDwellAvgDays', '3.3'),       // 5. SM YTD Dwell Avg Days
-            getFieldValue('triagePercentLess4Hours', '38.8%'), // 6. Triage % < 4 Hours (SWAPPED)
-            getFieldValue('triageHours', '0.8'),             // 7. Triage Hours (SWAPPED)
-            getFieldValue('etrPercentCases', '9.5'),         // 8. ETR % of Cases
-            getFieldValue('percentCasesWith3Notes', '1.0%'), // 9. % Cases with 3+ Notes
-            getFieldValue('rdsMonthlyAvgDays', '15.3%'),     // 10. RDS Monthly Avg Days
-            getFieldValue('rdsYtdDwellAvgDays', '4.3')       // 11. RDS YTD Dwell Avg Days
+            getFieldValue('vscCaseRequirements', 'N/A'),       // 1. VSC Case Requirements
+            getFieldValue('vscClosedCorrectly', 'N/A'),        // 2. VSC Closed Correctly
+            getFieldValue('ttActivation', 'N/A'),              // 3. TT+ Activation
+            getFieldValue('smMonthlyDwellAvg', '1.2'),         // 4. SM Monthly Dwell Avg
+            getFieldValue('triageHours', '3.3'),               // 5. SM YTD Dwell Avg Days (backend triageHours field)
+            getFieldValue('triagePercentLess4Hours', '38.8%'), // 6. Triage % < 4 Hours
+            getFieldValue('etrPercentCases', '0.8'),           // 7. SM Average Triage Hours (backend etrPercentCases field)
+            getFieldValue('percentCasesWith3Notes', '9.5'),    // 8. ETR % of Cases (backend percentCasesWith3Notes field)
+            getFieldValue('rdsMonthlyAvgDays', '1.0%'),        // 9. % Cases with 3+ Notes (backend rdsMonthlyAvgDays field)
+            getFieldValue('smYtdDwellAvgDays', '15.3%'),       // 10. RDS Dwell Monthly Avg Days (backend smYtdDwellAvgDays field)
+            getFieldValue('rdsYtdDwellAvgDays', '4.3')         // 11. RDS YTD Dwell Avg Days
           ];
         } else {
           // Fallback to backend data if available
