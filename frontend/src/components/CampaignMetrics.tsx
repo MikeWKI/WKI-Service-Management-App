@@ -301,13 +301,23 @@ export default function CampaignMetrics() {
   const fetchCampaignData = useCallback(async () => {
     setIsLoading(true);
     try {
+      // Add timeout to API calls
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout')), 10000); // 10 second timeout
+      });
+
       // First, try the dedicated campaign endpoint
       console.log('Fetching from dedicated campaign endpoint...');
       let campaignResponse = null;
       
       try {
-        campaignResponse = await fetch(`${API_BASE_URL}/api/locationMetrics/campaigns`);
-        if (campaignResponse.ok) {
+        const campaignResponsePromise = fetch(`${API_BASE_URL}/api/locationMetrics/campaigns`);
+        campaignResponse = await Promise.race([
+          campaignResponsePromise,
+          timeoutPromise
+        ]) as Response;
+        
+        if (campaignResponse && campaignResponse.ok) {
           const campaignData = await campaignResponse.json();
           console.log('Campaign endpoint response:', campaignData);
           
@@ -320,7 +330,6 @@ export default function CampaignMetrics() {
             if (convertedData) {
               setCampaignData(convertedData);
               setLastUpdated(new Date(extractedAt).toLocaleString());
-              setIsLoading(false);
               return;
             }
           }
@@ -331,8 +340,13 @@ export default function CampaignMetrics() {
 
       // Fallback: Check main endpoint for campaign data in dealership metrics
       console.log('Fetching from main locationMetrics endpoint...');
-      const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
-      if (response.ok) {
+      const responsePromise = fetch(`${API_BASE_URL}/api/locationMetrics`);
+      const response = await Promise.race([
+        responsePromise,
+        timeoutPromise
+      ]) as Response;
+      
+      if (response && response.ok) {
         const data = await response.json();
         console.log('Main endpoint response:', data);
         
@@ -345,7 +359,6 @@ export default function CampaignMetrics() {
           if (convertedData) {
             setCampaignData(convertedData);
             setLastUpdated(new Date(extractedAt).toLocaleString());
-            setIsLoading(false);
             return;
           }
         }
@@ -362,6 +375,7 @@ export default function CampaignMetrics() {
           setLastUpdated(null);
         }
       } else {
+        console.error('Backend endpoints are not responding');
         setCampaignData(null);
         setLastUpdated(null);
       }

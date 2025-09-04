@@ -70,22 +70,32 @@ const API_BASE_URL = 'https://wki-service-management-app.onrender.com';
 // Test API connection
 const testAPIConnection = async () => {
   try {
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Connection test timeout')), 5000);
+    });
+    
     // Test the main endpoint we'll be using
-    const response = await fetch(`${API_BASE_URL}/api/locationMetrics/upload`, {
+    const responsePromise = fetch(`${API_BASE_URL}/api/locationMetrics/upload`, {
       method: 'GET', // Just test connectivity, not actual upload
     });
-    console.log('Backend connectivity test:', response.status);
+    const response = await Promise.race([
+      responsePromise,
+      timeoutPromise
+    ]) as Response;
     
-    if (response.status === 405) {
+    console.log('Backend connectivity test:', response ? response.status : 'No response');
+    
+    if (response && response.status === 405) {
       // Method not allowed is expected for GET on upload endpoint
       console.log('✅ Backend is responding (POST endpoint ready)');
       return true;
-    } else if (response.status === 500) {
+    } else if (response && response.status === 500) {
       console.log('⚠️ Backend responding but has server errors (likely database issue)');
       return true; // Backend is running, just has DB issues
     }
     
-    return response.ok;
+    return response ? response.ok : false;
   } catch (error) {
     console.error('Backend connectivity test failed:', error instanceof Error ? error.message : String(error));
     return false;
@@ -126,9 +136,19 @@ const uploadScorecardToAPI = async (file: File, month: string, year: number) => 
 };
 
 const fetchLocationMetrics = async () => {
-  const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch metrics: ${response.statusText}`);
+  // Add timeout to prevent hanging
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('Request timeout after 10 seconds')), 10000);
+  });
+  
+  const responsePromise = fetch(`${API_BASE_URL}/api/locationMetrics`);
+  const response = await Promise.race([
+    responsePromise,
+    timeoutPromise
+  ]) as Response;
+  
+  if (!response || !response.ok) {
+    throw new Error(`Failed to fetch metrics: ${response ? response.statusText : 'No response'}`);
   }
   return response.json();
 };
