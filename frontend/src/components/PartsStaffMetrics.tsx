@@ -184,100 +184,43 @@ export default function PartsStaffMetrics() {
           ))}
         </div>
       )}
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg border-2 border-yellow-500/50 p-6 shadow-2xl hover:shadow-yellow-500/25 transition-all duration-300 hover:scale-105">
-          <div className="flex items-center justify-between mb-4">
-            <TrendingUp size={24} className="text-white" />
-            <span className="text-2xl">⚠️</span>
-          </div>
-          <h3 className="text-lg font-semibold mb-2 text-white">Order Accuracy</h3>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-2xl font-bold text-white">88%</span>
-              <span className="text-sm text-slate-400">Target: &gt; 95%</span>
-            </div>
-            <p className="text-sm text-slate-300">Percentage of parts orders without errors</p>
-            <div className="mt-3 p-2 bg-slate-700/50 rounded text-xs border border-slate-600">
-              <strong className="text-red-400">Impact:</strong> <span className="text-slate-300">Rework Prevention &amp; Customer Trust</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg border-2 border-green-500/50 p-6 shadow-2xl hover:shadow-green-500/25 transition-all duration-300 hover:scale-105">
-          <div className="flex items-center justify-between mb-4">
-            <AlertCircle size={24} className="text-white" />
-            <span className="text-2xl">✅</span>
-          </div>
-          <h3 className="text-lg font-semibold mb-2 text-white">Proactive Ordering</h3>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-2xl font-bold text-white">87%</span>
-              <span className="text-sm text-slate-400">Target: &gt; 85%</span>
-            </div>
-            <p className="text-sm text-slate-300">Percentage of critical parts ordered proactively</p>
-            <div className="mt-3 p-2 bg-slate-700/50 rounded text-xs border border-slate-600">
-              <strong className="text-red-400">Impact:</strong> <span className="text-slate-300">Downtime Prevention &amp; Planning</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Action Items */}
       <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-lg shadow-2xl border border-slate-700 p-8 mb-8">
         <h2 className="text-2xl font-bold text-white mb-6">🎯 Action Items to Improve Your Metrics</h2>
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-2 gap-8">
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-red-400 border-b border-red-500/50 pb-2">Parts Availability</h3>
+            <h3 className="text-lg font-semibold text-red-400 border-b border-red-500/50 pb-2">Parts Documentation</h3>
             <ul className="space-y-2">
               <li className="flex items-start space-x-2 text-sm">
                 <span className="text-red-500 mt-1">•</span>
-                <span className="text-slate-300">Monitor inventory levels daily</span>
+                <span className="text-slate-300">Update case notes when parts are delayed</span>
               </li>
               <li className="flex items-start space-x-2 text-sm">
                 <span className="text-red-500 mt-1">•</span>
-                <span className="text-slate-300">Set automatic reorder points</span>
+                <span className="text-slate-300">Communicate ETA changes promptly</span>
               </li>
               <li className="flex items-start space-x-2 text-sm">
                 <span className="text-red-500 mt-1">•</span>
-                <span className="text-slate-300">Review historical usage patterns</span>
+                <span className="text-slate-300">Use consistent status updates</span>
               </li>
             </ul>
           </div>
           
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-red-400 border-b border-red-500/50 pb-2">Order Accuracy</h3>
+            <h3 className="text-lg font-semibold text-red-400 border-b border-red-500/50 pb-2">Dwell Time Management</h3>
             <ul className="space-y-2">
               <li className="flex items-start space-x-2 text-sm">
                 <span className="text-red-500 mt-1">•</span>
-                <span className="text-slate-300">Double-check part numbers before ordering</span>
+                <span className="text-slate-300">Expedite critical parts orders</span>
               </li>
               <li className="flex items-start space-x-2 text-sm">
                 <span className="text-red-500 mt-1">•</span>
-                <span className="text-slate-300">Use barcode scanning when possible</span>
+                <span className="text-slate-300">Monitor high-dwell cases daily</span>
               </li>
               <li className="flex items-start space-x-2 text-sm">
                 <span className="text-red-500 mt-1">•</span>
-                <span className="text-slate-300">Verify compatibility with technicians</span>
-              </li>
-            </ul>
-          </div>
-          
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-red-400 border-b border-red-500/50 pb-2">Picking Efficiency</h3>
-            <ul className="space-y-2">
-              <li className="flex items-start space-x-2 text-sm">
-                <span className="text-red-500 mt-1">•</span>
-                <span className="text-slate-300">Organize parts by frequency of use</span>
-              </li>
-              <li className="flex items-start space-x-2 text-sm">
-                <span className="text-red-500 mt-1">•</span>
-                <span className="text-slate-300">Batch similar orders together</span>
-              </li>
-              <li className="flex items-start space-x-2 text-sm">
-                <span className="text-red-500 mt-1">•</span>
-                <span className="text-slate-300">Maintain clear labeling system</span>
+                <span className="text-slate-300">Coordinate with service advisors</span>
               </li>
             </ul>
           </div>
@@ -291,17 +234,17 @@ export default function PartsStaffMetrics() {
           <div>
             <h4 className="font-semibold mb-2 text-white">Operational Impact</h4>
             <ul className="space-y-1">
-              <li>• High availability = Reduced truck dwell time</li>
-              <li>• Fast picking = Better technician productivity</li>
-              <li>• Accurate orders = Fewer delays and customer complaints</li>
+              <li>• Parts availability directly affects customer dwell time</li>
+              <li>• Proper documentation reduces case complexity</li>
+              <li>• Quick turnaround improves technician productivity</li>
             </ul>
           </div>
           <div>
-            <h4 className="font-semibold mb-2 text-white">Financial Impact</h4>
+            <h4 className="font-semibold mb-2 text-white">Customer Impact</h4>
             <ul className="space-y-1">
-              <li>• Proactive ordering = Better inventory turnover</li>
-              <li>• Reduced errors = Lower return/exchange costs</li>
-              <li>• Efficient processes = Lower labor costs</li>
+              <li>• Faster parts = Shorter repair times</li>
+              <li>• Clear communication = Better customer experience</li>
+              <li>• Accurate ETAs = Improved trust and satisfaction</li>
             </ul>
           </div>
         </div>

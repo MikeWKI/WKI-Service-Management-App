@@ -251,33 +251,9 @@ export default function ServiceAdvisorMetrics() {
           </div>
         </>
       )}
-            className={`rounded-lg border-2 p-6 shadow-2xl hover:shadow-red-500/25 transition-all duration-300 hover:scale-105 ${getStatusColor(metric.status)}`}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-2">
-                <div className="text-white">{metric.icon}</div>
-                <span className="text-2xl">{getStatusIcon(metric.status)}</span>
-              </div>
-            </div>
-            
-            <h3 className="text-lg font-semibold mb-2 text-white">{metric.title}</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-2xl font-bold text-white">{metric.value}</span>
-                <span className="text-sm text-slate-400">Target: {metric.target}</span>
-              </div>
-              <p className="text-sm text-slate-300">{metric.description}</p>
-              <div className="mt-3 p-2 bg-slate-700/50 rounded text-xs border border-slate-600">
-                <strong className="text-red-400">Impact:</strong> <span className="text-slate-300">{metric.impact}</span>
-              </div>
-            </div>
-          </div>
-        ))}
-        </div>
-      )}
 
       {/* Action Items and Performance Impact - only show when data exists */}
-      {serviceAdvisorMetrics.length > 0 && (
+      {metrics.length > 0 && (
         <>
           <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-lg shadow-2xl border border-slate-700 p-8">
             <h2 className="text-2xl font-bold text-white mb-6">

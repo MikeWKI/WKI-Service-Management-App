@@ -205,121 +205,61 @@ export default function TechnicianMetrics() {
           ))}
         </div>
       )}
-            <div className="mt-3 p-2 bg-slate-700/50 rounded text-xs border border-slate-600">
-              <strong className="text-red-400">Impact:</strong> <span className="text-slate-300">PACCAR Gold ExpressLane requirement</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg border-2 border-green-500/50 p-6 shadow-2xl hover:shadow-green-500/25 transition-all duration-300 hover:scale-105">
-          <div className="flex items-center justify-between mb-4">
-            <Wrench size={24} className="text-white" />
-            <span className="text-2xl">✅</span>
-          </div>
-          <h3 className="text-lg font-semibold mb-2 text-white">ATR Accuracy</h3>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-2xl font-bold text-white">4.2 hrs</span>
-              <span className="text-sm text-slate-400">Target: Match ETR</span>
-            </div>
-            <p className="text-sm text-slate-300">Actual Time to Repair vs estimated time</p>
-            <div className="mt-3 p-2 bg-slate-700/50 rounded text-xs border border-slate-600">
-              <strong className="text-red-400">Impact:</strong> <span className="text-slate-300">ETR accuracy and customer trust</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg border-2 border-green-500/50 p-6 shadow-2xl hover:shadow-green-500/25 transition-all duration-300 hover:scale-105">
-          <div className="flex items-center justify-between mb-4">
-            <Target size={24} className="text-white" />
-            <span className="text-2xl">✅</span>
-          </div>
-          <h3 className="text-lg font-semibold mb-2 text-white">Diagnostic Accuracy</h3>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-2xl font-bold text-white">96%</span>
-              <span className="text-sm text-slate-400">Target: &gt; 95%</span>
-            </div>
-            <p className="text-sm text-slate-300">Percentage of accurate problem identification</p>
-            <div className="mt-3 p-2 bg-slate-700/50 rounded text-xs border border-slate-600">
-              <strong className="text-red-400">Impact:</strong> <span className="text-slate-300">Repair Efficiency &amp; Parts Costs</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg border-2 border-green-500/50 p-6 shadow-2xl hover:shadow-green-500/25 transition-all duration-300 hover:scale-105">
-          <div className="flex items-center justify-between mb-4">
-            <Wrench size={24} className="text-white" />
-            <span className="text-2xl">✅</span>
-          </div>
-          <h3 className="text-lg font-semibold mb-2 text-white">Safety Compliance</h3>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-2xl font-bold text-white">100%</span>
-              <span className="text-sm text-slate-400">Target: 100%</span>
-            </div>
-            <p className="text-sm text-slate-300">Adherence to safety protocols and procedures</p>
-            <div className="mt-3 p-2 bg-slate-700/50 rounded text-xs border border-slate-600">
-              <strong className="text-red-400">Impact:</strong> <span className="text-slate-300">Workplace Safety &amp; Legal Compliance</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Action Items */}
       <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-lg shadow-2xl border border-slate-700 p-8 mb-8">
         <h2 className="text-2xl font-bold text-white mb-6">🎯 Action Items to Improve Your Metrics</h2>
         <div className="grid md:grid-cols-3 gap-8">
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-red-400 border-b border-red-500/50 pb-2">Diagnostic Skills</h3>
+            <h3 className="text-lg font-semibold text-red-400 border-b border-red-500/50 pb-2">ETR Management</h3>
             <ul className="space-y-2">
               <li className="flex items-start space-x-2 text-sm">
                 <span className="text-red-500 mt-1">•</span>
-                <span className="text-slate-300">Follow systematic diagnostic procedures</span>
+                <span className="text-slate-300">Provide accurate time estimates for repairs</span>
               </li>
               <li className="flex items-start space-x-2 text-sm">
                 <span className="text-red-500 mt-1">•</span>
-                <span className="text-slate-300">Use proper diagnostic tools and software</span>
+                <span className="text-slate-300">Update ETR when scope changes</span>
               </li>
               <li className="flex items-start space-x-2 text-sm">
                 <span className="text-red-500 mt-1">•</span>
-                <span className="text-slate-300">Document findings thoroughly in case notes</span>
+                <span className="text-slate-300">Communicate delays immediately</span>
               </li>
             </ul>
           </div>
           
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-red-400 border-b border-red-500/50 pb-2">Quality Control</h3>
+            <h3 className="text-lg font-semibold text-red-400 border-b border-red-500/50 pb-2">Triage Efficiency</h3>
             <ul className="space-y-2">
               <li className="flex items-start space-x-2 text-sm">
                 <span className="text-red-500 mt-1">•</span>
-                <span className="text-slate-300">Perform thorough post-repair testing</span>
+                <span className="text-slate-300">Complete initial assessment quickly</span>
               </li>
               <li className="flex items-start space-x-2 text-sm">
                 <span className="text-red-500 mt-1">•</span>
-                <span className="text-slate-300">Double-check torque specifications</span>
+                <span className="text-slate-300">Use systematic diagnostic approach</span>
               </li>
               <li className="flex items-start space-x-2 text-sm">
                 <span className="text-red-500 mt-1">•</span>
-                <span className="text-slate-300">Complete final inspection checklists</span>
+                <span className="text-slate-300">Document findings clearly</span>
               </li>
             </ul>
           </div>
           
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-red-400 border-b border-red-500/50 pb-2">Efficiency</h3>
+            <h3 className="text-lg font-semibold text-red-400 border-b border-red-500/50 pb-2">Documentation</h3>
             <ul className="space-y-2">
               <li className="flex items-start space-x-2 text-sm">
                 <span className="text-red-500 mt-1">•</span>
-                <span className="text-slate-300">Organize tools and workspace efficiently</span>
+                <span className="text-slate-300">Keep case notes concise and clear</span>
               </li>
               <li className="flex items-start space-x-2 text-sm">
                 <span className="text-red-500 mt-1">•</span>
-                <span className="text-slate-300">Plan repair sequences to minimize downtime</span>
+                <span className="text-slate-300">Avoid unnecessary note additions</span>
               </li>
               <li className="flex items-start space-x-2 text-sm">
                 <span className="text-red-500 mt-1">•</span>
-                <span className="text-slate-300">Coordinate with Service Advisors proactively</span>
+                <span className="text-slate-300">Use standard terminology</span>
               </li>
             </ul>
           </div>
@@ -331,19 +271,19 @@ export default function TechnicianMetrics() {
         <h3 className="text-xl font-bold text-red-300 mb-4">💡 How Technicians Drive Dealer Success</h3>
         <div className="grid md:grid-cols-2 gap-6 text-sm text-slate-300">
           <div>
-            <h4 className="font-semibold mb-2 text-white">Quality Impact</h4>
+            <h4 className="font-semibold mb-2 text-white">Repair Quality Impact</h4>
             <ul className="space-y-1">
-              <li>• High first-time fix rate = Improved customer confidence</li>
-              <li>• Accurate diagnostics = Reduced unnecessary parts costs</li>
-              <li>• Quality workmanship = Higher customer satisfaction scores</li>
+              <li>• Accurate ETR = Better customer planning and satisfaction</li>
+              <li>• Fast triage = Reduced customer wait times</li>
+              <li>• Clear documentation = Improved case tracking</li>
             </ul>
           </div>
           <div>
-            <h4 className="font-semibold mb-2 text-white">Efficiency Impact</h4>
+            <h4 className="font-semibold mb-2 text-white">Operational Impact</h4>
             <ul className="space-y-1">
-              <li>• Fast, accurate repairs = Lower dwell time</li>
-              <li>• Proper procedures = Reduced liability and rework</li>
-              <li>• Good communication = Smoother workflow coordination</li>
+              <li>• Quality repairs = Reduced comebacks and rework</li>
+              <li>• Efficient diagnosis = Better resource utilization</li>
+              <li>• Proper documentation = Smoother workflows</li>
             </ul>
           </div>
         </div>
