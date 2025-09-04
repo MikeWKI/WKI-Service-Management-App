@@ -26,15 +26,50 @@ interface CampaignMetricsData {
 const API_BASE_URL = 'https://wki-service-management-app.onrender.com';
 
 // Helper function to convert backend campaign data to frontend format
-const convertBackendCampaignData = (campaignCompletionRates: any, extractedAt: string): CampaignMetricsData | null => {
+const convertBackendCampaignData = (campaignData: any, extractedAt: string): CampaignMetricsData | null => {
   try {
-    console.log('Converting backend campaign data:', campaignCompletionRates);
+    console.log('Converting backend campaign data:', campaignData);
     
-    if (!campaignCompletionRates) {
+    if (!campaignData) {
       return null;
     }
     
-    // Create campaigns based on the backend data structure
+    // Check if we have the new detailed campaign structure from pages 2-3
+    if (campaignData.locations && Array.isArray(campaignData.locations)) {
+      // New structure with detailed campaigns by location
+      const locations: LocationCampaignData[] = campaignData.locations.map((location: any) => {
+        const campaigns: CampaignData[] = location.campaigns.map((campaign: any) => ({
+          id: campaign.code || campaign.id,
+          name: campaign.name || campaign.description,
+          locationScore: parseFloat(campaign.closeRate?.replace('%', '')) || 0,
+          nationalScore: parseFloat(campaign.nationalRate?.replace('%', '')) || 0,
+          goal: parseFloat(campaign.goal?.replace('%', '')) || 100,
+          status: getStatusFromScores(
+            parseFloat(campaign.closeRate?.replace('%', '')) || 0,
+            parseFloat(campaign.nationalRate?.replace('%', '')) || 0,
+            parseFloat(campaign.goal?.replace('%', '')) || 100
+          )
+        }));
+        
+        const overallScore = campaigns.reduce((sum, camp) => sum + camp.locationScore, 0) / campaigns.length;
+        
+        return {
+          locationName: location.name,
+          campaigns,
+          overallScore
+        };
+      });
+      
+      return {
+        locations,
+        extractedAt
+      };
+    }
+    
+    // Fallback for old campaign completion rates structure
+    const campaignCompletionRates = campaignData.campaignCompletionRates || campaignData;
+    
+    // Create campaigns based on the legacy backend data structure
     const campaigns: CampaignData[] = [
       {
         id: 'cases-closed-correctly',
@@ -406,8 +441,8 @@ export default function CampaignMetrics() {
           <div className="text-6xl mb-4">📊</div>
           <h2 className="text-2xl font-bold text-white mb-4">No Campaign Data Available</h2>
           <p className="text-slate-300 mb-6">
-            Campaign completion metrics from the "OPEN CAMPAIGNS - Completion Rate" section of page 1 will appear once a W370 Service Scorecard is uploaded. 
-            This includes actual completion rates, national averages, and goal tracking for campaign performance.
+            Campaign completion metrics from pages 2-3 of the W370 Service Scorecard will appear once uploaded. 
+            This includes specific campaign codes (24KWL, E311, E316, E327, etc.), close rates by location, national averages, and goal tracking for campaign performance across all Kenworth dealerships.
           </p>
         </div>
       </div>

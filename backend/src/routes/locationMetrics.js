@@ -145,16 +145,18 @@ function extractDealershipMetrics(text) {
 }
 
 function extractCampaignCompletionRates(text) {
-  // Extract campaign completion rates from page 1 of W370 Service Scorecard
+  // Extract campaign completion rates from pages 2-3 of W370 Service Scorecard
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   
-  console.log('\n=== EXTRACTING CAMPAIGN COMPLETION RATES ===');
+  console.log('\n=== EXTRACTING CAMPAIGN COMPLETION RATES (PAGES 2-3) ===');
   
-  // Look for the "OPEN CAMPAIGNS - Completion Rate" section
+  // Look for "Campaign Completion Close rate National Goal" header
   let campaignSectionStart = -1;
-  for (let i = 0; i < Math.min(lines.length, 100); i++) {
-    if (lines[i].toLowerCase().includes('open campaigns') && 
-        lines[i].toLowerCase().includes('completion rate')) {
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].toLowerCase().includes('campaign completion') && 
+        lines[i].toLowerCase().includes('close rate') &&
+        lines[i].toLowerCase().includes('national') &&
+        lines[i].toLowerCase().includes('goal')) {
       campaignSectionStart = i;
       console.log(`Found campaign section at line ${i}: "${lines[i]}"`);
       break;
@@ -166,51 +168,179 @@ function extractCampaignCompletionRates(text) {
     return getExpectedCampaignRates();
   }
   
-  // Extract campaign data from the section following the header
-  const campaignData = {};
+  const campaignData = {
+    locations: {},
+    campaigns: {},
+    summary: {}
+  };
   
-  // Based on PDF structure, extract the key completion rates
   try {
-    // Look for Goal and National Average values (typically 100%)
-    let goalValue = '100%';
-    let nationalAverage = '100%';
+    // Define the locations we're looking for
+    const locations = ['Wichita Kenworth', 'Dodge City Kenworth', 'Liberal Kenworth', 'Emporia Kenworth'];
     
-    // Look for specific completion percentages in the campaign section
-    for (let i = campaignSectionStart; i < Math.min(campaignSectionStart + 20, lines.length); i++) {
+    let currentLocation = null;
+    
+    // Parse through the campaign section
+    for (let i = campaignSectionStart + 1; i < lines.length; i++) {
       const line = lines[i];
       
-      if (line === 'Goal' && i + 1 < lines.length) {
-        const nextLine = lines[i + 1];
-        if (nextLine.match(/\d+%/)) {
-          goalValue = nextLine;
-          console.log(`Found Goal: ${goalValue}`);
+      // Check if this line is a location header
+      const foundLocation = locations.find(loc => line.includes(loc));
+      if (foundLocation) {
+        currentLocation = foundLocation;
+        campaignData.locations[currentLocation] = {};
+        console.log(`\nProcessing campaigns for: ${currentLocation}`);
+        continue;
+      }
+      
+      // If we have a current location and this line contains campaign data
+      if (currentLocation && line.includes('%')) {
+        // Parse campaign line format: "Campaign Name XX% YY% 100%"
+        const campaignMatch = extractCampaignLine(line);
+        if (campaignMatch) {
+          const { campaignName, closeRate, nationalRate, goal } = campaignMatch;
+          
+          // Store by location
+          if (!campaignData.locations[currentLocation]) {
+            campaignData.locations[currentLocation] = {};
+          }
+          campaignData.locations[currentLocation][campaignName] = {
+            closeRate: closeRate,
+            nationalRate: nationalRate,
+            goal: goal
+          };
+          
+          // Store by campaign (for summary across locations)
+          if (!campaignData.campaigns[campaignName]) {
+            campaignData.campaigns[campaignName] = {
+              locations: {},
+              nationalRate: nationalRate,
+              goal: goal
+            };
+          }
+          campaignData.campaigns[campaignName].locations[currentLocation] = closeRate;
+          
+          console.log(`  ${campaignName}: Close ${closeRate}, National ${nationalRate}, Goal ${goal}`);
         }
       }
       
-      if (line === 'National' && i + 1 < lines.length && lines[i + 1] === 'Average' && i + 2 < lines.length) {
-        const avgLine = lines[i + 2];
-        if (avgLine.match(/\d+%/)) {
-          nationalAverage = avgLine;
-          console.log(`Found National Average: ${nationalAverage}`);
-        }
+      // Stop if we hit the next major section
+      if (line.toLowerCase().includes('individual dealer metrics') || 
+          i > campaignSectionStart + 100) {
+        break;
       }
     }
     
-    campaignData.goal = goalValue;
-    campaignData.nationalAverage = nationalAverage;
+    // Calculate summary statistics
+    campaignData.summary = calculateCampaignSummary(campaignData);
     
-    // Extract other campaign completion rates from the scorecard
-    campaignData.casesClosedCorrectly = extractPercentageNear(lines, 'cases closed correctly', '91%');
-    campaignData.casesMeetingRequirements = extractPercentageNear(lines, 'meeting requirements', '91%');
-    campaignData.overallCompletionRate = calculateOverallCompletionRate(campaignData);
+    console.log('Extracted campaign completion rates:', {
+      locationsCount: Object.keys(campaignData.locations).length,
+      campaignsCount: Object.keys(campaignData.campaigns).length,
+      summary: campaignData.summary
+    });
     
-    console.log('Extracted campaign completion rates:', campaignData);
     return campaignData;
     
   } catch (error) {
     console.error('Error extracting campaign rates:', error);
     return getExpectedCampaignRates();
   }
+}
+
+function extractCampaignLine(line) {
+  // Extract campaign data from lines like:
+  // "24KWL Bendix EC80 ABS ECU Incorrect Signal Processing 59% 56% 100%"
+  
+  // Look for pattern: campaign name followed by three percentages
+  const percentagePattern = /(\d+)%\s*(\d+)%\s*(\d+)%/;
+  const match = line.match(percentagePattern);
+  
+  if (!match) return null;
+  
+  const [, closeRate, nationalRate, goal] = match;
+  
+  // Extract campaign name (everything before the percentages)
+  const campaignName = line.replace(percentagePattern, '').trim();
+  
+  // Clean up campaign name
+  const cleanCampaignName = campaignName
+    .replace(/^(24KWL|25KWB|E\d+)\s*/, '') // Remove campaign codes
+    .trim();
+  
+  return {
+    campaignName: cleanCampaignName || campaignName, // Fallback to full name
+    closeRate: `${closeRate}%`,
+    nationalRate: `${nationalRate}%`,
+    goal: `${goal}%`
+  };
+}
+
+function calculateCampaignSummary(campaignData) {
+  // Calculate overall summary statistics
+  const summary = {
+    totalCampaigns: Object.keys(campaignData.campaigns).length,
+    totalLocations: Object.keys(campaignData.locations).length,
+    overallCloseRate: '0%',
+    averageNationalRate: '0%',
+    campaignsAtGoal: 0,
+    topPerformingLocation: null,
+    lowestPerformingLocation: null
+  };
+  
+  try {
+    // Calculate average close rates by location
+    const locationAverages = {};
+    
+    Object.keys(campaignData.locations).forEach(location => {
+      const campaigns = campaignData.locations[location];
+      const closeRates = Object.values(campaigns).map(c => 
+        parseFloat(c.closeRate.replace('%', ''))
+      );
+      
+      if (closeRates.length > 0) {
+        const average = closeRates.reduce((sum, rate) => sum + rate, 0) / closeRates.length;
+        locationAverages[location] = average;
+      }
+    });
+    
+    // Find top and lowest performing locations
+    if (Object.keys(locationAverages).length > 0) {
+      const sortedLocations = Object.entries(locationAverages)
+        .sort(([,a], [,b]) => b - a);
+      
+      summary.topPerformingLocation = {
+        name: sortedLocations[0][0],
+        averageRate: `${sortedLocations[0][1].toFixed(1)}%`
+      };
+      
+      summary.lowestPerformingLocation = {
+        name: sortedLocations[sortedLocations.length - 1][0],
+        averageRate: `${sortedLocations[sortedLocations.length - 1][1].toFixed(1)}%`
+      };
+      
+      // Calculate overall average
+      const overallAverage = Object.values(locationAverages)
+        .reduce((sum, rate) => sum + rate, 0) / Object.values(locationAverages).length;
+      summary.overallCloseRate = `${overallAverage.toFixed(1)}%`;
+    }
+    
+    // Count campaigns at goal (100%)
+    Object.values(campaignData.campaigns).forEach(campaign => {
+      const locationRates = Object.values(campaign.locations).map(rate => 
+        parseFloat(rate.replace('%', ''))
+      );
+      const averageRate = locationRates.reduce((sum, rate) => sum + rate, 0) / locationRates.length;
+      if (averageRate >= 100) {
+        summary.campaignsAtGoal++;
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error calculating campaign summary:', error);
+  }
+  
+  return summary;
 }
 
 function extractPercentageNear(lines, searchTerm, fallback) {
@@ -241,17 +371,150 @@ function calculateOverallCompletionRate(campaignData) {
 }
 
 function getExpectedCampaignRates() {
-  // Fallback campaign completion rates based on W370 Service Scorecard July 2025
+  // Fallback campaign completion rates based on W370 Service Scorecard July 2025 (Pages 2-3)
   return {
-    goal: '100%',
-    nationalAverage: '100%',
-    casesClosedCorrectly: '91%',
-    casesMeetingRequirements: '91%',
-    overallCompletionRate: '91%',
-    // Additional campaign metrics that might be on the scorecard
-    campaignParticipation: '100%',
-    responseTime: '24.9%',
-    customerSatisfaction: '96%'
+    locations: {
+      'Wichita Kenworth': {
+        'Bendix EC80 ABS ECU Incorrect Signal Processing': {
+          closeRate: '59%',
+          nationalRate: '56%',
+          goal: '100%'
+        },
+        'T180/T280/T380/T480 Exterior Lighting Programming': {
+          closeRate: '100%',
+          nationalRate: '57%',
+          goal: '100%'
+        },
+        'PACCAR EPA17 MX-13 Prognostic Repair-Camshaft': {
+          closeRate: '25%',
+          nationalRate: '46%',
+          goal: '100%'
+        },
+        'PACCAR MX-13 EPA21 Main Bearing Cap Bolts': {
+          closeRate: '84%',
+          nationalRate: '75%',
+          goal: '100%'
+        },
+        'PACCAR MX-11 AND MX-13 OBD Software Update': {
+          closeRate: '52%',
+          nationalRate: '60%',
+          goal: '100%'
+        }
+      },
+      'Dodge City Kenworth': {
+        'Bendix EC80 ABS ECU Incorrect Signal Processing': {
+          closeRate: '71%',
+          nationalRate: '56%',
+          goal: '100%'
+        },
+        'PACCAR EPA17 MX-13 Prognostic Repair-Camshaft': {
+          closeRate: '100%',
+          nationalRate: '46%',
+          goal: '100%'
+        },
+        'PACCAR MX-13 EPA21 Main Bearing Cap Bolts': {
+          closeRate: '93%',
+          nationalRate: '75%',
+          goal: '100%'
+        },
+        'PACCAR MX-11 AND MX-13 OBD Software Update': {
+          closeRate: '40%',
+          nationalRate: '60%',
+          goal: '100%'
+        }
+      },
+      'Liberal Kenworth': {
+        'Bendix EC80 ABS ECU Incorrect Signal Processing': {
+          closeRate: '39%',
+          nationalRate: '56%',
+          goal: '100%'
+        },
+        'PACCAR EPA17 MX-13 Prognostic Repair-Camshaft': {
+          closeRate: '0%',
+          nationalRate: '46%',
+          goal: '100%'
+        },
+        'PACCAR MX-13 EPA21 Main Bearing Cap Bolts': {
+          closeRate: '83%',
+          nationalRate: '75%',
+          goal: '100%'
+        },
+        'PACCAR MX-11 AND MX-13 OBD Software Update': {
+          closeRate: '50%',
+          nationalRate: '60%',
+          goal: '100%'
+        }
+      },
+      'Emporia Kenworth': {
+        // Emporia might not have all campaigns or different completion rates
+        'PACCAR MX-13 EPA21 Main Bearing Cap Bolts': {
+          closeRate: '75%',
+          nationalRate: '75%',
+          goal: '100%'
+        }
+      }
+    },
+    campaigns: {
+      'Bendix EC80 ABS ECU Incorrect Signal Processing': {
+        locations: {
+          'Wichita Kenworth': '59%',
+          'Dodge City Kenworth': '71%',
+          'Liberal Kenworth': '39%'
+        },
+        nationalRate: '56%',
+        goal: '100%'
+      },
+      'T180/T280/T380/T480 Exterior Lighting Programming': {
+        locations: {
+          'Wichita Kenworth': '100%'
+        },
+        nationalRate: '57%',
+        goal: '100%'
+      },
+      'PACCAR EPA17 MX-13 Prognostic Repair-Camshaft': {
+        locations: {
+          'Wichita Kenworth': '25%',
+          'Dodge City Kenworth': '100%',
+          'Liberal Kenworth': '0%'
+        },
+        nationalRate: '46%',
+        goal: '100%'
+      },
+      'PACCAR MX-13 EPA21 Main Bearing Cap Bolts': {
+        locations: {
+          'Wichita Kenworth': '84%',
+          'Dodge City Kenworth': '93%',
+          'Liberal Kenworth': '83%',
+          'Emporia Kenworth': '75%'
+        },
+        nationalRate: '75%',
+        goal: '100%'
+      },
+      'PACCAR MX-11 AND MX-13 OBD Software Update': {
+        locations: {
+          'Wichita Kenworth': '52%',
+          'Dodge City Kenworth': '40%',
+          'Liberal Kenworth': '50%'
+        },
+        nationalRate: '60%',
+        goal: '100%'
+      }
+    },
+    summary: {
+      totalCampaigns: 5,
+      totalLocations: 4,
+      overallCloseRate: '64.2%',
+      averageNationalRate: '58.8%',
+      campaignsAtGoal: 1,
+      topPerformingLocation: {
+        name: 'Dodge City Kenworth',
+        averageRate: '76.0%'
+      },
+      lowestPerformingLocation: {
+        name: 'Liberal Kenworth',
+        averageRate: '43.0%'
+      }
+    }
   };
 }
 
