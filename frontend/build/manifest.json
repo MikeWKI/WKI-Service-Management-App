@@ -1,0 +1,22 @@
+{
+  "short_name": "WKI Service",
+  "name": "WKI Service Management Application",
+  "description": "Service Management Process Application for Kenworth dealers",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#dc2626",
+  "background_color": "#0f172a",
+  "orientation": "any",
+  "categories": ["productivity", "business"],
+  "lang": "en-US",
+  "dir": "ltr",
+  "scope": "/",
+  "prefer_related_applications": false
+}

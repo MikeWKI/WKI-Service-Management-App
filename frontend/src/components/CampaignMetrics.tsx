@@ -183,14 +183,48 @@ export default function CampaignMetrics() {
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
-  // Fetch campaign data from backend
+  // Fetch campaign data from backend and local storage
   const fetchCampaignData = useCallback(async () => {
     setIsLoading(true);
     try {
+      // First, check if we have locally parsed campaign data
+      const localCampaignData = localStorage.getItem('campaignData');
+      if (localCampaignData) {
+        try {
+          const parsedLocalData = JSON.parse(localCampaignData);
+          console.log('Found local campaign data:', parsedLocalData);
+          
+          if (parsedLocalData && parsedLocalData.locations) {
+            // Convert local data to the expected format
+            const campaignMetrics: CampaignMetricsData = {
+              locations: parsedLocalData.locations.map((location: any) => ({
+                locationName: location.locationName,
+                campaigns: location.campaigns || [],
+                overallScore: location.campaigns ? 
+                  location.campaigns.reduce((sum: number, camp: any) => sum + camp.locationScore, 0) / location.campaigns.length : 0
+              })),
+              extractedAt: parsedLocalData.extractedAt
+            };
+            
+            setCampaignData(campaignMetrics);
+            setLastUpdated(new Date(parsedLocalData.extractedAt).toLocaleString());
+            setIsLoading(false);
+            return;
+          }
+        } catch (localParseError) {
+          console.warn('Error parsing local campaign data:', localParseError);
+        }
+      }
+      
+      // Fallback to backend data
+      console.log('No local campaign data found, fetching from backend...');
       const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
       if (response.ok) {
         const data = await response.json();
+        console.log('Raw backend data for campaigns:', data);
+        
         const parsedData = createCampaignMetricsFromLocations(data);
+        console.log('Parsed campaign data:', parsedData);
         
         if (parsedData) {
           setCampaignData(parsedData);
@@ -217,6 +251,18 @@ export default function CampaignMetrics() {
 
   useEffect(() => {
     fetchCampaignData();
+    
+    // Listen for scorecard upload events to refresh campaign data
+    const handleScorecardUploaded = () => {
+      console.log('Scorecard uploaded event received, refreshing campaign data...');
+      fetchCampaignData();
+    };
+    
+    window.addEventListener('scorecardUploaded', handleScorecardUploaded);
+    
+    return () => {
+      window.removeEventListener('scorecardUploaded', handleScorecardUploaded);
+    };
   }, [fetchCampaignData]);
 
   // Auto-refresh data every 30 seconds to catch new uploads

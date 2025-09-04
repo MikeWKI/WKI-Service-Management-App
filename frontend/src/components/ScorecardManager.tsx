@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Upload, FileText, MapPin, Calendar, BarChart3, AlertCircle, CheckCircle, X, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { parseScorecardPDF } from '../services/pdfParser';
 
 interface DealershipMetrics {
   dwellTime?: string;
@@ -255,6 +256,28 @@ export default function ScorecardManager() {
     setParseError(null);
 
     try {
+      // Also parse the PDF locally to extract campaign data
+      console.log('Parsing PDF locally for campaign data...');
+      let localParsedData = null;
+      try {
+        localParsedData = await parseScorecardPDF(file);
+        console.log('Local PDF parsing successful:', localParsedData);
+        
+        // Store campaign data in localStorage for the CampaignMetrics component
+        if (localParsedData && localParsedData.locations) {
+          const campaignData = {
+            locations: localParsedData.locations,
+            extractedAt: new Date().toISOString(),
+            month: selectedMonth,
+            year: selectedYear
+          };
+          localStorage.setItem('campaignData', JSON.stringify(campaignData));
+          console.log('✅ Stored campaign data in localStorage');
+        }
+      } catch (localParseError) {
+        console.warn('Local PDF parsing failed, continuing with backend only:', localParseError);
+      }
+
       // Upload to backend API
       setUploadProgress(20);
       console.log('Starting upload process...');
