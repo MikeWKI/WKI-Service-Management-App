@@ -1,5 +1,5 @@
-import React from 'react';
-import { ArrowLeft, Clock, Users, CheckCircle, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Clock, Users, CheckCircle, AlertTriangle, MessageSquare, Target, BarChart3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface MetricCard {
@@ -10,13 +10,105 @@ interface MetricCard {
   impact: string;
   description: string;
   icon: React.ReactNode;
+  location: string;
 }
 
-// Note: These metrics are estimates and should be replaced with actual data from uploaded scorecards
-const serviceAdvisorMetrics: MetricCard[] = [
-  // Only show metrics that can be derived from legitimate W370 scorecard data
-  // Remove hardcoded values that don't correspond to actual scorecard fields
-];
+interface LocationMetrics {
+  location: string;
+  etrPercentCases: string;
+  percentCasesWith3Notes: string;
+  vscCaseRequirements: string;
+}
+
+// Status parsing functions
+const parseEtrStatus = (value: string): 'good' | 'warning' | 'critical' => {
+  if (!value || value === 'N/A') return 'critical';
+  const numValue = parseFloat(value.replace('%', ''));
+  if (numValue >= 15) return 'good';
+  if (numValue >= 10) return 'warning';
+  return 'critical';
+};
+
+const parseNotesStatus = (value: string): 'good' | 'warning' | 'critical' => {
+  if (!value || value === 'N/A') return 'critical';
+  const numValue = parseFloat(value.replace('%', ''));
+  if (numValue <= 5) return 'good';
+  if (numValue <= 10) return 'warning';
+  return 'critical';
+};
+
+const parseVscStatus = (value: string): 'good' | 'warning' | 'critical' => {
+  if (!value || value === 'N/A') return 'critical';
+  const numValue = parseFloat(value.replace('%', ''));
+  if (numValue >= 95) return 'good';
+  if (numValue >= 80) return 'warning';
+  return 'critical';
+};
+
+const getServiceAdvisorMetrics = async (): Promise<MetricCard[]> => {
+  const API_BASE_URL = 'https://wki-service-management-app.onrender.com';
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
+    if (response.ok) {
+      const data = await response.json();
+      const metrics: MetricCard[] = [];
+      
+      // Process each location's metrics
+      Object.entries(data).forEach(([locationKey, locationData]: [string, any]) => {
+        const locationName = locationKey.replace(/([A-Z])/g, ' $1').trim();
+        
+        // ETR % of Cases
+        const etrValue = locationData.etrPercentCases || 'N/A';
+        metrics.push({
+          title: 'ETR % of Cases',
+          value: etrValue.includes('%') ? etrValue : `${etrValue}%`,
+          target: '> 15% (target)',
+          status: parseEtrStatus(etrValue),
+          impact: 'Customer satisfaction and service transparency',
+          description: 'Percentage of cases with accurate estimated time of repair provided to customers',
+          icon: <Target className="w-6 h-6" />,
+          location: locationName
+        });
+
+        // QAB Usage (Customer Communication) - using VSC Case Requirements as proxy
+        const qabValue = locationData.vscCaseRequirements || 'N/A';
+        metrics.push({
+          title: 'QAB Usage Metrics',
+          value: qabValue,
+          target: '> 95% (target)',
+          status: parseVscStatus(qabValue),
+          impact: 'Workflow efficiency and case tracking accuracy',
+          description: 'Proper use of QAB system for case management and customer updates',
+          icon: <BarChart3 className="w-6 h-6" />,
+          location: locationName
+        });
+
+        // Customer Communication (% Cases with 3+ Notes)
+        const commValue = locationData.percentCasesWith3Notes || 'N/A';
+        metrics.push({
+          title: 'Customer Communication',
+          value: commValue.includes('%') ? commValue : `${commValue}%`,
+          target: '< 5% (target)',
+          status: parseNotesStatus(commValue),
+          impact: 'Customer engagement and case documentation quality',
+          description: 'Cases requiring extensive documentation indicating communication gaps',
+          icon: <MessageSquare className="w-6 h-6" />,
+          location: locationName
+        });
+      });
+      
+      return metrics;
+    }
+  } catch (error) {
+    console.log('Using fallback data due to API error:', error);
+  }
+  
+  // Fallback data
+  return [];
+};
+
+const serviceAdvisorMetrics: MetricCard[] = [];
 
 const actionItems = [
   {
@@ -49,6 +141,25 @@ const actionItems = [
 ];
 
 export default function ServiceAdvisorMetrics() {
+  const [metrics, setMetrics] = useState<MetricCard[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        const data = await getServiceAdvisorMetrics();
+        setMetrics(data);
+      } catch (error) {
+        console.error('Error fetching service advisor metrics:', error);
+        setMetrics([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMetrics();
+  }, []);
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'good': return 'text-green-400 bg-gradient-to-br from-slate-800 to-slate-900 border-green-500/50';
@@ -66,6 +177,16 @@ export default function ServiceAdvisorMetrics() {
       default: return '📊';
     }
   };
+
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-xl text-slate-300">Loading Service Advisor metrics...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -90,7 +211,7 @@ export default function ServiceAdvisorMetrics() {
       </div>
 
       {/* Show message when no legitimate scorecard data is available */}
-      {serviceAdvisorMetrics.length === 0 && (
+      {metrics.length === 0 && !loading && (
         <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl p-8 border border-slate-700 shadow-2xl text-center mb-8">
           <div className="text-6xl mb-4">📊</div>
           <h2 className="text-2xl font-bold text-white mb-4">No Service Advisor Data Available</h2>
@@ -101,11 +222,35 @@ export default function ServiceAdvisorMetrics() {
       )}
 
       {/* Metrics Grid - only show when data exists */}
-      {serviceAdvisorMetrics.length > 0 && (
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          {serviceAdvisorMetrics.map((metric, index) => (
-          <div
-            key={index}
+      {metrics.length > 0 && (
+        <>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {metrics.map((metric, index) => (
+              <div
+                key={index}
+                className={`${getStatusColor(metric.status)} rounded-lg border-2 p-6 shadow-2xl hover:shadow-lg transition-all duration-300 hover:scale-105`}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  {metric.icon}
+                  <span className="text-2xl">{getStatusIcon(metric.status)}</span>
+                </div>
+                <h3 className="text-lg font-semibold mb-2 text-white">{metric.title}</h3>
+                <div className="text-sm text-slate-400 mb-2">{metric.location}</div>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-2xl font-bold text-white">{metric.value}</span>
+                    <span className="text-sm text-slate-400">{metric.target}</span>
+                  </div>
+                  <p className="text-sm text-slate-300">{metric.description}</p>
+                  <div className="mt-3 p-2 bg-slate-700/50 rounded text-xs border border-slate-600">
+                    <strong className="text-red-400">Impact:</strong> <span className="text-slate-300">{metric.impact}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
             className={`rounded-lg border-2 p-6 shadow-2xl hover:shadow-red-500/25 transition-all duration-300 hover:scale-105 ${getStatusColor(metric.status)}`}
           >
             <div className="flex items-center justify-between mb-4">
