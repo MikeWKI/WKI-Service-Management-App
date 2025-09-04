@@ -99,16 +99,16 @@ export default function QuickLinksPanel() {
       >
         {isExpanded ? (
           <div className="flex items-center lg:flex-col lg:space-y-1">
-            <span className="text-xs font-semibold text-slate-200 mr-2 lg:mr-0 lg:mb-1">Quick Links</span>
-            <ChevronRight className="w-4 h-4 xl:w-5 xl:h-5 text-slate-300 lg:hidden" />
-            <ChevronLeft className="w-4 h-4 xl:w-5 xl:h-5 text-slate-300 hidden lg:block" />
+            <span className="text-lg font-semibold text-slate-200 mr-2 lg:mr-0 lg:mb-1">Quick Links</span>
+            <ChevronRight className="w-6 h-6 xl:w-8 xl:h-8 text-slate-300 lg:hidden" />
+            <ChevronLeft className="w-6 h-6 xl:w-8 xl:h-8 text-slate-300 hidden lg:block" />
           </div>
         ) : (
           <div className="flex items-center lg:flex-col lg:space-y-1">
-            <span className="text-xs font-semibold text-slate-300 mr-2 lg:mr-0 lg:mb-1">Quick Links</span>
+            <span className="text-lg font-semibold text-slate-300 mr-2 lg:mr-0 lg:mb-1">Quick Links</span>
             <div className="flex items-center">
-              <Link className="w-4 h-4 xl:w-5 xl:h-5 text-yellow-400 animate-bounce lg:mb-1" />
-              <ChevronLeft className="w-3 h-3 xl:w-4 xl:h-4 text-slate-300 ml-1 lg:ml-0" />
+              <Link className="w-6 h-6 xl:w-8 xl:h-8 text-yellow-400 animate-bounce lg:mb-1" />
+              <ChevronLeft className="w-5 h-5 xl:w-6 xl:h-6 text-slate-300 ml-1 lg:ml-0" />
             </div>
           </div>
         )}
@@ -118,9 +118,9 @@ export default function QuickLinksPanel() {
       {isExpanded && (
         <div className="lg:fixed lg:top-1/2 lg:right-4 lg:-translate-y-1/2 w-full lg:w-80 xl:w-96 p-3 xl:p-4 lg:bg-slate-900 lg:border lg:border-slate-700 lg:rounded-lg lg:shadow-2xl lg:z-40 max-h-96 lg:max-h-[80vh] overflow-hidden">
           <div className="mb-3 xl:mb-4 hidden lg:block">
-            <h3 className="text-base xl:text-lg font-bold text-slate-100 mb-1 xl:mb-2 flex items-center">
+            <h3 className="text-xl xl:text-2xl font-bold text-slate-100 mb-1 xl:mb-2 flex items-center">
               Quick Links
-              <FileText className="w-4 h-4 xl:w-5 xl:h-5 ml-2 text-red-400" />
+              <FileText className="w-6 h-6 xl:w-8 xl:h-8 ml-2 text-red-400" />
             </h3>
             <p className="text-xs text-slate-400">Reference Documents & Tools</p>
           </div>

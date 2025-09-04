@@ -83,9 +83,6 @@ function App() {
             
             {/* Quick Links fixed to right side for desktop */}
             <div className="hidden lg:flex fixed top-1/2 right-4 -translate-y-1/2 z-30 flex-col items-center justify-start w-[60px] xl:w-[70px] 2xl:w-[80px]">
-              <span className="writing-mode-vertical-rl text-orientation-mixed text-xs font-bold tracking-wider text-slate-400 mb-2 select-none">
-                Quick Links
-              </span>
               <div className="w-full">
                 <QuickLinksPanel />
               </div>
