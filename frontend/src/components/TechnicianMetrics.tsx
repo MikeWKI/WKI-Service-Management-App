@@ -139,32 +139,32 @@ const getTechnicianMetrics = async (): Promise<MetricCard[]> => {
       title: 'ETR % of Cases',
       value: '',
       target: '> 15% (target)',
-      status: 'attention',
+      status: 'warning',
       impact: 'Customer satisfaction and repair transparency',
       description: 'Percentage of cases with accurate estimated time of repair - critical for customer communication',
       icon: <Target className="w-6 h-6" />,
       location: 'All Locations',
       locations: [
-        { location: 'Wichita', value: '12%', status: 'attention' as const },
+        { location: 'Wichita', value: '12%', status: 'warning' as const },
         { location: 'Dodge City', value: '18%', status: 'good' as const },
         { location: 'Liberal', value: '8%', status: 'critical' as const },
-        { location: 'Emporia', value: '15%', status: 'attention' as const }
+        { location: 'Emporia', value: '15%', status: 'warning' as const }
       ]
     },
     {
       title: 'SM Average Triage Hours',
       value: '',
       target: '< 2.0 hrs (target)',
-      status: 'attention',
+      status: 'warning',
       impact: 'Initial diagnosis efficiency and workflow',
       description: 'Time spent on initial case assessment and diagnosis - affects overall repair timeline',
       icon: <Clock className="w-6 h-6" />,
       location: 'All Locations',
       locations: [
-        { location: 'Wichita', value: '2.3 hrs', status: 'attention' as const },
+        { location: 'Wichita', value: '2.3 hrs', status: 'warning' as const },
         { location: 'Dodge City', value: '1.8 hrs', status: 'good' as const },
         { location: 'Liberal', value: '2.7 hrs', status: 'critical' as const },
-        { location: 'Emporia', value: '2.1 hrs', status: 'attention' as const }
+        { location: 'Emporia', value: '2.1 hrs', status: 'warning' as const }
       ]
     },
     {
@@ -179,7 +179,7 @@ const getTechnicianMetrics = async (): Promise<MetricCard[]> => {
       locations: [
         { location: 'Wichita', value: '3%', status: 'good' as const },
         { location: 'Dodge City', value: '2%', status: 'good' as const },
-        { location: 'Liberal', value: '6%', status: 'attention' as const },
+        { location: 'Liberal', value: '6%', status: 'warning' as const },
         { location: 'Emporia', value: '4%', status: 'good' as const }
       ]
     }
