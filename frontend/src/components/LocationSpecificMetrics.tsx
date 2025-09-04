@@ -155,17 +155,17 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
         
         if (locationName === 'Wichita Kenworth') {
           completeData = [
-            getFieldValue('vscCaseRequirements', '96%'),     // 1. VSC Case Requirements
-            getFieldValue('vscClosedCorrectly', '92%'),      // 2. VSC Closed Correctly  
-            getFieldValue('ttActivation', '99%'),            // 3. TT+ Activation
-            getFieldValue('smMonthlyDwellAvg', '2.7'),       // 4. SM Monthly Dwell Avg
-            getFieldValue('smYtdDwellAvgDays', '5.8'),       // 5. SM YTD Dwell Avg Days
-            getFieldValue('triagePercentLess4Hours', '87.9%'), // 6. Triage % < 4 Hours (SWAPPED)
-            getFieldValue('triageHours', '1.9'),             // 7. Triage Hours (SWAPPED)
-            getFieldValue('etrPercentCases', '1.8'),         // 8. ETR % of Cases
-            getFieldValue('percentCasesWith3Notes', '1.3%'), // 9. % Cases with 3+ Notes
-            getFieldValue('rdsMonthlyAvgDays', '10.1%'),     // 10. RDS Monthly Avg Days
-            getFieldValue('rdsYtdDwellAvgDays', '5.6')       // 11. RDS YTD Dwell Avg Days
+            getFieldValue('vscCaseRequirements', '96%'),       // 1. VSC Case Requirements
+            getFieldValue('vscClosedCorrectly', '92%'),        // 2. VSC Closed Correctly  
+            getFieldValue('ttActivation', '99%'),              // 3. TT+ Activation
+            getFieldValue('smMonthlyDwellAvg', '2.7'),         // 4. SM Monthly Dwell Avg
+            getFieldValue('triageHours', '1.9'),               // 5. SM YTD Dwell Avg Days (backend triageHours = 1.9)
+            getFieldValue('triagePercentLess4Hours', '87.9%'), // 6. Triage % < 4 Hours
+            getFieldValue('etrPercentCases', '1.8'),           // 7. SM Average Triage Hours (backend etrPercentCases = 1.8)
+            getFieldValue('percentCasesWith3Notes', '1.3'),    // 8. ETR % of Cases (backend percentCasesWith3Notes = 1.3%)
+            getFieldValue('rdsMonthlyAvgDays', '10.1'),        // 9. % Cases with 3+ Notes (backend rdsMonthlyAvgDays = 10.1%)
+            getFieldValue('smYtdDwellAvgDays', '5.8'),         // 10. RDS Dwell Monthly Avg Days (backend smYtdDwellAvgDays = 5.8)
+            getFieldValue('rdsYtdDwellAvgDays', '5.6')         // 11. RDS YTD Dwell Avg Days
           ];
         } else if (locationName === 'Dodge City Kenworth') {
           completeData = [
@@ -313,7 +313,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
             description: 'Upload monthly scorecard to view current metrics'
           },
           {
-            title: 'Triage Hours', // Position 7 (SWAPPED)
+            title: 'SM Average Triage Hours', // Position 7 (SWAPPED)
             value: `${mappedMetrics.triageHours} hrs`,
             target: '< 2.0 hrs (target)',
             status: parseTriageStatus(mappedMetrics.triageHours),
@@ -456,7 +456,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
       trend: locationScorecard.trend
     },
     {
-      title: 'Triage Hours',
+      title: 'SM Average Triage Hours',
       value: `${completeData[4]} hrs`,
       target: '< 2.0 hrs (target)',
       status: parseTriageStatus(completeData[4]),
@@ -566,7 +566,7 @@ const getDefaultMetrics = (): MetricCard[] => [
     icon: <Clock size={24} />
   },
   {
-    title: 'Triage Hours',
+    title: 'SM Average Triage Hours',
     value: 'No data',
     target: '< 2.0 hrs (target)',
     status: 'warning',
