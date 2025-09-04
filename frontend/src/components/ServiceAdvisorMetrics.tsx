@@ -51,52 +51,55 @@ const getServiceAdvisorMetrics = async (): Promise<MetricCard[]> => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
     if (response.ok) {
-      const data = await response.json();
+      const apiResponse = await response.json();
       const metrics: MetricCard[] = [];
       
-      // Process each location's metrics
-      Object.entries(data).forEach(([locationKey, locationData]: [string, any]) => {
-        const locationName = locationKey.replace(/([A-Z])/g, ' $1').trim();
-        
-        // ETR % of Cases
-        const etrValue = locationData.etrPercentCases || 'N/A';
-        metrics.push({
-          title: 'ETR % of Cases',
-          value: etrValue.includes('%') ? etrValue : `${etrValue}%`,
-          target: '> 15% (target)',
-          status: parseEtrStatus(etrValue),
-          impact: 'Customer satisfaction and service transparency',
-          description: 'Percentage of cases with accurate estimated time of repair provided to customers',
-          icon: <Target className="w-6 h-6" />,
-          location: locationName
-        });
+      // Handle the nested data structure
+      if (apiResponse.success && apiResponse.data && apiResponse.data.locations) {
+        apiResponse.data.locations.forEach((location: any) => {
+          const locationName = location.name || 'Unknown Location';
+          const locationData = location.metrics || location;
+          
+          // ETR % of Cases
+          const etrValue = locationData.etrPercentCases || 'N/A';
+          metrics.push({
+            title: 'ETR % of Cases',
+            value: etrValue.includes('%') ? etrValue : `${etrValue}%`,
+            target: '> 15% (target)',
+            status: parseEtrStatus(etrValue),
+            impact: 'Customer satisfaction and service transparency',
+            description: 'Percentage of cases with accurate estimated time of repair provided to customers',
+            icon: <Target className="w-6 h-6" />,
+            location: locationName
+          });
 
-        // QAB Usage (Customer Communication) - using VSC Case Requirements as proxy
-        const qabValue = locationData.vscCaseRequirements || 'N/A';
-        metrics.push({
-          title: 'QAB Usage Metrics',
-          value: qabValue,
-          target: '> 95% (target)',
-          status: parseVscStatus(qabValue),
-          impact: 'Workflow efficiency and case tracking accuracy',
-          description: 'Proper use of QAB system for case management and customer updates',
-          icon: <BarChart3 className="w-6 h-6" />,
-          location: locationName
-        });
+          // QAB Usage (Customer Communication) - using VSC Case Requirements as proxy
+          const qabValue = locationData.vscCaseRequirements || 'N/A';
+          metrics.push({
+            title: 'QAB Usage Metrics',
+            value: qabValue,
+            target: '> 95% (target)',
+            status: parseVscStatus(qabValue),
+            impact: 'Workflow efficiency and case tracking accuracy',
+            description: 'Proper use of QAB system for case management and customer updates',
+            icon: <BarChart3 className="w-6 h-6" />,
+            location: locationName
+          });
 
-        // Customer Communication (% Cases with 3+ Notes)
-        const commValue = locationData.percentCasesWith3Notes || 'N/A';
-        metrics.push({
-          title: 'Customer Communication',
-          value: commValue.includes('%') ? commValue : `${commValue}%`,
-          target: '< 5% (target)',
-          status: parseNotesStatus(commValue),
-          impact: 'Customer engagement and case documentation quality',
-          description: 'Cases requiring extensive documentation indicating communication gaps',
-          icon: <MessageSquare className="w-6 h-6" />,
-          location: locationName
+          // Customer Communication (% Cases with 3+ Notes)
+          const commValue = locationData.percentCasesWith3Notes || 'N/A';
+          metrics.push({
+            title: 'Customer Communication',
+            value: commValue.includes('%') ? commValue : `${commValue}%`,
+            target: '< 5% (target)',
+            status: parseNotesStatus(commValue),
+            impact: 'Customer engagement and case documentation quality',
+            description: 'Cases requiring extensive documentation indicating communication gaps',
+            icon: <MessageSquare className="w-6 h-6" />,
+            location: locationName
+          });
         });
-      });
+      }
       
       return metrics;
     }

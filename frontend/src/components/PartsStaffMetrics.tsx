@@ -36,39 +36,42 @@ const getPartsStaffMetrics = async (): Promise<MetricCard[]> => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
     if (response.ok) {
-      const data = await response.json();
+      const apiResponse = await response.json();
       const metrics: MetricCard[] = [];
       
-      // Process each location's metrics
-      Object.entries(data).forEach(([locationKey, locationData]: [string, any]) => {
-        const locationName = locationKey.replace(/([A-Z])/g, ' $1').trim();
-        
-        // % Cases with 3+ Notes
-        const notesValue = locationData.percentCasesWith3Notes || 'N/A';
-        metrics.push({
-          title: '% Cases with 3+ Notes',
-          value: notesValue.includes('%') ? notesValue : `${notesValue}%`,
-          target: '< 5% (target)',
-          status: parseNotesStatus(notesValue),
-          impact: 'Parts availability and procurement efficiency',
-          description: 'Cases requiring extensive documentation often indicate parts delays or complexity',
-          icon: <MessageSquare className="w-6 h-6" />,
-          location: locationName
-        });
+      // Handle the nested data structure
+      if (apiResponse.success && apiResponse.data && apiResponse.data.locations) {
+        apiResponse.data.locations.forEach((location: any) => {
+          const locationName = location.name || 'Unknown Location';
+          const locationData = location.metrics || location;
+          
+          // % Cases with 3+ Notes
+          const notesValue = locationData.percentCasesWith3Notes || 'N/A';
+          metrics.push({
+            title: '% Cases with 3+ Notes',
+            value: notesValue.includes('%') ? notesValue : `${notesValue}%`,
+            target: '< 5% (target)',
+            status: parseNotesStatus(notesValue),
+            impact: 'Parts availability and procurement efficiency',
+            description: 'Cases requiring extensive documentation often indicate parts delays or complexity',
+            icon: <MessageSquare className="w-6 h-6" />,
+            location: locationName
+          });
 
-        // Monthly Dwell Average
-        const dwellValue = locationData.smMonthlyDwellAvg || 'N/A';
-        metrics.push({
-          title: 'Monthly Dwell Average',
-          value: dwellValue === 'N/A' ? dwellValue : `${dwellValue} days`,
-          target: '< 3.0 days (target)',
-          status: parseDwellStatus(dwellValue),
-          impact: 'Customer satisfaction and service efficiency',
-          description: 'Average time trucks spend at dealership - parts availability directly impacts dwell time',
-          icon: <Clock className="w-6 h-6" />,
-          location: locationName
+          // Monthly Dwell Average
+          const dwellValue = locationData.smMonthlyDwellAvg || 'N/A';
+          metrics.push({
+            title: 'Monthly Dwell Average',
+            value: dwellValue === 'N/A' ? dwellValue : `${dwellValue} days`,
+            target: '< 3.0 days (target)',
+            status: parseDwellStatus(dwellValue),
+            impact: 'Customer satisfaction and service efficiency',
+            description: 'Average time trucks spend at dealership - parts availability directly impacts dwell time',
+            icon: <Clock className="w-6 h-6" />,
+            location: locationName
+          });
         });
-      });
+      }
       
       return metrics;
     }

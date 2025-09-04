@@ -44,52 +44,55 @@ const getTechnicianMetrics = async (): Promise<MetricCard[]> => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
     if (response.ok) {
-      const data = await response.json();
+      const apiResponse = await response.json();
       const metrics: MetricCard[] = [];
       
-      // Process each location's metrics
-      Object.entries(data).forEach(([locationKey, locationData]: [string, any]) => {
-        const locationName = locationKey.replace(/([A-Z])/g, ' $1').trim();
-        
-        // ETR % of Cases
-        const etrValue = locationData.etrPercentCases || 'N/A';
-        metrics.push({
-          title: 'ETR % of Cases',
-          value: etrValue.includes('%') ? etrValue : `${etrValue}%`,
-          target: '> 15% (target)',
-          status: parseEtrStatus(etrValue),
-          impact: 'Customer satisfaction and repair transparency',
-          description: 'Percentage of cases with accurate estimated time of repair - critical for customer communication',
-          icon: <Target className="w-6 h-6" />,
-          location: locationName
-        });
+      // Handle the nested data structure
+      if (apiResponse.success && apiResponse.data && apiResponse.data.locations) {
+        apiResponse.data.locations.forEach((location: any) => {
+          const locationName = location.name || 'Unknown Location';
+          const locationData = location.metrics || location;
+          
+          // ETR % of Cases
+          const etrValue = locationData.etrPercentCases || 'N/A';
+          metrics.push({
+            title: 'ETR % of Cases',
+            value: etrValue.includes('%') ? etrValue : `${etrValue}%`,
+            target: '> 15% (target)',
+            status: parseEtrStatus(etrValue),
+            impact: 'Customer satisfaction and repair transparency',
+            description: 'Percentage of cases with accurate estimated time of repair - critical for customer communication',
+            icon: <Target className="w-6 h-6" />,
+            location: locationName
+          });
 
-        // SM Average Triage Hours (using triageHours field which maps to SM YTD Dwell Avg)
-        const triageValue = locationData.triageHours || 'N/A';
-        metrics.push({
-          title: 'SM Average Triage Hours',
-          value: triageValue === 'N/A' ? triageValue : `${triageValue} hrs`,
-          target: '< 2.0 hrs (target)',
-          status: parseTriageStatus(triageValue),
-          impact: 'Initial diagnosis efficiency and workflow',
-          description: 'Time spent on initial case assessment and diagnosis - affects overall repair timeline',
-          icon: <Clock className="w-6 h-6" />,
-          location: locationName
-        });
+          // SM Average Triage Hours (using triageHours field which maps to SM YTD Dwell Avg)
+          const triageValue = locationData.triageHours || 'N/A';
+          metrics.push({
+            title: 'SM Average Triage Hours',
+            value: triageValue === 'N/A' ? triageValue : `${triageValue} hrs`,
+            target: '< 2.0 hrs (target)',
+            status: parseTriageStatus(triageValue),
+            impact: 'Initial diagnosis efficiency and workflow',
+            description: 'Time spent on initial case assessment and diagnosis - affects overall repair timeline',
+            icon: <Clock className="w-6 h-6" />,
+            location: locationName
+          });
 
-        // % Cases with 3+ Notes
-        const notesValue = locationData.percentCasesWith3Notes || 'N/A';
-        metrics.push({
-          title: '% Cases with 3+ Notes',
-          value: notesValue.includes('%') ? notesValue : `${notesValue}%`,
-          target: '< 5% (target)',
-          status: parseNotesStatus(notesValue),
-          impact: 'Repair complexity and documentation quality',
-          description: 'Cases requiring extensive documentation often indicate complex repairs or communication issues',
-          icon: <MessageSquare className="w-6 h-6" />,
-          location: locationName
+          // % Cases with 3+ Notes
+          const notesValue = locationData.percentCasesWith3Notes || 'N/A';
+          metrics.push({
+            title: '% Cases with 3+ Notes',
+            value: notesValue.includes('%') ? notesValue : `${notesValue}%`,
+            target: '< 5% (target)',
+            status: parseNotesStatus(notesValue),
+            impact: 'Repair complexity and documentation quality',
+            description: 'Cases requiring extensive documentation often indicate complex repairs or communication issues',
+            icon: <MessageSquare className="w-6 h-6" />,
+            location: locationName
+          });
         });
-      });
+      }
       
       return metrics;
     }
