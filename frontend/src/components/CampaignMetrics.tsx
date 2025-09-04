@@ -513,12 +513,14 @@ export default function CampaignMetrics() {
         loc.locationName.toLowerCase().replace(/\s+/g, '-') === selectedLocation
       );
 
-  // Calculate overall statistics
-  const allCampaigns = campaignData.locations.flatMap(loc => loc.campaigns);
+  // Calculate overall statistics (excluding Emporia since they don't have campaign metrics)
+  const allCampaigns = campaignData.locations
+    .filter(loc => !loc.locationName.toLowerCase().includes('emporia'))
+    .flatMap(loc => loc.campaigns);
   const totalCampaigns = allCampaigns.length;
   const excellentCount = allCampaigns.filter(c => c.status === 'excellent').length;
   const criticalCount = allCampaigns.filter(c => c.status === 'critical').length;
-  const avgScore = allCampaigns.reduce((sum, c) => sum + c.locationScore, 0) / totalCampaigns;
+  const avgScore = totalCampaigns > 0 ? allCampaigns.reduce((sum, c) => sum + c.locationScore, 0) / totalCampaigns : 0;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -652,48 +654,63 @@ export default function CampaignMetrics() {
             </div>
 
             {/* Campaigns Grid */}
-            <div className="grid gap-4">
-              {location.campaigns.map((campaign) => (
-                <div key={campaign.id} className={`bg-gradient-to-r ${getStatusColor(campaign.status)} rounded-xl p-4 border-2`}>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center mb-2">
-                        {getStatusIcon(campaign.status)}
-                        <h3 className="text-white font-semibold ml-2 text-sm">{campaign.name}</h3>
-                      </div>
-                      
-                      <div className="grid grid-cols-3 gap-4 text-sm">
-                        <div>
-                          <p className="text-white/80">Location Score</p>
-                          <p className="text-2xl font-bold text-white">{campaign.locationScore}%</p>
+            {location.locationName.toLowerCase().includes('emporia') ? (
+              // Special message for Emporia Kenworth
+              <div className="bg-gradient-to-br from-slate-700 via-slate-800 to-slate-700 rounded-xl p-8 border border-slate-600 text-center">
+                <div className="text-6xl mb-4">ℹ️</div>
+                <h3 className="text-xl font-bold text-white mb-4">Campaign Metrics Not Scored</h3>
+                <p className="text-slate-300 mb-2">
+                  Campaign completion metrics are not tracked for this location.
+                </p>
+                <p className="text-slate-400 text-sm">
+                  Standard location metrics are still available and updated regularly.
+                </p>
+              </div>
+            ) : (
+              // Regular campaign display for other locations
+              <div className="grid gap-4">
+                {location.campaigns.map((campaign) => (
+                  <div key={campaign.id} className={`bg-gradient-to-r ${getStatusColor(campaign.status)} rounded-xl p-4 border-2`}>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center mb-2">
+                          {getStatusIcon(campaign.status)}
+                          <h3 className="text-white font-semibold ml-2 text-sm">{campaign.name}</h3>
                         </div>
-                        <div>
-                          <p className="text-white/80">National Average</p>
-                          <p className="text-lg font-semibold text-white/90">{campaign.nationalScore}%</p>
+                        
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <p className="text-white/80">Location Score</p>
+                            <p className="text-2xl font-bold text-white">{campaign.locationScore}%</p>
+                          </div>
+                          <div>
+                            <p className="text-white/80">National Average</p>
+                            <p className="text-lg font-semibold text-white/90">{campaign.nationalScore}%</p>
+                          </div>
+                          <div>
+                            <p className="text-white/80">Goal</p>
+                            <p className="text-lg font-semibold text-white/90">{campaign.goal}%</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-white/80">Goal</p>
-                          <p className="text-lg font-semibold text-white/90">{campaign.goal}%</p>
-                        </div>
-                      </div>
-                      
-                      <div className="mt-3">
-                        <div className="bg-white/20 rounded-full h-2">
-                          <div 
-                            className="bg-white rounded-full h-2 transition-all duration-500"
-                            style={{ width: `${Math.min(campaign.locationScore, 100)}%` }}
-                          />
-                        </div>
-                        <div className="flex justify-between text-xs text-white/70 mt-1">
-                          <span>0%</span>
-                          <span>Goal: {campaign.goal}%</span>
+                        
+                        <div className="mt-3">
+                          <div className="bg-white/20 rounded-full h-2">
+                            <div 
+                              className="bg-white rounded-full h-2 transition-all duration-500"
+                              style={{ width: `${Math.min(campaign.locationScore, 100)}%` }}
+                            />
+                          </div>
+                          <div className="flex justify-between text-xs text-white/70 mt-1">
+                            <span>0%</span>
+                            <span>Goal: {campaign.goal}%</span>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>
