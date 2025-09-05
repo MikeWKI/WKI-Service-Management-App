@@ -118,7 +118,7 @@ export default function Footer() {
                   animation: 'slideInFromTop 0.4s ease-out 0.2s both'
                 }}
               >
-                🎉 You Found the Easter Egg! 🎉
+                🎉 You Found it! 🎉
               </h2>
             </div>
             
@@ -143,7 +143,7 @@ export default function Footer() {
                 }}
               >
                 <p className="text-slate-300 text-sm">
-                  Congratulations! You discovered the secret easter egg! 🥚
+                  App Build WKI Service 2025 🥚
                 </p>
                 <p className="text-slate-400 text-xs mt-2">
                   Click anywhere to close
