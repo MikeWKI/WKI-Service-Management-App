@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Clock, Users, CheckCircle, AlertTriangle, MessageSquare, Target, BarChart3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useApiCache } from '../hooks/useApiCache';
+import { usePerformanceMonitor } from '../hooks/usePerformanceMonitor';
+import { useLoading } from '../contexts/LoadingContext';
+import { useNotifications } from '../contexts/NotificationContext';
+import LoadingSpinner from './LoadingSpinner';
 
 interface MetricCard {
   title: string;
@@ -61,148 +66,162 @@ const parseDwellStatus = (value: string): 'good' | 'warning' | 'critical' => {
 const getServiceAdvisorMetrics = async (): Promise<MetricCard[]> => {
   const API_BASE_URL = 'https://wki-service-management-app.onrender.com';
   
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
-    if (response.ok) {
-      const apiResponse = await response.json();
-      
-      // Initialize combined metrics for all locations
-      const combinedMetrics = {
-        etr: { title: 'ETR % of Cases', values: [] as any[], icon: <Target className="w-6 h-6" />, target: '> 15% (target)', impact: 'Customer satisfaction and service transparency', description: 'Percentage of cases with accurate estimated time of repair provided to customers' },
-        dwell: { title: 'SM Monthly Dwell Avg', values: [] as any[], icon: <Clock className="w-6 h-6" />, target: '< 3.0 days (target)', impact: 'Workflow efficiency and customer wait times', description: 'Average time trucks spend at dealership - affects customer satisfaction and operational efficiency' },
-        notes: { title: '% Cases with 3+ Notes', values: [] as any[], icon: <MessageSquare className="w-6 h-6" />, target: '< 5% (target)', impact: 'Customer engagement and case documentation quality', description: 'Cases requiring extensive documentation indicating communication complexity' }
-      };
-      
-      // Handle the nested data structure
-      if (apiResponse.success && apiResponse.data && apiResponse.data.locations) {
-        apiResponse.data.locations.forEach((location: any) => {
-          const locationName = location.name || 'Unknown Location';
-          const locationData = location.metrics || location;
-          
-          // ETR % of Cases
-          const etrValue = locationData.etrPercentCases || 'N/A';
-          combinedMetrics.etr.values.push({
-            location: locationName,
-            value: etrValue.includes('%') ? etrValue : `${etrValue}%`,
-            status: parseEtrStatus(etrValue)
-          });
-
-          // SM Monthly Dwell Avg
-          const dwellValue = locationData.smMonthlyDwellAvg || 'N/A';
-          combinedMetrics.dwell.values.push({
-            location: locationName,
-            value: dwellValue === 'N/A' ? dwellValue : `${dwellValue} days`,
-            status: parseDwellStatus(dwellValue)
-          });
-
-          // % Cases with 3+ Notes
-          const notesValue = locationData.percentCasesWith3Notes || 'N/A';
-          combinedMetrics.notes.values.push({
-            location: locationName,
-            value: notesValue.includes('%') ? notesValue : `${notesValue}%`,
-            status: parseNotesStatus(notesValue)
-          });
-        });
-      }
-      
-      // Convert to MetricCard format with combined location data
-      const metrics: MetricCard[] = [
-        {
-          title: combinedMetrics.etr.title,
-          value: '', // Will be handled differently in rendering
-          target: combinedMetrics.etr.target,
-          status: 'good', // Will be determined by individual locations
-          impact: combinedMetrics.etr.impact,
-          description: combinedMetrics.etr.description,
-          icon: combinedMetrics.etr.icon,
-          location: 'All Locations',
-          locations: combinedMetrics.etr.values
-        },
-        {
-          title: combinedMetrics.dwell.title,
-          value: '',
-          target: combinedMetrics.dwell.target,
-          status: 'good',
-          impact: combinedMetrics.dwell.impact,
-          description: combinedMetrics.dwell.description,
-          icon: combinedMetrics.dwell.icon,
-          location: 'All Locations',
-          locations: combinedMetrics.dwell.values
-        },
-        {
-          title: combinedMetrics.notes.title,
-          value: '',
-          target: combinedMetrics.notes.target,
-          status: 'good',
-          impact: combinedMetrics.notes.impact,
-          description: combinedMetrics.notes.description,
-          icon: combinedMetrics.notes.icon,
-          location: 'All Locations',
-          locations: combinedMetrics.notes.values
-        }
-      ];
-      
-      return metrics;
-    }
-  } catch (error) {
-    console.log('Using fallback data due to API error:', error);
+  const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch metrics: ${response.status} ${response.statusText}`);
   }
   
-  // Fallback data
-  return [];
+  const apiResponse = await response.json();
+  
+  // Initialize combined metrics for all locations
+  const combinedMetrics = {
+    etr: { title: 'ETR % of Cases', values: [] as any[], icon: <Target className="w-6 h-6" />, target: '> 15% (target)', impact: 'Customer satisfaction and service transparency', description: 'Percentage of cases with accurate estimated time of repair provided to customers' },
+    dwell: { title: 'SM Monthly Dwell Avg', values: [] as any[], icon: <Clock className="w-6 h-6" />, target: '< 3.0 days (target)', impact: 'Workflow efficiency and customer wait times', description: 'Average time trucks spend at dealership - affects customer satisfaction and operational efficiency' },
+    notes: { title: '% Cases with 3+ Notes', values: [] as any[], icon: <MessageSquare className="w-6 h-6" />, target: '< 5% (target)', impact: 'Customer engagement and case documentation quality', description: 'Cases requiring extensive documentation indicating communication complexity' }
+  };
+  
+  // Handle the nested data structure
+  if (apiResponse.success && apiResponse.data && apiResponse.data.locations) {
+    apiResponse.data.locations.forEach((location: any) => {
+      const locationName = location.name || 'Unknown Location';
+      const locationData = location.metrics || location;
+      
+      // ETR % of Cases
+      const etrValue = locationData.etrPercentCases || 'N/A';
+      combinedMetrics.etr.values.push({
+        location: locationName,
+        value: etrValue.includes('%') ? etrValue : `${etrValue}%`,
+        status: parseEtrStatus(etrValue)
+      });
+
+      // SM Monthly Dwell Avg
+      const dwellValue = locationData.smMonthlyDwellAvg || 'N/A';
+      combinedMetrics.dwell.values.push({
+        location: locationName,
+        value: dwellValue === 'N/A' ? dwellValue : `${dwellValue} days`,
+        status: parseDwellStatus(dwellValue)
+      });
+
+      // % Cases with 3+ Notes
+      const notesValue = locationData.percentCasesWith3Notes || 'N/A';
+      combinedMetrics.notes.values.push({
+        location: locationName,
+        value: notesValue.includes('%') ? notesValue : `${notesValue}%`,
+        status: parseNotesStatus(notesValue)
+      });
+    });
+  }
+  
+  // Convert to MetricCard format with combined location data
+  const metrics: MetricCard[] = [
+    {
+      title: combinedMetrics.etr.title,
+      value: '', // Will be handled differently in rendering
+      target: combinedMetrics.etr.target,
+      status: 'good', // Will be determined by individual locations
+      impact: combinedMetrics.etr.impact,
+      description: combinedMetrics.etr.description,
+      icon: combinedMetrics.etr.icon,
+      location: 'All Locations',
+      locations: combinedMetrics.etr.values
+    },
+    {
+      title: combinedMetrics.dwell.title,
+      value: '',
+      target: combinedMetrics.dwell.target,
+      status: 'good',
+      impact: combinedMetrics.dwell.impact,
+      description: combinedMetrics.dwell.description,
+      icon: combinedMetrics.dwell.icon,
+      location: 'All Locations',
+      locations: combinedMetrics.dwell.values
+    },
+    {
+      title: combinedMetrics.notes.title,
+      value: '',
+      target: combinedMetrics.notes.target,
+      status: 'good',
+      impact: combinedMetrics.notes.impact,
+      description: combinedMetrics.notes.description,
+      icon: combinedMetrics.notes.icon,
+      location: 'All Locations',
+      locations: combinedMetrics.notes.values
+    }
+  ];
+  
+  return metrics;
 };
 
-const serviceAdvisorMetrics: MetricCard[] = [];
-
-const actionItems = [
-  {
-    metric: 'ETR Management',
-    actions: [
-      'Set ETR within PremierCare 2-hour window',
-      'Include ETR on all posted estimates',
-      'Update ETR proactively when scope changes',
-      'Monitor Vision favorites for ETR Overdue cases'
-    ]
-  },
-  {
-    metric: 'Daily Updates',
-    actions: [
-      'Implement daily case review protocols',
-      'Contact customers within 24-hour window minimum',
-      'Use automated reminders for update schedules',
-      'Monitor Vision Extended Update favorite'
-    ]
-  },
-  {
-    metric: 'QAB Usage',
-    actions: [
-      'Use CHECK-IN button immediately when truck arrives',
-      'Click REQUEST APPROVAL for all estimates (auto-sets follow-up)',
-      'Mark ASSET READY when repairs complete',
-      'Use ASSET RELEASED to set ATR and complete case'
-    ]
-  }
-];
-
-export default function ServiceAdvisorMetrics() {
-  const [metrics, setMetrics] = useState<MetricCard[]>([]);
-  const [loading, setLoading] = useState(true);
+function ServiceAdvisorMetrics() {
+  const { trackOperation } = usePerformanceMonitor('ServiceAdvisorMetrics');
+  const { startLoading, stopLoading, isLoading } = useLoading();
+  const { success, error } = useNotifications();
+  
+  const { 
+    data: metrics, 
+    isLoading: dataLoading, 
+    error: dataError, 
+    refetch,
+    isStale 
+  } = useApiCache('serviceAdvisorMetrics', getServiceAdvisorMetrics, {
+    cacheTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 5 * 60 * 1000   // 5 minutes
+  });
 
   useEffect(() => {
-    const fetchMetrics = async () => {
-      try {
-        const data = await getServiceAdvisorMetrics();
-        setMetrics(data);
-      } catch (error) {
-        console.error('Error fetching service advisor metrics:', error);
-        setMetrics([]);
-      } finally {
-        setLoading(false);
+    const trackDataLoad = trackOperation('dataLoad');
+    
+    if (dataLoading) {
+      startLoading('serviceAdvisorMetrics');
+    } else {
+      stopLoading('serviceAdvisorMetrics');
+      trackDataLoad();
+      
+      if (dataError) {
+        error('Failed to Load Metrics', dataError, {
+          actions: [
+            {
+              label: 'Retry',
+              action: () => refetch(),
+              variant: 'primary'
+            }
+          ]
+        });
+      } else if (metrics && metrics.length > 0) {
+        success('Metrics Updated', 'Service advisor metrics loaded successfully');
       }
-    };
+    }
+  }, [dataLoading, dataError, metrics, startLoading, stopLoading, trackOperation, error, success, refetch]);
 
-    fetchMetrics();
-  }, []);
+  const actionItems = [
+    {
+      metric: 'ETR Management',
+      actions: [
+        'Set ETR within PremierCare 2-hour window',
+        'Include ETR on all posted estimates',
+        'Update ETR proactively when scope changes',
+        'Monitor Vision favorites for ETR Overdue cases'
+      ]
+    },
+    {
+      metric: 'Daily Updates',
+      actions: [
+        'Implement daily case review protocols',
+        'Contact customers within 24-hour window minimum',
+        'Use automated reminders for update schedules',
+        'Monitor Vision Extended Update favorite'
+      ]
+    },
+    {
+      metric: 'QAB Usage',
+      actions: [
+        'Use CHECK-IN button immediately when truck arrives',
+        'Click REQUEST APPROVAL for all estimates (auto-sets follow-up)',
+        'Mark ASSET READY when repairs complete',
+        'Use ASSET RELEASED to set ATR and complete case'
+      ]
+    }
+  ];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -222,15 +241,13 @@ export default function ServiceAdvisorMetrics() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-xl text-slate-300">Loading Service Advisor metrics...</div>
-        </div>
-      </div>
-    );
+  // Show loading spinner while data is loading
+  if (dataLoading) {
+    return <LoadingSpinner size="lg" text="Loading Service Advisor metrics..." fullScreen />;
   }
+
+  // Show stale data warning
+  const showStaleWarning = isStale && metrics && metrics.length > 0;
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -247,15 +264,43 @@ export default function ServiceAdvisorMetrics() {
 
       <div className="mb-8">
         <h1 className="text-4xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent mb-2">
-          Service Advisor Impact Dashboard
+          Service Advisor PACCAR Metrics
         </h1>
         <p className="text-xl text-slate-300">
-          Your role drives customer satisfaction and operational efficiency
+          Your QAB usage directly impacts PACCAR dealer performance tracking
         </p>
+        
+        {/* Stale data warning */}
+        {showStaleWarning && (
+          <div className="mt-4 p-3 bg-yellow-900/50 border border-yellow-500/50 rounded-lg">
+            <p className="text-yellow-400 text-sm">
+              ⚠️ Data may be outdated. 
+              <button 
+                onClick={() => refetch()} 
+                className="ml-2 underline hover:no-underline"
+              >
+                Refresh now
+              </button>
+            </p>
+          </div>
+        )}
       </div>
+      {/* Error state */}
+      {dataError && (
+        <div className="bg-red-900/50 border border-red-500/50 rounded-lg p-6 mb-8">
+          <h3 className="text-red-400 text-xl mb-2">Error Loading Metrics</h3>
+          <p className="text-slate-300 mb-4">{dataError}</p>
+          <button 
+            onClick={() => refetch()}
+            className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
 
       {/* Show message when no legitimate scorecard data is available */}
-      {metrics.length === 0 && !loading && (
+      {!dataLoading && !dataError && (!metrics || metrics.length === 0) && (
         <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl p-8 border border-slate-700 shadow-2xl text-center mb-8">
           <div className="text-6xl mb-4">📊</div>
           <h2 className="text-2xl font-bold text-white mb-4">No Service Advisor Data Available</h2>
@@ -266,7 +311,7 @@ export default function ServiceAdvisorMetrics() {
       )}
 
       {/* Metrics Grid - only show when data exists */}
-      {metrics.length > 0 && (
+      {!dataLoading && !dataError && metrics && metrics.length > 0 && (
         <>
           <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
             {metrics.map((metric, index) => (
@@ -305,12 +350,8 @@ export default function ServiceAdvisorMetrics() {
               </div>
             ))}
           </div>
-        </>
-      )}
 
-      {/* Action Items and Performance Impact - only show when data exists */}
-      {metrics.length > 0 && (
-        <>
+          {/* Action Items and Performance Impact */}
           <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-lg shadow-2xl border border-slate-700 p-8">
             <h2 className="text-2xl font-bold text-white mb-6">
               🎯 Action Items to Improve Your Metrics
@@ -364,3 +405,5 @@ export default function ServiceAdvisorMetrics() {
     </div>
   );
 }
+
+export default ServiceAdvisorMetrics;

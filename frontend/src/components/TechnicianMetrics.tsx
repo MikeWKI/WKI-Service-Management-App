@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Wrench, Clock, CheckCircle, Target, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useApiCache } from '../hooks/useApiCache';
+import { usePerformanceMonitor } from '../hooks/usePerformanceMonitor';
+import { useLoading } from '../contexts/LoadingContext';
+import { useNotifications } from '../contexts/NotificationContext';
+import LoadingSpinner from './LoadingSpinner';
 
 interface MetricCard {
   title: string;
@@ -186,25 +191,46 @@ const getTechnicianMetrics = async (): Promise<MetricCard[]> => {
   ];
 };
 
-export default function TechnicianMetrics() {
-  const [metrics, setMetrics] = useState<MetricCard[]>([]);
-  const [loading, setLoading] = useState(true);
+function TechnicianMetrics() {
+  const { trackOperation } = usePerformanceMonitor('TechnicianMetrics');
+  const { startLoading, stopLoading, isLoading } = useLoading();
+  const { success, error } = useNotifications();
+  
+  const { 
+    data: metrics, 
+    isLoading: dataLoading, 
+    error: dataError, 
+    refetch,
+    isStale 
+  } = useApiCache('technicianMetrics', getTechnicianMetrics, {
+    cacheTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 5 * 60 * 1000   // 5 minutes
+  });
 
   useEffect(() => {
-    const fetchMetrics = async () => {
-      try {
-        const data = await getTechnicianMetrics();
-        setMetrics(data);
-      } catch (error) {
-        console.error('Error fetching technician metrics:', error);
-        setMetrics([]);
-      } finally {
-        setLoading(false);
+    const trackDataLoad = trackOperation('dataLoad');
+    
+    if (dataLoading) {
+      startLoading('technicianMetrics');
+    } else {
+      stopLoading('technicianMetrics');
+      trackDataLoad();
+      
+      if (dataError) {
+        error('Failed to Load Technician Metrics', dataError, {
+          actions: [
+            {
+              label: 'Retry',
+              action: () => refetch(),
+              variant: 'primary'
+            }
+          ]
+        });
+      } else if (metrics && metrics.length > 0) {
+        success('Metrics Updated', 'Technician metrics loaded successfully');
       }
-    };
-
-    fetchMetrics();
-  }, []);
+    }
+  }, [dataLoading, dataError, metrics, startLoading, stopLoading, trackOperation, error, success, refetch]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -224,35 +250,63 @@ export default function TechnicianMetrics() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-xl text-slate-300">Loading Technician metrics...</div>
-        </div>
-      </div>
-    );
+  // Show loading spinner while data is loading
+  if (dataLoading) {
+    return <LoadingSpinner size="lg" text="Loading Technician metrics..." fullScreen />;
   }
+
+  // Show stale data warning
+  const showStaleWarning = isStale && metrics && metrics.length > 0;
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="flex items-center mb-8">
-        <Link to="/metrics" className="flex items-center text-red-400 hover:text-red-300 mr-4 transition-colors">
+        <Link to="/metrics" className="flex items-center text-green-400 hover:text-green-300 mr-4 transition-colors">
           <ArrowLeft size={20} className="mr-2" />
           Back to Role Selection
         </Link>
       </div>
 
       <div className="mb-8">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent mb-2">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent mb-2">
           Technician PACCAR Metrics
         </h1>
         <p className="text-xl text-slate-300">
-          Your repair quality, Case communication and Workflow usage directly impact WKI dealer performance
+          Your repair quality, case communication and workflow usage directly impact WKI dealer performance
         </p>
+        
+        {/* Stale data warning */}
+        {showStaleWarning && (
+          <div className="mt-4 p-3 bg-yellow-900/50 border border-yellow-500/50 rounded-lg">
+            <p className="text-yellow-400 text-sm">
+              ⚠️ Data may be outdated. 
+              <button 
+                onClick={() => refetch()} 
+                className="ml-2 underline hover:no-underline"
+              >
+                Refresh now
+              </button>
+            </p>
+          </div>
+        )}
       </div>
 
+      {/* Error state */}
+      {dataError && (
+        <div className="bg-red-900/50 border border-red-500/50 rounded-lg p-6 mb-8">
+          <h3 className="text-red-400 text-xl mb-2">Error Loading Metrics</h3>
+          <p className="text-slate-300 mb-4">{dataError}</p>
+          <button 
+            onClick={() => refetch()}
+            className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
+
       {/* Show message when no legitimate scorecard data is available */}
-      {metrics.length === 0 && !loading && (
+      {!dataLoading && !dataError && (!metrics || metrics.length === 0) && (
         <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl p-8 border border-slate-700 shadow-2xl text-center mb-8">
           <div className="text-6xl mb-4">🔧</div>
           <h2 className="text-2xl font-bold text-white mb-4">No Technician Data Available</h2>
@@ -263,7 +317,7 @@ export default function TechnicianMetrics() {
       )}
 
       {/* Metrics Grid - only show when data exists */}
-      {metrics.length > 0 && (
+      {!dataLoading && !dataError && metrics && metrics.length > 0 && (
         <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
           {metrics.map((metric, index) => (
             <div
@@ -398,3 +452,5 @@ export default function TechnicianMetrics() {
     </div>
   );
 }
+
+export default TechnicianMetrics;

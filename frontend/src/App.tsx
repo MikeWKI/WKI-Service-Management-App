@@ -19,11 +19,14 @@ import {
   EmporiaMetrics,
   DodgeCityMetrics,
   LiberalMetrics,
-  CampaignMetrics
+  CampaignMetrics,
+  ErrorBoundary
 } from "./components";
 import QuickLinksPanel from "./components/QuickLinksPanel";
 import FixedThemeToggle from "./components/FixedThemeToggle";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { LoadingProvider, GlobalLoadingBar } from "./contexts/LoadingContext";
+import { NotificationProvider, NotificationContainer } from "./contexts/NotificationContext";
 import "./index.css";
 
 function App() {
@@ -35,18 +38,29 @@ function App() {
 
   if (showSplash) {
     return (
-      <ThemeProvider>
-        <SplashScreen onFinish={handleSplashFinish} />
-      </ThemeProvider>
+      <ErrorBoundary>
+        <ThemeProvider>
+          <LoadingProvider>
+            <NotificationProvider>
+              <SplashScreen onFinish={handleSplashFinish} />
+            </NotificationProvider>
+          </LoadingProvider>
+        </ThemeProvider>
+      </ErrorBoundary>
     );
   }
 
   return (
-    <ThemeProvider>
-      <Router>
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 light:from-gray-50 light:via-white light:to-gray-100">
-          <Navigation />
-          <FixedThemeToggle />
+    <ErrorBoundary>
+      <ThemeProvider>
+        <LoadingProvider>
+          <NotificationProvider>
+            <Router>
+              <GlobalLoadingBar />
+              <NotificationContainer />
+              <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 light:from-gray-50 light:via-white light:to-gray-100">
+                <Navigation />
+                <FixedThemeToggle />
           {/* Responsive layout: main content centered, quick links on right for desktop */}
           <div className="relative w-full">
             {/* Main content - always centered */}
@@ -94,12 +108,15 @@ function App() {
               <QuickLinksPanel />
             </div>
           </div>
-          <Footer />
-        </div>
-      </Router>
-    </ThemeProvider>
-  );
-}
+                  <Footer />
+                </div>
+              </Router>
+            </NotificationProvider>
+          </LoadingProvider>
+        </ThemeProvider>
+      </ErrorBoundary>
+    );
+  }
 
-export default App;
+  export default App;
 
