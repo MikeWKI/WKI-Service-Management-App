@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Clock, Users, CheckCircle, AlertTriangle, MessageSquare, Target, BarChart3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useApiCache } from '../hooks/useApiCache';
@@ -156,6 +156,7 @@ function ServiceAdvisorMetrics() {
   const { trackOperation } = usePerformanceMonitor('ServiceAdvisorMetrics');
   const { startLoading, stopLoading, isLoading } = useLoading();
   const { success, error } = useNotifications();
+  const hasShownSuccessRef = useRef(false);
   
   const { 
     data: metrics, 
@@ -173,11 +174,13 @@ function ServiceAdvisorMetrics() {
     
     if (dataLoading) {
       startLoading('serviceAdvisorMetrics');
+      hasShownSuccessRef.current = false; // Reset when starting new load
     } else {
       stopLoading('serviceAdvisorMetrics');
       trackDataLoad();
       
       if (dataError) {
+        hasShownSuccessRef.current = false; // Reset on error
         error('Failed to Load Metrics', dataError, {
           actions: [
             {
@@ -187,8 +190,15 @@ function ServiceAdvisorMetrics() {
             }
           ]
         });
-      } else if (metrics && metrics.length > 0) {
-        success('Metrics Updated', 'Service advisor metrics loaded successfully');
+      } else if (metrics && metrics.length > 0 && !hasShownSuccessRef.current) {
+        const sessionKey = 'serviceAdvisorMetrics_success_shown';
+        const hasShownInSession = sessionStorage.getItem(sessionKey);
+        
+        if (!hasShownInSession) {
+          hasShownSuccessRef.current = true; // Mark as shown
+          sessionStorage.setItem(sessionKey, 'true');
+          success('Metrics Updated', 'Service advisor metrics loaded successfully', { duration: 2000 });
+        }
       }
     }
   }, [dataLoading, dataError, metrics, startLoading, stopLoading, trackOperation, error, success, refetch]);
