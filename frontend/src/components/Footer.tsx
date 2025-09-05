@@ -88,7 +88,10 @@ export default function Footer() {
     {/* Easter Egg Modal */}
     {showEasterEgg && (
       <div 
-        className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 animate-fadeIn"
+        className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
+        style={{
+          animation: 'fadeIn 0.3s ease-out'
+        }}
         onClick={closeEasterEgg}
       >
         <div className="relative max-w-4xl max-h-[90vh] mx-4">
@@ -102,15 +105,29 @@ export default function Footer() {
           </button>
           
           {/* Easter egg container with animation */}
-          <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl border-2 border-red-500/50 shadow-2xl overflow-hidden animate-scaleIn">
+          <div 
+            className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl border-2 border-red-500/50 shadow-2xl overflow-hidden"
+            style={{
+              animation: 'scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+            }}
+          >
             <div className="bg-gradient-to-r from-red-600 to-red-700 px-6 py-4">
-              <h2 className="text-white text-xl font-bold text-center animate-slideInFromTop">
+              <h2 
+                className="text-white text-xl font-bold text-center"
+                style={{
+                  animation: 'slideInFromTop 0.4s ease-out 0.2s both'
+                }}
+              >
                 🎉 You Found the Easter Egg! 🎉
               </h2>
             </div>
             
             <div className="p-6">
-              <div className="animate-slideInFromBottom">
+              <div
+                style={{
+                  animation: 'slideInFromBottom 0.4s ease-out 0.3s both'
+                }}
+              >
                 <img 
                   src="/SMAEaster.png" 
                   alt="Easter Egg" 
@@ -119,7 +136,12 @@ export default function Footer() {
                 />
               </div>
               
-              <div className="text-center mt-4 animate-fadeInDelay">
+              <div 
+                className="text-center mt-4"
+                style={{
+                  animation: 'fadeInDelay 0.4s ease-out 0.5s both'
+                }}
+              >
                 <p className="text-slate-300 text-sm">
                   Congratulations! You discovered the secret easter egg! 🥚
                 </p>
@@ -132,72 +154,6 @@ export default function Footer() {
         </div>
       </div>
     )}
-
-    {/* Custom CSS for animations */}
-    <style jsx>{`
-      @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
-      
-      @keyframes scaleIn {
-        from { 
-          opacity: 0;
-          transform: scale(0.8) rotate(-5deg);
-        }
-        to { 
-          opacity: 1;
-          transform: scale(1) rotate(0deg);
-        }
-      }
-      
-      @keyframes slideInFromTop {
-        from {
-          opacity: 0;
-          transform: translateY(-20px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      
-      @keyframes slideInFromBottom {
-        from {
-          opacity: 0;
-          transform: translateY(20px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      
-      @keyframes fadeInDelay {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
-      
-      .animate-fadeIn {
-        animation: fadeIn 0.3s ease-out;
-      }
-      
-      .animate-scaleIn {
-        animation: scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      }
-      
-      .animate-slideInFromTop {
-        animation: slideInFromTop 0.4s ease-out 0.2s both;
-      }
-      
-      .animate-slideInFromBottom {
-        animation: slideInFromBottom 0.4s ease-out 0.3s both;
-      }
-      
-      .animate-fadeInDelay {
-        animation: fadeInDelay 0.4s ease-out 0.5s both;
-      }
-    `}</style>
     </>
   );
 }
