@@ -158,7 +158,15 @@ Time: ${new Date().toISOString()}
             /* Feedback Options */
             <div className="space-y-3">
               <div className="mb-3 xl:mb-4 hidden lg:block">
-                <h3 className="text-lg font-bold text-blue-300 mb-2">Share Your Feedback</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-blue-300 mb-2">Share Your Feedback</h3>
+                  <button
+                    onClick={() => setIsExpanded(false)}
+                    className="p-1 hover:bg-slate-700 rounded-lg transition-colors"
+                  >
+                    <X className="w-5 h-5 text-slate-400" />
+                  </button>
+                </div>
                 <p className="text-sm text-slate-400">
                   Help us improve the WKI Service Management App
                 </p>
@@ -206,7 +214,10 @@ Time: ${new Date().toISOString()}
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-blue-300">Send Feedback</h3>
                 <button
-                  onClick={() => setShowForm(false)}
+                  onClick={() => {
+                    setShowForm(false);
+                    setIsExpanded(false);
+                  }}
                   className="p-1 hover:bg-slate-700 rounded-lg transition-colors"
                 >
                   <X className="w-5 h-5 text-slate-400" />
@@ -241,7 +252,7 @@ Time: ${new Date().toISOString()}
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
                     className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none"
-                    placeholder="your.email@example.com"
+                    placeholder="FirstL@WichitaKenworth.com"
                     required
                   />
                 </div>
@@ -281,7 +292,7 @@ Time: ${new Date().toISOString()}
                     value={formData.message}
                     onChange={(e) => handleInputChange('message', e.target.value)}
                     className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none h-24 resize-none"
-                    placeholder="Describe your feedback, suggestion, or issue..."
+                    placeholder="Describe your feedback, suggestion, question, or issue..."
                     required
                   />
                 </div>
