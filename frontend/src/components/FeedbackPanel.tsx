@@ -152,7 +152,7 @@ Time: ${new Date().toISOString()}
 
       {/* Expanded Content */}
       {isExpanded && (
-        <div className="lg:fixed lg:top-1/2 lg:right-4 lg:-translate-y-1/2 lg:mt-[400px] w-full lg:w-80 xl:w-96 p-3 xl:p-4 lg:bg-slate-900 lg:border lg:border-blue-500/30 lg:rounded-lg lg:shadow-2xl lg:z-20 max-h-96 lg:max-h-[60vh] overflow-y-auto">
+        <div className="lg:fixed lg:top-20 lg:right-4 w-full lg:w-80 xl:w-96 p-3 xl:p-4 lg:bg-slate-900 lg:border lg:border-blue-500/30 lg:rounded-lg lg:shadow-2xl lg:z-20 max-h-96 lg:max-h-[calc(100vh-6rem)] overflow-y-auto">
           
           {!showForm ? (
             /* Feedback Options */
