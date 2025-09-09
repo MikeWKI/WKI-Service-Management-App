@@ -23,6 +23,7 @@ import {
   ErrorBoundary
 } from "./components";
 import QuickLinksPanel from "./components/QuickLinksPanel";
+import FeedbackPanel from "./components/FeedbackPanel";
 import FixedThemeToggle from "./components/FixedThemeToggle";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LoadingProvider, GlobalLoadingBar } from "./contexts/LoadingContext";
@@ -96,16 +97,20 @@ function App() {
             </div>
             
             {/* Quick Links fixed to right side for desktop */}
-            <div className="hidden lg:flex fixed top-1/2 right-4 -translate-y-1/2 z-30 flex-col items-center justify-start w-[60px] xl:w-[70px] 2xl:w-[80px]">
+            <div className="hidden lg:flex fixed top-1/2 right-4 -translate-y-1/2 z-30 flex-col items-center justify-start w-[60px] xl:w-[70px] 2xl:w-[80px] space-y-4">
               <div className="w-full">
                 <QuickLinksPanel />
               </div>
+              <div className="w-full">
+                <FeedbackPanel />
+              </div>
             </div>
           </div>
-          {/* Quick Links for mobile (integrated in navigation) */}
+          {/* Quick Links and Feedback for mobile (integrated in navigation) */}
           <div className="block lg:hidden w-full bg-slate-800 border-t border-slate-700">
-            <div className="max-w-full sm:max-w-7xl mx-auto px-1 sm:px-4">
+            <div className="max-w-full sm:max-w-7xl mx-auto px-1 sm:px-4 space-y-2 py-2">
               <QuickLinksPanel />
+              <FeedbackPanel />
             </div>
           </div>
                   <Footer />
