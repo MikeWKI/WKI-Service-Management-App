@@ -67,12 +67,20 @@ const locations = [
 // Backend API base URL
 const API_BASE_URL = 'https://wki-service-management-app.onrender.com';
 
-// Test API connection
+// Test API connection with caching
+let connectionTestCache: { result: boolean; timestamp: number } | null = null;
+const CONNECTION_CACHE_DURATION = 30000; // 30 seconds
+
 const testAPIConnection = async () => {
+  // Check cache first
+  if (connectionTestCache && (Date.now() - connectionTestCache.timestamp) < CONNECTION_CACHE_DURATION) {
+    return connectionTestCache.result;
+  }
+
   try {
     // Add timeout to prevent hanging
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Connection test timeout')), 5000);
+      setTimeout(() => reject(new Error('Connection test timeout')), 3000); // Reduced to 3s
     });
     
     // Test the main endpoint we'll be using
@@ -84,20 +92,25 @@ const testAPIConnection = async () => {
       timeoutPromise
     ]) as Response;
     
-    console.log('Backend connectivity test:', response ? response.status : 'No response');
-    
+    let result = false;
     if (response && response.status === 405) {
       // Method not allowed is expected for GET on upload endpoint
-      console.log('✅ Backend is responding (POST endpoint ready)');
-      return true;
+      result = true;
     } else if (response && response.status === 500) {
-      console.log('⚠️ Backend responding but has server errors (likely database issue)');
-      return true; // Backend is running, just has DB issues
+      // Backend responding but has server errors
+      result = true;
+    } else {
+      result = response ? response.ok : false;
     }
-    
-    return response ? response.ok : false;
+
+    // Cache the result
+    connectionTestCache = { result, timestamp: Date.now() };
+    return result;
   } catch (error) {
-    console.error('Backend connectivity test failed:', error instanceof Error ? error.message : String(error));
+    // Less verbose error logging
+    console.debug('Backend connectivity test failed:', error instanceof Error ? error.message : String(error));
+    // Cache negative result for shorter time
+    connectionTestCache = { result: false, timestamp: Date.now() };
     return false;
   }
 };
@@ -136,9 +149,9 @@ const uploadScorecardToAPI = async (file: File, month: string, year: number) => 
 };
 
 const fetchLocationMetrics = async () => {
-  // Add timeout to prevent hanging
+  // Add shorter timeout to prevent hanging (reduced to 3s)
   const timeoutPromise = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error('Request timeout after 10 seconds')), 10000);
+    setTimeout(() => reject(new Error('Request timeout after 3 seconds')), 3000);
   });
   
   const responsePromise = fetch(`${API_BASE_URL}/api/locationMetrics`);
@@ -188,10 +201,11 @@ export default function ScorecardManager() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Test API connection
+        // Test API connection (cached for 30 seconds)
         const apiWorking = await testAPIConnection();
-        console.log('API connection test result:', apiWorking);
-        // Always try to fetch from backend
+        console.debug('API connection test result:', apiWorking);
+      // Always try to fetch from backend
+      try {
         const backendData = await fetchLocationMetrics();
         // Parse backendData for dealership and locations
         let dealership: DealershipMetrics | undefined, locations: any[] | undefined, extractedAt: string | undefined;
@@ -292,7 +306,9 @@ export default function ScorecardManager() {
       // Check specific properties
       console.log('Has dealership?', 'dealership' in (result || {}));
       console.log('Has locations?', 'locations' in (result || {}));
-      console.log('Has data?', 'data' in (result || {}));
+      console.log('Has extractedAt?', 'extractedAt' in (result || {}));
+      console.log('Direct structure (Pattern 1):', 'dealership' in (result || {}) && 'locations' in (result || {}));
+      console.log('Nested structure (Pattern 2):', 'data' in (result || {}));
 
       if (result && typeof result === 'object' && 'data' in result) {
         console.log('Data structure:', JSON.stringify(result.data, null, 2));

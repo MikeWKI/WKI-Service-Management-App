@@ -129,7 +129,12 @@ Time: ${new Date().toISOString()}
     <div className="lg:w-full mt-4">
       {/* Toggle Button */}
       <button
-        onClick={togglePanel}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('Feedback toggle clicked, current state:', isExpanded);
+          togglePanel();
+        }}
         className="w-full p-2 xl:p-3 flex items-center justify-center hover:bg-slate-700/50 transition-colors duration-200 relative lg:rounded-lg border border-blue-500/30 hover:border-blue-400/50"
         aria-label={isExpanded ? 'Minimize Feedback' : 'Expand Feedback'}
       >
@@ -152,7 +157,7 @@ Time: ${new Date().toISOString()}
 
       {/* Expanded Content */}
       {isExpanded && (
-        <div className="lg:fixed lg:top-20 lg:right-4 w-full lg:w-80 xl:w-96 p-3 xl:p-4 lg:bg-slate-900 lg:border lg:border-blue-500/30 lg:rounded-lg lg:shadow-2xl lg:z-20 max-h-96 lg:max-h-[calc(100vh-6rem)] overflow-y-auto">
+        <div className="lg:fixed lg:top-20 lg:right-4 w-full lg:w-80 xl:w-96 p-3 xl:p-4 lg:bg-slate-900 lg:border lg:border-blue-500/30 lg:rounded-lg lg:shadow-2xl lg:z-50 max-h-96 lg:max-h-[calc(100vh-6rem)] overflow-y-auto">
           
           {!showForm ? (
             /* Feedback Options */
@@ -161,7 +166,12 @@ Time: ${new Date().toISOString()}
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-bold text-blue-300 mb-2">Share Your Feedback</h3>
                   <button
-                    onClick={() => setIsExpanded(false)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('Feedback main panel X clicked');
+                      setIsExpanded(false);
+                    }}
                     className="p-1 hover:bg-slate-700 rounded-lg transition-colors"
                   >
                     <X className="w-5 h-5 text-slate-400" />
@@ -214,7 +224,10 @@ Time: ${new Date().toISOString()}
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-blue-300">Send Feedback</h3>
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Feedback form X clicked');
                     setShowForm(false);
                     setIsExpanded(false);
                   }}

@@ -93,7 +93,12 @@ export default function QuickLinksPanel() {
     <div className="lg:w-full">
       {/* Toggle Button */}
       <button
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('QuickLinks toggle clicked, current state:', isExpanded);
+          setIsExpanded(!isExpanded);
+        }}
         className="w-full p-2 xl:p-3 flex items-center justify-center hover:bg-slate-700/50 transition-colors duration-200 relative lg:rounded-lg"
         aria-label={isExpanded ? 'Minimize Quick Links' : 'Expand Quick Links'}
       >
