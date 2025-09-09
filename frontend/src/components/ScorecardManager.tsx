@@ -204,8 +204,8 @@ export default function ScorecardManager() {
         // Test API connection (cached for 30 seconds)
         const apiWorking = await testAPIConnection();
         console.debug('API connection test result:', apiWorking);
-      // Always try to fetch from backend
-      try {
+        
+        // Always try to fetch from backend
         const backendData = await fetchLocationMetrics();
         // Parse backendData for dealership and locations
         let dealership: DealershipMetrics | undefined, locations: any[] | undefined, extractedAt: string | undefined;
