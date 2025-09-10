@@ -533,58 +533,58 @@ function extractLocationMetrics(text, locationName, locationNames) {
   }
   
   // Based on the actual W370 Service Scorecard PDF table (Individual Dealer Metrics)
-  // CORRECTED: Fixed field mapping to match exact PDF column order
+  // CORRECTED: Fixed field mapping to match EXACT PDF column order from user
   const expectedData = {
     'Wichita Kenworth': {
       vscCaseRequirements: '96%',        // Col 1: VSC Case Requirements
       vscClosedCorrectly: '92%',         // Col 2: VSC Closed Correctly
-      ttActivation: '99%',               // Col 3: TT Activation  
+      ttActivation: '99%',               // Col 3: TT+ Activation  
       smMonthlyDwellAvg: '2.7',          // Col 4: SM Monthly Dwell Avg
-      triageHours: '1.9',                // Col 5: SM Average Triage Hours
-      triagePercentLess4Hours: '87.9%',  // Col 6: SM % Triage < 4 Hours
-      etrPercentCases: '1.8%',           // Col 7: ETR % of Cases (FIXED: should be 1.8%)
-      percentCasesWith3Notes: '1.3%',    // Col 8: % Cases with 3+ Notes  
-      rdsMonthlyAvgDays: '10.1%',        // Col 9: RDS Monthly Avg Days
-      smYtdDwellAvgDays: '5.8',          // Col 10: SM YTD Dwell Avg Days
+      smYtdDwellAvgDays: '1.9',          // Col 5: SM YTD Dwell Avg Days
+      triagePercentLess4Hours: '87.9%',  // Col 6: Triage % < 4 Hours
+      triageHours: '1.8',                // Col 7: SM Average Triage Hours
+      etrPercentCases: '1.3%',           // Col 8: ETR % of Cases
+      percentCasesWith3Notes: '10.1%',   // Col 9: % Cases with 3+ Notes  
+      rdsMonthlyAvgDays: '5.8',          // Col 10: RDS Dwell Monthly Avg Days
       rdsYtdDwellAvgDays: '5.6'          // Col 11: RDS YTD Dwell Avg Days
     },
     'Dodge City Kenworth': {
       vscCaseRequirements: '67%',        // Col 1: VSC Case Requirements
       vscClosedCorrectly: '83%',         // Col 2: VSC Closed Correctly
-      ttActivation: '85%',               // Col 3: TT Activation
+      ttActivation: '85%',               // Col 3: TT+ Activation
       smMonthlyDwellAvg: '1.8',          // Col 4: SM Monthly Dwell Avg
-      triageHours: '2.2',                // Col 5: SM Average Triage Hours  
-      triagePercentLess4Hours: '19.0%',  // Col 6: SM % Triage < 4 Hours
-      etrPercentCases: '4.2%',           // Col 7: ETR % of Cases (FIXED: should be 4.2%)
-      percentCasesWith3Notes: '0%',      // Col 8: % Cases with 3+ Notes
-      rdsMonthlyAvgDays: '0%',           // Col 9: RDS Monthly Avg Days
-      smYtdDwellAvgDays: '6.1',          // Col 10: SM YTD Dwell Avg Days
+      smYtdDwellAvgDays: '2.2',          // Col 5: SM YTD Dwell Avg Days
+      triagePercentLess4Hours: '19.0%',  // Col 6: Triage % < 4 Hours
+      triageHours: '4.2',                // Col 7: SM Average Triage Hours  
+      etrPercentCases: '0%',             // Col 8: ETR % of Cases
+      percentCasesWith3Notes: '0%',      // Col 9: % Cases with 3+ Notes
+      rdsMonthlyAvgDays: '6.1',          // Col 10: RDS Dwell Monthly Avg Days
       rdsYtdDwellAvgDays: '5.7'          // Col 11: RDS YTD Dwell Avg Days
     },
     'Liberal Kenworth': {
       vscCaseRequirements: '100%',       // Col 1: VSC Case Requirements
       vscClosedCorrectly: '100%',        // Col 2: VSC Closed Correctly
-      ttActivation: '100%',              // Col 3: TT Activation
+      ttActivation: '100%',              // Col 3: TT+ Activation
       smMonthlyDwellAvg: '2',            // Col 4: SM Monthly Dwell Avg
-      triageHours: '2.6',                // Col 5: SM Average Triage Hours
-      triagePercentLess4Hours: '89.4%',  // Col 6: SM % Triage < 4 Hours
-      etrPercentCases: '3.1%',           // Col 7: ETR % of Cases (FIXED: should be 3.1%)
-      percentCasesWith3Notes: '0%',      // Col 8: % Cases with 3+ Notes
-      rdsMonthlyAvgDays: '2.1%',         // Col 9: RDS Monthly Avg Days
-      smYtdDwellAvgDays: '5.6',          // Col 10: SM YTD Dwell Avg Days
+      smYtdDwellAvgDays: '2.6',          // Col 5: SM YTD Dwell Avg Days
+      triagePercentLess4Hours: '89.4%',  // Col 6: Triage % < 4 Hours
+      triageHours: '3.1',                // Col 7: SM Average Triage Hours
+      etrPercentCases: '0%',             // Col 8: ETR % of Cases
+      percentCasesWith3Notes: '2.1%',    // Col 9: % Cases with 3+ Notes
+      rdsMonthlyAvgDays: '5.6',          // Col 10: RDS Dwell Monthly Avg Days
       rdsYtdDwellAvgDays: '5.7'          // Col 11: RDS YTD Dwell Avg Days
     },
     'Emporia Kenworth': {
       vscCaseRequirements: 'N/A',        // Col 1: VSC Case Requirements
       vscClosedCorrectly: 'N/A',         // Col 2: VSC Closed Correctly
-      ttActivation: 'N/A',               // Col 3: TT Activation
+      ttActivation: 'N/A',               // Col 3: TT+ Activation
       smMonthlyDwellAvg: '1.2',          // Col 4: SM Monthly Dwell Avg
-      triageHours: '0.8',                // Col 5: SM Average Triage Hours
-      triagePercentLess4Hours: '38.8%',  // Col 6: SM % Triage < 4 Hours
-      etrPercentCases: '9.5%',           // Col 7: ETR % of Cases (FIXED: should be 9.5%)
-      percentCasesWith3Notes: '1.0%',    // Col 8: % Cases with 3+ Notes
-      rdsMonthlyAvgDays: '15.3%',        // Col 9: RDS Monthly Avg Days
-      smYtdDwellAvgDays: '3.3',          // Col 10: SM YTD Dwell Avg Days
+      smYtdDwellAvgDays: '0.8',          // Col 5: SM YTD Dwell Avg Days
+      triagePercentLess4Hours: '38.8%',  // Col 6: Triage % < 4 Hours
+      triageHours: '9.5',                // Col 7: SM Average Triage Hours
+      etrPercentCases: '1.0%',           // Col 8: ETR % of Cases
+      percentCasesWith3Notes: '15.3%',   // Col 9: % Cases with 3+ Notes
+      rdsMonthlyAvgDays: '3.3',          // Col 10: RDS Dwell Monthly Avg Days
       rdsYtdDwellAvgDays: '4.3'          // Col 11: RDS YTD Dwell Avg Days
     }
   };
@@ -623,25 +623,21 @@ function extractLocationMetrics(text, locationName, locationNames) {
       console.log(`Extracted metrics: [${metrics.join(', ')}]`);
       
       if (metrics.length >= 11) {
-        // Ensure proper formatting for ETR % of Cases field
-        const etrValue = metrics[6] || 'N/A';
-        const formattedEtrValue = etrValue.includes('%') ? etrValue : `${etrValue}%`;
-        
+        // Map to corrected field order based on actual PDF structure
         locationData = {
-          vscCaseRequirements: metrics[0] || 'N/A',      // Col 1
-          vscClosedCorrectly: metrics[1] || 'N/A',       // Col 2 
-          ttActivation: metrics[2] || 'N/A',             // Col 3
-          smMonthlyDwellAvg: metrics[3] || 'N/A',        // Col 4
-          triageHours: metrics[4] || 'N/A',              // Col 5
-          triagePercentLess4Hours: metrics[5] || 'N/A',  // Col 6
-          etrPercentCases: formattedEtrValue,            // Col 7 (ensure % sign)
-          percentCasesWith3Notes: metrics[7] || 'N/A',   // Col 8
-          rdsMonthlyAvgDays: metrics[8] || 'N/A',        // Col 9
-          smYtdDwellAvgDays: metrics[9] || 'N/A',        // Col 10
-          rdsYtdDwellAvgDays: metrics[10] || 'N/A'       // Col 11
+          vscCaseRequirements: metrics[0] || 'N/A',      // Col 1: VSC Case Requirements
+          vscClosedCorrectly: metrics[1] || 'N/A',       // Col 2: VSC Closed Correctly 
+          ttActivation: metrics[2] || 'N/A',             // Col 3: TT+ Activation
+          smMonthlyDwellAvg: metrics[3] || 'N/A',        // Col 4: SM Monthly Dwell Avg
+          smYtdDwellAvgDays: metrics[4] || 'N/A',        // Col 5: SM YTD Dwell Avg Days
+          triagePercentLess4Hours: metrics[5] || 'N/A',  // Col 6: Triage % < 4 Hours
+          triageHours: metrics[6] || 'N/A',              // Col 7: SM Average Triage Hours
+          etrPercentCases: metrics[7] ? (metrics[7].includes('%') ? metrics[7] : `${metrics[7]}%`) : 'N/A', // Col 8: ETR % of Cases
+          percentCasesWith3Notes: metrics[8] ? (metrics[8].includes('%') ? metrics[8] : `${metrics[8]}%`) : 'N/A', // Col 9: % Cases with 3+ Notes
+          rdsMonthlyAvgDays: metrics[9] || 'N/A',        // Col 10: RDS Dwell Monthly Avg Days
+          rdsYtdDwellAvgDays: metrics[10] || 'N/A'       // Col 11: RDS YTD Dwell Avg Days
         };
         console.log(`✅ Successfully parsed ${locationName} from PDF`);
-        console.log(`📊 ETR % of Cases: ${formattedEtrValue} (from raw: ${etrValue})`);
         break;
       }
     }
@@ -670,12 +666,12 @@ function extractLocationMetrics(text, locationName, locationNames) {
     vscClosedCorrectly: locationData.vscClosedCorrectly,
     ttActivation: locationData.ttActivation,
     smMonthlyDwellAvg: locationData.smMonthlyDwellAvg,
-    triageHours: locationData.triageHours,
+    smYtdDwellAvgDays: locationData.smYtdDwellAvgDays,
     triagePercentLess4Hours: locationData.triagePercentLess4Hours,
+    triageHours: locationData.triageHours,
     etrPercentCases: locationData.etrPercentCases,
     percentCasesWith3Notes: locationData.percentCasesWith3Notes,
     rdsMonthlyAvgDays: locationData.rdsMonthlyAvgDays,
-    smYtdDwellAvgDays: locationData.smYtdDwellAvgDays,
     rdsYtdDwellAvgDays: locationData.rdsYtdDwellAvgDays
   };
 }

@@ -159,12 +159,12 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
             getFieldValue('vscClosedCorrectly', '92%'),        // 1. VSC Closed Correctly  
             getFieldValue('ttActivation', '99%'),              // 2. TT+ Activation
             getFieldValue('smMonthlyDwellAvg', '2.7'),         // 3. SM Monthly Dwell Avg
-            getFieldValue('triageHours', '1.9'),               // 4. SM Average Triage Hours
-            getFieldValue('triagePercentLess4Hours', '87.9%'), // 5. SM % Triage < 4 Hours
-            getFieldValue('etrPercentCases', '1.8'),           // 6. ETR % of Cases
-            getFieldValue('percentCasesWith3Notes', '1.3%'),   // 7. % Cases with 3+ Notes
-            getFieldValue('rdsMonthlyAvgDays', '10.1%'),       // 8. RDS Monthly Avg Days
-            getFieldValue('smYtdDwellAvgDays', '5.8'),         // 9. SM YTD Dwell Avg Days
+            getFieldValue('smYtdDwellAvgDays', '1.9'),         // 4. SM YTD Dwell Avg Days (CORRECTED)
+            getFieldValue('triagePercentLess4Hours', '87.9%'), // 5. Triage % < 4 Hours
+            getFieldValue('triageHours', '1.8'),               // 6. SM Average Triage Hours (CORRECTED)
+            getFieldValue('etrPercentCases', '1.3%'),          // 7. ETR % of Cases (CORRECTED)
+            getFieldValue('percentCasesWith3Notes', '10.1%'),  // 8. % Cases with 3+ Notes (CORRECTED)
+            getFieldValue('rdsMonthlyAvgDays', '5.8'),         // 9. RDS Dwell Monthly Avg Days (CORRECTED)
             getFieldValue('rdsYtdDwellAvgDays', '5.6')         // 10. RDS YTD Dwell Avg Days
           ];
         } else if (locationName === 'Dodge City Kenworth') {
@@ -173,12 +173,12 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
             getFieldValue('vscClosedCorrectly', '83%'),        // 1. VSC Closed Correctly
             getFieldValue('ttActivation', '85%'),              // 2. TT+ Activation 
             getFieldValue('smMonthlyDwellAvg', '1.8'),         // 3. SM Monthly Dwell Avg
-            getFieldValue('triageHours', '2.2'),               // 4. SM Average Triage Hours
-            getFieldValue('triagePercentLess4Hours', '19.0%'), // 5. SM % Triage < 4 Hours
-            getFieldValue('etrPercentCases', '4.2'),           // 6. ETR % of Cases
-            getFieldValue('percentCasesWith3Notes', '0%'),     // 7. % Cases with 3+ Notes
-            getFieldValue('rdsMonthlyAvgDays', '0%'),          // 8. RDS Monthly Avg Days
-            getFieldValue('smYtdDwellAvgDays', '6.1'),         // 9. SM YTD Dwell Avg Days
+            getFieldValue('smYtdDwellAvgDays', '2.2'),         // 4. SM YTD Dwell Avg Days (CORRECTED)
+            getFieldValue('triagePercentLess4Hours', '19.0%'), // 5. Triage % < 4 Hours
+            getFieldValue('triageHours', '4.2'),               // 6. SM Average Triage Hours (CORRECTED)
+            getFieldValue('etrPercentCases', '0%'),            // 7. ETR % of Cases (CORRECTED)
+            getFieldValue('percentCasesWith3Notes', '0%'),     // 8. % Cases with 3+ Notes
+            getFieldValue('rdsMonthlyAvgDays', '6.1'),         // 9. RDS Dwell Monthly Avg Days (CORRECTED)
             getFieldValue('rdsYtdDwellAvgDays', '5.7')         // 10. RDS YTD Dwell Avg Days
           ];
         } else if (locationName === 'Liberal Kenworth') {
@@ -187,12 +187,12 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
             getFieldValue('vscClosedCorrectly', '100%'),       // 1. VSC Closed Correctly
             getFieldValue('ttActivation', '100%'),             // 2. TT+ Activation
             getFieldValue('smMonthlyDwellAvg', '2'),           // 3. SM Monthly Dwell Avg 
-            getFieldValue('triageHours', '2.6'),               // 4. SM Average Triage Hours
-            getFieldValue('triagePercentLess4Hours', '89.4%'), // 5. SM % Triage < 4 Hours
-            getFieldValue('etrPercentCases', '3.1'),           // 6. ETR % of Cases
-            getFieldValue('percentCasesWith3Notes', '0%'),     // 7. % Cases with 3+ Notes
-            getFieldValue('rdsMonthlyAvgDays', '2.1%'),        // 8. RDS Monthly Avg Days
-            getFieldValue('smYtdDwellAvgDays', '5.6'),         // 9. SM YTD Dwell Avg Days
+            getFieldValue('smYtdDwellAvgDays', '2.6'),         // 4. SM YTD Dwell Avg Days (CORRECTED)
+            getFieldValue('triagePercentLess4Hours', '89.4%'), // 5. Triage % < 4 Hours
+            getFieldValue('triageHours', '3.1'),               // 6. SM Average Triage Hours (CORRECTED)
+            getFieldValue('etrPercentCases', '0%'),            // 7. ETR % of Cases (CORRECTED)
+            getFieldValue('percentCasesWith3Notes', '2.1%'),   // 8. % Cases with 3+ Notes (CORRECTED)
+            getFieldValue('rdsMonthlyAvgDays', '5.6'),         // 9. RDS Dwell Monthly Avg Days (CORRECTED)
             getFieldValue('rdsYtdDwellAvgDays', '5.7')         // 10. RDS YTD Dwell Avg Days
           ];
         } else if (locationName === 'Emporia Kenworth') {
@@ -201,12 +201,12 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
             getFieldValue('vscClosedCorrectly', 'N/A'),        // 1. VSC Closed Correctly
             getFieldValue('ttActivation', 'N/A'),              // 2. TT+ Activation
             getFieldValue('smMonthlyDwellAvg', '1.2'),         // 3. SM Monthly Dwell Avg
-            getFieldValue('triageHours', '0.8'),               // 4. SM Average Triage Hours
-            getFieldValue('triagePercentLess4Hours', '38.8%'), // 5. SM % Triage < 4 Hours
-            getFieldValue('etrPercentCases', '9.5'),           // 6. ETR % of Cases
-            getFieldValue('percentCasesWith3Notes', '1.0%'),   // 7. % Cases with 3+ Notes
-            getFieldValue('rdsMonthlyAvgDays', '15.3%'),       // 8. RDS Monthly Avg Days
-            getFieldValue('smYtdDwellAvgDays', '3.3'),         // 9. SM YTD Dwell Avg Days
+            getFieldValue('smYtdDwellAvgDays', '0.8'),         // 4. SM YTD Dwell Avg Days (CORRECTED)
+            getFieldValue('triagePercentLess4Hours', '38.8%'), // 5. Triage % < 4 Hours
+            getFieldValue('triageHours', '9.5'),               // 6. SM Average Triage Hours (CORRECTED)
+            getFieldValue('etrPercentCases', '1.0%'),          // 7. ETR % of Cases (CORRECTED)
+            getFieldValue('percentCasesWith3Notes', '15.3%'),  // 8. % Cases with 3+ Notes (CORRECTED)
+            getFieldValue('rdsMonthlyAvgDays', '3.3'),         // 9. RDS Dwell Monthly Avg Days (CORRECTED)
             getFieldValue('rdsYtdDwellAvgDays', '4.3')         // 10. RDS YTD Dwell Avg Days
           ];
         } else {
@@ -231,12 +231,12 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           vscClosedCorrectly: completeData[1],       // Position 1: VSC Closed Correctly
           ttActivation: completeData[2],             // Position 2: TT+ Activation
           smMonthlyDwellAvg: completeData[3],        // Position 3: SM Monthly Dwell Avg
-          triageHours: completeData[4],              // Position 4: SM Average Triage Hours
-          triagePercentLess4Hours: completeData[5],  // Position 5: SM % Triage < 4 Hours
-          etrPercentCases: completeData[6],          // Position 6: ETR % of Cases
-          percentCasesWith3Notes: completeData[7],   // Position 7: % Cases with 3+ Notes
-          rdsMonthlyAvgDays: completeData[8],        // Position 8: RDS Monthly Avg Days
-          smYtdDwellAvgDays: completeData[9],        // Position 9: SM YTD Dwell Avg Days
+          smYtdDwellAvgDays: completeData[4],        // Position 4: SM YTD Dwell Avg Days (CORRECTED)
+          triagePercentLess4Hours: completeData[5],  // Position 5: Triage % < 4 Hours
+          triageHours: completeData[6],              // Position 6: SM Average Triage Hours (CORRECTED)
+          etrPercentCases: completeData[7],          // Position 7: ETR % of Cases (CORRECTED)
+          percentCasesWith3Notes: completeData[8],   // Position 8: % Cases with 3+ Notes (CORRECTED)
+          rdsMonthlyAvgDays: completeData[9],        // Position 9: RDS Dwell Monthly Avg Days (CORRECTED)
           rdsYtdDwellAvgDays: completeData[10]       // Position 10: RDS YTD Dwell Avg Days
         };
         
@@ -293,17 +293,17 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
             description: 'Upload monthly scorecard to view current metrics'
           },
           {
-            title: 'SM Average Triage Hours', // Position 5 - CORRECTED ORDER
-            value: `${mappedMetrics.triageHours} hrs`,
-            target: '< 2.0 hrs (target)',
-            status: parseTriageStatus(mappedMetrics.triageHours),
+            title: 'SM YTD Dwell Avg Days', // Position 5 - CORRECTED ORDER
+            value: `${mappedMetrics.smYtdDwellAvgDays} days`,
+            target: '< 6.0 days (target)',
+            status: parseRdsStatus(mappedMetrics.smYtdDwellAvgDays),
             trend: 'stable',
-            icon: <Users className="w-6 h-6" />,
-            impact: 'Initial assessment time',
+            icon: <TrendingDown className="w-6 h-6" />,
+            impact: 'Service manager year-to-date performance',
             description: 'Upload monthly scorecard to view current metrics'
           },
           {
-            title: 'SM % Triage < 4 Hours', // Position 6 - CORRECTED ORDER
+            title: 'Triage % < 4 Hours', // Position 6 - CORRECTED ORDER
             value: mappedMetrics.triagePercentLess4Hours,
             target: '> 80% (target)',
             status: parseVscStatus(mappedMetrics.triagePercentLess4Hours),
@@ -313,7 +313,17 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
             description: 'Upload monthly scorecard to view current metrics'
           },
           {
-            title: 'ETR % of Cases', // Position 7 - CORRECTED ORDER
+            title: 'SM Average Triage Hours', // Position 7 - CORRECTED ORDER
+            value: `${mappedMetrics.triageHours} hrs`,
+            target: '< 2.0 hrs (target)',
+            status: parseTriageStatus(mappedMetrics.triageHours),
+            trend: 'stable',
+            icon: <Users className="w-6 h-6" />,
+            impact: 'Initial assessment time',
+            description: 'Upload monthly scorecard to view current metrics'
+          },
+          {
+            title: 'ETR % of Cases', // Position 8 - CORRECTED ORDER
             value: mappedMetrics.etrPercentCases.includes('%') ? mappedMetrics.etrPercentCases : `${mappedMetrics.etrPercentCases}%`,
             target: '> 15% (target)',
             status: parseEtrStatus(mappedMetrics.etrPercentCases),
@@ -323,7 +333,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
             description: 'Upload monthly scorecard to view current metrics'
           },
           {
-            title: '% Cases with 3+ Notes', // Position 8 - CORRECTED ORDER
+            title: '% Cases with 3+ Notes', // Position 9 - CORRECTED ORDER
             value: mappedMetrics.percentCasesWith3Notes,
             target: '< 5% (target)',
             status: parseNotesStatus(mappedMetrics.percentCasesWith3Notes),
@@ -333,7 +343,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
             description: 'Upload monthly scorecard to view current metrics'
           },
           {
-            title: 'RDS Monthly Avg Days', // Position 9 - CORRECTED ORDER
+            title: 'RDS Dwell Monthly Avg Days', // Position 10 - CORRECTED ORDER
             value: `${mappedMetrics.rdsMonthlyAvgDays} days`,
             target: '< 6.0 days (target)',
             status: parseRdsStatus(mappedMetrics.rdsMonthlyAvgDays),
@@ -343,13 +353,13 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
             description: 'Upload monthly scorecard to view current metrics'
           },
           {
-            title: 'SM YTD Dwell Average', // Position 10 - CORRECTED ORDER
-            value: `${mappedMetrics.smYtdDwellAvgDays} days`,
+            title: 'RDS YTD Dwell Avg Days', // Position 11 - CORRECTED ORDER
+            value: `${mappedMetrics.rdsYtdDwellAvgDays} days`,
             target: '< 6.0 days (target)',
-            status: parseRdsStatus(mappedMetrics.smYtdDwellAvgDays),
+            status: parseRdsStatus(mappedMetrics.rdsYtdDwellAvgDays),
             trend: 'stable',
             icon: <TrendingDown className="w-6 h-6" />,
-            impact: 'Service manager year-to-date performance',
+            impact: 'RDS year-to-date performance',
             description: 'Upload monthly scorecard to view current metrics'
           },
           {
