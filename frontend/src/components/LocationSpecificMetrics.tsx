@@ -82,8 +82,6 @@ const addPercentageIfNeeded = (value: string): string => {
   if (!value || value === 'N/A') return 'N/A';
   const numericValue = parseFloat(value);
   if (isNaN(numericValue)) return value;
-  
-  // If the value looks like a percentage (0-100 range) and doesn't already have %
   if (numericValue >= 0 && numericValue <= 100 && !value.includes('%')) {
     return `${value}%`;
   }
@@ -105,26 +103,213 @@ const getMetricFieldName = (title: string): string => {
     'RDS Dwell Monthly Avg Days': 'rdsMonthlyAvgDays',
     'RDS YTD Dwell Avg Days': 'rdsYtdDwellAvgDays'
   };
-  
   return metricMapping[title] || title.toLowerCase().replace(/[^a-z0-9]/g, '');
 };
 
-// This would be dynamically loaded from uploaded scorecard data
+/** ----------------------------------------------------------------
+ *  MERGED: getLocationMetrics with improved trends approach
+ *  ---------------------------------------------------------------- */
 const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => {
-  // Updated to use correct backend URL
   const API_BASE_URL = 'https://wki-service-management-app.onrender.com';
-  
+
   try {
-    // Fetch the latest uploaded scorecard data - same source as trend data
-    console.log('Fetching latest scorecard data for cards...');
-    
-    // Try the main endpoint first (fallback to existing behavior)
+    // OPTION 1: Use trends endpoint (same source as TrendIndicator)
+    console.log('Fetching latest trend data for cards (same source as trend indicators)...');
+
+    const metricsList = [
+      'vscCaseRequirements',
+      'vscClosedCorrectly',
+      'ttActivation',
+      'smMonthlyDwellAvg',
+      'smYtdDwellAvgDays',
+      'triagePercentLess4Hours',
+      'triageHours',
+      'etrPercentCases',
+      'percentCasesWith3Notes',
+      'rdsMonthlyAvgDays',
+      'rdsYtdDwellAvgDays'
+    ];
+
+    const currentValues: Record<string, string> = {};
+
+    // Fetch current values from the same trends endpoint that populates the trend indicators
+    for (const metric of metricsList) {
+      try {
+        const trendResponse = await fetch(`${API_BASE_URL}/api/locationMetrics/trends/${locationId}/${metric}`);
+        if (trendResponse.ok) {
+          const trendData = await trendResponse.json();
+          // FIXED: Use currentValue directly from the API response object
+          if (trendData && trendData.success && trendData.data) {
+            const cv = trendData.data.currentValue;
+            currentValues[metric] = (cv !== null && cv !== undefined) ? String(cv) : 'N/A';
+            console.log(`✅ ${metric}: ${trendData.data.currentValue} (${trendData.data.currentPeriod})`);
+          } else {
+            console.log(`❌ ${metric}: No data in response`);
+            currentValues[metric] = 'N/A';
+          }
+        } else {
+          console.log(`❌ ${metric}: HTTP ${trendResponse.status}`);
+          currentValues[metric] = 'N/A';
+        }
+      } catch (err) {
+        console.error(`Error fetching trend data for ${metric}:`, err);
+        currentValues[metric] = 'N/A';
+      }
+    }
+
+    // Format helper for card display
+    const formatValue = (value: string, metric: string): string => {
+      if (!value || value === 'N/A') return 'N/A';
+
+      const percentageMetrics = [
+        'vscCaseRequirements',
+        'vscClosedCorrectly',
+        'ttActivation',
+        'triagePercentLess4Hours',
+        'etrPercentCases',
+        'percentCasesWith3Notes'
+      ];
+      if (percentageMetrics.includes(metric) && !value.includes('%')) {
+        return `${value}%`;
+      }
+
+      const timeMetrics = ['smMonthlyDwellAvg', 'smYtdDwellAvgDays', 'rdsMonthlyAvgDays', 'rdsYtdDwellAvgDays'];
+      if (timeMetrics.includes(metric) && !value.includes('days')) {
+        return `${value} days`;
+      }
+
+      if (metric === 'triageHours' && !value.includes('hrs')) {
+        return `${value} hrs`;
+      }
+
+      return value;
+    };
+
+    // If any trend values were obtained, build the cards from trends
+    if (Object.keys(currentValues).length > 0) {
+      console.log('Using trend data for card values:', currentValues);
+
+      return [
+        {
+          title: 'VSC Case Requirements',
+          value: formatValue(currentValues.vscCaseRequirements, 'vscCaseRequirements'),
+          target: '> 95% (target)',
+          status: parseVscStatus(currentValues.vscCaseRequirements),
+          impact: 'Service case compliance metric',
+          description: 'Percentage of VSC case requirements met',
+          icon: <CheckCircle size={24} />,
+          trend: 'stable'
+        },
+        {
+          title: 'VSC Closed Correctly',
+          value: formatValue(currentValues.vscClosedCorrectly, 'vscClosedCorrectly'),
+          target: '> 90% (target)',
+          status: parseVscStatus(currentValues.vscClosedCorrectly),
+          impact: 'Case closure accuracy metric',
+          description: 'Percentage of VSC cases closed correctly',
+          icon: <CheckCircle size={24} />,
+          trend: 'stable'
+        },
+        {
+          title: 'TT+ Activation',
+          value: formatValue(currentValues.ttActivation, 'ttActivation'),
+          target: '> 95% (target)',
+          status: parseVscStatus(currentValues.ttActivation),
+          impact: 'Technology activation compliance',
+          description: 'TruckTech Plus activation percentage',
+          icon: <TrendingUp size={24} />,
+          trend: 'stable'
+        },
+        {
+          title: 'SM Monthly Dwell Average',
+          value: formatValue(currentValues.smMonthlyDwellAvg, 'smMonthlyDwellAvg'),
+          target: '< 3.0 days (target)',
+          status: parseDwellStatus(currentValues.smMonthlyDwellAvg),
+          impact: 'Service manager dwell time',
+          description: 'Average dwell time managed by service manager',
+          icon: <Clock size={24} />,
+          trend: 'stable'
+        },
+        {
+          title: 'SM YTD Dwell Avg Days',
+          value: formatValue(currentValues.smYtdDwellAvgDays, 'smYtdDwellAvgDays'),
+          target: '< 6.0 days (target)',
+          status: parseRdsStatus(currentValues.smYtdDwellAvgDays),
+          impact: 'Service manager year-to-date performance',
+          description: 'Year-to-date average dwell time',
+          icon: <TrendingDown size={24} />,
+          trend: 'stable'
+        },
+        {
+          title: 'Triage % < 4 Hours',
+          value: formatValue(currentValues.triagePercentLess4Hours, 'triagePercentLess4Hours'),
+          target: '> 80% (target)',
+          status: parseVscStatus(currentValues.triagePercentLess4Hours),
+          impact: 'Quick triage performance',
+          description: 'Percentage of cases triaged within 4 hours',
+          icon: <TrendingUp size={24} />,
+          trend: 'stable'
+        },
+        {
+          title: 'SM Average Triage Hours',
+          value: formatValue(currentValues.triageHours, 'triageHours'),
+          target: '< 2.0 hrs (target)',
+          status: parseTriageStatus(currentValues.triageHours),
+          impact: 'Initial assessment efficiency',
+          description: 'Time to complete initial triage assessment',
+          icon: <Users size={24} />,
+          trend: 'stable'
+        },
+        {
+          title: 'ETR % of Cases',
+          value: formatValue(currentValues.etrPercentCases, 'etrPercentCases'),
+          target: '> 15% (target)',
+          status: parseEtrStatus(currentValues.etrPercentCases),
+          impact: 'ETR compliance rate',
+          description: 'Percentage of cases with ETR provided',
+          icon: <BarChart3 size={24} />,
+          trend: 'stable'
+        },
+        {
+          title: '% Cases with 3+ Notes',
+          value: formatValue(currentValues.percentCasesWith3Notes, 'percentCasesWith3Notes'),
+          target: '< 5% (target)',
+          status: parseNotesStatus(currentValues.percentCasesWith3Notes),
+          impact: 'Case documentation quality',
+          description: 'Cases requiring extensive documentation',
+          icon: <AlertTriangle size={24} />,
+          trend: 'stable'
+        },
+        {
+          title: 'RDS Dwell Monthly Avg Days',
+          value: formatValue(currentValues.rdsMonthlyAvgDays, 'rdsMonthlyAvgDays'),
+          target: '< 6.0 days (target)',
+          status: parseRdsStatus(currentValues.rdsMonthlyAvgDays),
+          impact: 'RDS monthly dwell performance',
+          description: 'Remote diagnostic service dwell time',
+          icon: <Clock size={24} />,
+          trend: 'stable'
+        },
+        {
+          title: 'RDS YTD Dwell Avg Days',
+          value: formatValue(currentValues.rdsYtdDwellAvgDays, 'rdsYtdDwellAvgDays'),
+          target: '< 6.0 days (target)',
+          status: parseRdsStatus(currentValues.rdsYtdDwellAvgDays),
+          impact: 'RDS year-to-date dwell performance',
+          description: 'Year-to-date RDS dwell performance',
+          icon: <TrendingDown size={24} />,
+          trend: 'stable'
+        }
+      ];
+    }
+
+    // OPTION 2: Fall back to original backend logic when trends not available
+    console.log('Trends endpoint failed or returned no data, falling back to original logic...');
     const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
     if (response.ok) {
       const data = await response.json();
       let locations: any[] = [];
-      
-      // Handle different response structures
+
       if (data && typeof data === 'object') {
         if ('locations' in data && Array.isArray(data.locations)) {
           locations = data.locations;
@@ -132,89 +317,65 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           locations = data.data.locations;
         }
       }
-      
-      // Find the specific location by matching the locationId with location names
+
       const locationMap: Record<string, string> = {
         'wichita': 'Wichita Kenworth',
         'emporia': 'Emporia Kenworth',
         'dodge-city': 'Dodge City Kenworth',
         'liberal': 'Liberal Kenworth'
       };
-      
+
       const targetLocationName = locationMap[locationId];
-      const locationData = locations.find((loc: any) => 
+      const locationData = locations.find((loc: any) =>
         loc.name && loc.name.toLowerCase().includes(locationId.toLowerCase().replace('-', ' '))
       );
-      
+
       console.log(`Looking for location: ${locationId} -> ${targetLocationName}`);
       console.log('Available locations in backend response:', locations.map((loc: any) => loc.name));
       console.log('Found location data:', locationData);
-      
+
       if (locationData) {
         const metrics = locationData;
-        
         console.log('Raw location data from backend:', metrics);
-        
-        // Create a complete data mapping using backend data when available
+
         const locationName = metrics.name || metrics.locationName;
-        let completeData = [];
-        
-        // CRITICAL FIX: Clean the values to ensure they display correctly
+        let completeData: string[] = [];
+
         const cleanValue = (value: string, shouldHavePercent: boolean = false): string => {
           if (!value || value === 'N/A') return 'N/A';
-          
-          // Remove percentage if it shouldn't have one (like SM Monthly Dwell Avg)
           if (!shouldHavePercent && value.includes('%')) {
             return value.replace('%', '');
           }
-          
-          // Add percentage if it should have one but doesn't
           if (shouldHavePercent && !value.includes('%') && value !== 'N/A') {
             const numValue = parseFloat(value);
             if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
               return `${value}%`;
             }
           }
-          
           return value;
         };
 
-        // Use backend data when available, fallback to hardcoded values otherwise
         const getFieldValue = (backendField: string, fallbackValue: string) => {
           const value = metrics[backendField];
           console.log(`Getting field ${backendField}: backend has "${value}", using "${value || fallbackValue}"`);
           return value || fallbackValue;
         };
 
-        // Based on the backend logs, let's check what fields are actually available
         console.log('All available backend fields:', Object.keys(metrics));
-        
+
         if (locationName === 'Wichita Kenworth') {
-          // For Wichita, the correct July 2025 values should be:
-          // 1. VSC Case Requirements: 96%
-          // 2. VSC Closed Correctly: 92% 
-          // 3. TT+ Activation: 99%
-          // 4. SM Monthly Dwell Avg: 2.7
-          // 5. SM YTD Dwell Avg Days: 1.9
-          // 6. Triage % < 4 Hours: 87.9%
-          // 7. SM Average Triage Hours: 1.8
-          // 8. ETR % of Cases: 1.3
-          // 9. % Cases with 3+ Notes: 10.1%
-          // 10. RDS Dwell Monthly Avg Days: 5.8
-          // 11. RDS YTD Dwell Avg Days: 5.6
-          
           completeData = [
-            getFieldValue('vscCaseRequirements', '96%'),           // Card 1: VSC Case Requirements
-            getFieldValue('vscClosedCorrectly', '92%'),            // Card 2: VSC Closed Correctly  
-            getFieldValue('ttActivation', '99%'),                  // Card 3: TT+ Activation
-            getFieldValue('smMonthlyDwellAvg', '2.7'),             // Card 4: SM Monthly Dwell Avg (SHOULD BE 2.7, NOT 2.3%)
-            getFieldValue('smYtdDwellAvgDays', '1.9'),             // Card 5: SM YTD Dwell Avg Days  
-            getFieldValue('triagePercentLess4Hours', '87.9%'),     // Card 6: Triage % < 4 Hours
-            getFieldValue('triageHours', '1.8'),                   // Card 7: SM Average Triage Hours (SHOULD BE 1.8, NOT 100%)
-            getFieldValue('etrPercentCases', '1.3'),               // Card 8: ETR % of Cases (NO % SYMBOL)
-            getFieldValue('percentCasesWith3Notes', '10.1%'),      // Card 9: % Cases with 3+ Notes
-            getFieldValue('rdsMonthlyAvgDays', '5.8'),             // Card 10: RDS Dwell Monthly Avg Days
-            getFieldValue('rdsYtdDwellAvgDays', '5.6')             // Card 11: RDS YTD Dwell Avg Days
+            getFieldValue('vscCaseRequirements', '96%'),
+            getFieldValue('vscClosedCorrectly', '92%'),
+            getFieldValue('ttActivation', '99%'),
+            getFieldValue('smMonthlyDwellAvg', '2.7'),
+            getFieldValue('smYtdDwellAvgDays', '1.9'),
+            getFieldValue('triagePercentLess4Hours', '87.9%'),
+            getFieldValue('triageHours', '1.8'),
+            getFieldValue('etrPercentCases', '1.3'),
+            getFieldValue('percentCasesWith3Notes', '10.1%'),
+            getFieldValue('rdsMonthlyAvgDays', '5.8'),
+            getFieldValue('rdsYtdDwellAvgDays', '5.6')
           ];
         } else if (locationName === 'Dodge City Kenworth') {
           completeData = [
@@ -259,10 +420,10 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
             getFieldValue('rdsYtdDwellAvgDays', '4.3')
           ];
         } else {
-          // Fallback to backend data if available
+          // Generic fallback to backend-looking fields
           completeData = [
             getFieldValue('vscCaseRequirements', addPercentageIfNeeded(metrics.dwellTime || 'N/A')),
-            getFieldValue('vscClosedCorrectly', addPercentageIfNeeded(metrics.triageTime || 'N/A')), 
+            getFieldValue('vscClosedCorrectly', addPercentageIfNeeded(metrics.triageTime || 'N/A')),
             getFieldValue('ttActivation', addPercentageIfNeeded(metrics.cases || 'N/A')),
             getFieldValue('smMonthlyDwellAvg', metrics.satisfaction || 'N/A'),
             getFieldValue('triageHours', 'N/A'),
@@ -275,52 +436,36 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           ];
         }
 
-        // Apply cleaning to the complete data array
         const cleanedData = [
-          cleanValue(completeData[0], true),   // VSC Case Requirements - should have %
-          cleanValue(completeData[1], true),   // VSC Closed Correctly - should have %
-          cleanValue(completeData[2], true),   // TT+ Activation - should have %
-          cleanValue(completeData[3], false),  // SM Monthly Dwell Avg - should NOT have % (days)
-          cleanValue(completeData[4], false),  // SM YTD Dwell Avg Days - should NOT have % (days)
-          cleanValue(completeData[5], true),   // Triage % < 4 Hours - should have %
-          cleanValue(completeData[6], false),  // SM Average Triage Hours - should NOT have % (hours)
-          cleanValue(completeData[7], false),  // ETR % of Cases - NO % (this is already a percentage representation)
-          cleanValue(completeData[8], true),   // % Cases with 3+ Notes - should have %
-          cleanValue(completeData[9], false),  // RDS Dwell Monthly Avg Days - should NOT have % (days)
-          cleanValue(completeData[10], false)  // RDS YTD Dwell Avg Days - should NOT have % (days)
+          cleanValue(completeData[0], true),
+          cleanValue(completeData[1], true),
+          cleanValue(completeData[2], true),
+          cleanValue(completeData[3], false),
+          cleanValue(completeData[4], false),
+          cleanValue(completeData[5], true),
+          cleanValue(completeData[6], false),
+          cleanValue(completeData[7], false), // ETR % of Cases stays numeric; add % later when rendering if desired
+          cleanValue(completeData[8], true),
+          cleanValue(completeData[9], false),
+          cleanValue(completeData[10], false)
         ];
 
-        // Use the cleaned data
-        completeData = cleanedData;
-        
         const mappedMetrics = {
-          vscCaseRequirements: completeData[0],      // Position 0: VSC Case Requirements
-          vscClosedCorrectly: completeData[1],       // Position 1: VSC Closed Correctly
-          ttActivation: completeData[2],             // Position 2: TT+ Activation
-          smMonthlyDwellAvg: completeData[3],        // Position 3: SM Monthly Dwell Avg
-          smYtdDwellAvgDays: completeData[4],        // Position 4: SM YTD Dwell Avg Days
-          triagePercentLess4Hours: completeData[5],  // Position 5: Triage % < 4 Hours
-          triageHours: completeData[6],              // Position 6: SM Average Triage Hours
-          etrPercentCases: completeData[7],          // Position 7: ETR % of Cases
-          percentCasesWith3Notes: completeData[8],   // Position 8: % Cases with 3+ Notes
-          rdsMonthlyAvgDays: completeData[9],        // Position 9: RDS Dwell Monthly Avg Days
-          rdsYtdDwellAvgDays: completeData[10]       // Position 10: RDS YTD Dwell Avg Days
+          vscCaseRequirements: cleanedData[0],
+          vscClosedCorrectly: cleanedData[1],
+          ttActivation: cleanedData[2],
+          smMonthlyDwellAvg: cleanedData[3],
+          smYtdDwellAvgDays: cleanedData[4],
+          triagePercentLess4Hours: cleanedData[5],
+          triageHours: cleanedData[6],
+          etrPercentCases: cleanedData[7],
+          percentCasesWith3Notes: cleanedData[8],
+          rdsMonthlyAvgDays: cleanedData[9],
+          rdsYtdDwellAvgDays: cleanedData[10]
         };
-        
+
         console.log('Mapped metrics for', locationName, ':', mappedMetrics);
-        console.log('FINAL CARD MAPPING VERIFICATION:');
-        console.log('1. VSC Case Requirements card will show:', mappedMetrics.vscCaseRequirements, '(should be 96%)');
-        console.log('2. VSC Closed Correctly card will show:', mappedMetrics.vscClosedCorrectly, '(should be 92%)');
-        console.log('3. TT+ Activation card will show:', mappedMetrics.ttActivation, '(should be 99%)');
-        console.log('4. SM Monthly Dwell Avg card will show:', mappedMetrics.smMonthlyDwellAvg, '(should be 2.7)');
-        console.log('5. SM YTD Dwell Avg Days card will show:', mappedMetrics.smYtdDwellAvgDays, '(should be 1.9)');
-        console.log('6. Triage % < 4 Hours card will show:', mappedMetrics.triagePercentLess4Hours, '(should be 87.9%)');
-        console.log('7. SM Average Triage Hours card will show:', mappedMetrics.triageHours, '(should be 1.8)');
-        console.log('8. ETR % of Cases card will show:', mappedMetrics.etrPercentCases, '(should be 1.3)');
-        console.log('9. % Cases with 3+ Notes card will show:', mappedMetrics.percentCasesWith3Notes, '(should be 10.1%)');
-        console.log('10. RDS Dwell Monthly Avg Days card will show:', mappedMetrics.rdsMonthlyAvgDays, '(should be 5.8)');
-        console.log('11. RDS YTD Dwell Avg Days card will show:', mappedMetrics.rdsYtdDwellAvgDays, '(should be 5.6)');
-        
+
         return [
           {
             title: 'VSC Case Requirements',
@@ -335,7 +480,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           {
             title: 'VSC Closed Correctly',
             value: mappedMetrics.vscClosedCorrectly,
-            target: '> 90% (target)', 
+            target: '> 90% (target)',
             status: parseVscStatus(mappedMetrics.vscClosedCorrectly),
             trend: 'stable',
             icon: <CheckCircle className="w-6 h-6" />,
@@ -438,12 +583,11 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
   } catch (error) {
     console.error('Error fetching backend metrics:', error);
   }
-  
-  // Fallback to localStorage
+
+  // OPTION 3: Fallback to localStorage (unchanged from original)
   const storedScorecards = localStorage.getItem('wki-scorecards');
   const scorecards = storedScorecards ? JSON.parse(storedScorecards) : [];
-  
-  // Get the most recent scorecard for this location
+
   const locationScorecard = scorecards
     .filter((sc: any) => sc.locationId === locationId)
     .sort((a: any, b: any) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime())[0];
@@ -453,11 +597,10 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
   }
 
   const metrics = locationScorecard.metrics;
-  
-  // Get location name for complete data mapping
+
   const locationName = locationScorecard.locationName || locationId;
-  let completeData = [];
-  
+  let completeData: string[] = [];
+
   if (locationName.toLowerCase().includes('wichita')) {
     completeData = ['96%', '92%', '99%', '2.7', '1.9', '87.9%', '1.8%', '1.3%', '10.1%', '5.8', '5.6'];
   } else if (locationName.toLowerCase().includes('dodge')) {
@@ -467,7 +610,6 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
   } else if (locationName.toLowerCase().includes('emporia')) {
     completeData = ['N/A', 'N/A', 'N/A', '1.2', '0.8', '38.8%', '9.5%', '1.0%', '15.3%', '3.3', '4.3'];
   } else {
-    // Fallback to stored metrics if available
     completeData = [
       addPercentageIfNeeded(metrics.vscCaseRequirements || 'N/A'),
       addPercentageIfNeeded(metrics.vscClosedCorrectly || 'N/A'),
@@ -482,8 +624,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
       metrics.rdsYtdDwellAvgDays || 'N/A'
     ];
   }
-  
-  // Return the new W370 Service Scorecard metrics
+
   return [
     {
       title: 'VSC Case Requirements',
@@ -496,7 +637,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
       trend: locationScorecard.trend
     },
     {
-      title: 'VSC Closed Correctly', 
+      title: 'VSC Closed Correctly',
       value: completeData[1],
       target: '> 90% (target)',
       status: parseVscStatus(completeData[1]),
@@ -682,7 +823,7 @@ interface LocationMetricsProps {
 export default function LocationSpecificMetrics({ locationId, locationName, locationColor }: LocationMetricsProps) {
   const [locationMetrics, setLocationMetrics] = useState<MetricCard[]>(getDefaultMetrics());
   const [isLoading, setIsLoading] = useState(true);
-  
+
   useEffect(() => {
     const loadMetrics = async () => {
       try {
@@ -695,10 +836,9 @@ export default function LocationSpecificMetrics({ locationId, locationName, loca
         setIsLoading(false);
       }
     };
-    
     loadMetrics();
   }, [locationId]);
-  
+
   const getTrendIcon = (trend?: string) => {
     switch (trend) {
       case 'up':
@@ -739,7 +879,7 @@ export default function LocationSpecificMetrics({ locationId, locationName, loca
   const lastUpdated = () => {
     const storedScorecards = localStorage.getItem('wki-scorecards');
     const scorecards = storedScorecards ? JSON.parse(storedScorecards) : [];
-    
+
     const locationScorecard = scorecards
       .filter((sc: any) => sc.locationId === locationId)
       .sort((a: any, b: any) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime())[0];
@@ -757,7 +897,7 @@ export default function LocationSpecificMetrics({ locationId, locationName, loca
         <div className="max-w-7xl mx-auto px-6 py-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6">
-              <Link 
+              <Link
                 to="/metrics"
                 className="flex items-center text-slate-300 hover:text-white transition-all duration-200 group"
               >
@@ -778,7 +918,7 @@ export default function LocationSpecificMetrics({ locationId, locationName, loca
                 </div>
               </div>
             </div>
-            <Link 
+            <Link
               to="/scorecard-manager"
               className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg"
             >
@@ -859,7 +999,7 @@ export default function LocationSpecificMetrics({ locationId, locationName, loca
             </div>
           </div>
 
-          {/* Key Performance Indicators Section */}
+          {/* Service Quality Metrics */}
           <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-2xl border border-slate-700/50 p-8 mb-8 backdrop-blur-sm">
             <div className="flex items-center justify-between mb-8">
               <div>
@@ -871,7 +1011,7 @@ export default function LocationSpecificMetrics({ locationId, locationName, loca
                 <span className="font-medium">Quality Focus</span>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {locationMetrics.slice(0, 3).map((metric, index) => (
                 <div key={index} className="group relative">
@@ -895,10 +1035,10 @@ export default function LocationSpecificMetrics({ locationId, locationName, loca
                         />
                       </div>
                     </div>
-                    
+
                     <h3 className="text-lg font-bold text-white mb-2">{metric.title}</h3>
                     <div className="text-4xl font-bold text-white mb-4">{metric.value}</div>
-                    
+
                     <div className="bg-white/10 rounded-lg p-3 backdrop-blur-sm">
                       <p className="text-white/80 text-xs font-medium mb-1">Target:</p>
                       <p className="text-white font-semibold text-sm">{metric.target}</p>
@@ -909,7 +1049,7 @@ export default function LocationSpecificMetrics({ locationId, locationName, loca
             </div>
           </div>
 
-          {/* Operational Efficiency Section */}
+          {/* Operational Efficiency */}
           <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-2xl border border-slate-700/50 p-8 mb-8 backdrop-blur-sm">
             <div className="flex items-center justify-between mb-8">
               <div>
@@ -921,7 +1061,7 @@ export default function LocationSpecificMetrics({ locationId, locationName, loca
                 <span className="font-medium">Efficiency Focus</span>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               {locationMetrics.slice(3, 7).map((metric, index) => (
                 <div key={index} className="group relative">
@@ -945,10 +1085,10 @@ export default function LocationSpecificMetrics({ locationId, locationName, loca
                         />
                       </div>
                     </div>
-                    
+
                     <h3 className="text-sm font-bold text-white mb-2">{metric.title}</h3>
                     <div className="text-2xl font-bold text-white mb-3">{metric.value}</div>
-                    
+
                     <div className="bg-white/10 rounded-lg p-2 backdrop-blur-sm">
                       <p className="text-white/80 text-xs font-medium mb-1">Target:</p>
                       <p className="text-white font-semibold text-xs">{metric.target}</p>
@@ -959,7 +1099,7 @@ export default function LocationSpecificMetrics({ locationId, locationName, loca
             </div>
           </div>
 
-          {/* Case Management & Documentation Section */}
+          {/* Case Management & Documentation */}
           <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-2xl border border-slate-700/50 p-8 mb-8 backdrop-blur-sm">
             <div className="flex items-center justify-between mb-8">
               <div>
@@ -971,7 +1111,7 @@ export default function LocationSpecificMetrics({ locationId, locationName, loca
                 <span className="font-medium">Documentation Focus</span>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               {locationMetrics.slice(7, 11).map((metric, index) => (
                 <div key={index} className="group relative">
@@ -995,15 +1135,15 @@ export default function LocationSpecificMetrics({ locationId, locationName, loca
                         />
                       </div>
                     </div>
-                    
+
                     <h3 className="text-sm font-bold text-white mb-2">{metric.title}</h3>
                     <div className="text-2xl font-bold text-white mb-3">{metric.value}</div>
-                    
+
                     <div className="bg-white/10 rounded-lg p-2 backdrop-blur-sm">
                       <p className="text-white/80 text-xs font-medium mb-1">Target:</p>
                       <p className="text-white font-semibold text-xs">{metric.target}</p>
                     </div>
-                    
+
                     <div className="mt-3 pt-3 border-t border-white/10">
                       <p className="text-white/70 text-xs">{metric.impact}</p>
                     </div>
@@ -1025,7 +1165,7 @@ export default function LocationSpecificMetrics({ locationId, locationName, loca
                 <span className="font-medium">Full Analysis</span>
               </div>
             </div>
-            
+
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -1055,11 +1195,15 @@ export default function LocationSpecificMetrics({ locationId, locationName, loca
                         <span className="text-slate-300">{metric.target}</span>
                       </td>
                       <td className="py-4 px-4">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                          metric.status === 'good' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
-                          metric.status === 'warning' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
-                          'bg-red-500/20 text-red-400 border border-red-500/30'
-                        }`}>
+                        <span
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                            metric.status === 'good'
+                              ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                              : metric.status === 'warning'
+                              ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                              : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                          }`}
+                        >
                           {metric.status === 'good' ? '✓ Good' : metric.status === 'warning' ? '⚠ Warning' : '✗ Critical'}
                         </span>
                       </td>
@@ -1079,23 +1223,23 @@ export default function LocationSpecificMetrics({ locationId, locationName, loca
               <h2 className="text-2xl font-bold text-white mb-2">Action Center</h2>
               <p className="text-slate-300">Manage reports and compare performance across locations</p>
             </div>
-            
+
             <div className="flex flex-wrap gap-4 justify-center">
-              <Link 
+              <Link
                 to="/scorecard-manager"
                 className="group flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-green-600 to-green-700 text-white font-medium rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
               >
                 <Shield className="w-5 h-5" />
                 <span>Upload New Monthly Report</span>
               </Link>
-              <Link 
+              <Link
                 to="/location-metrics"
                 className="group flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-medium rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
               >
                 <BarChart3 className="w-5 h-5" />
                 <span>Compare All Locations</span>
               </Link>
-              <Link 
+              <Link
                 to="/metrics"
                 className="group flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
               >
