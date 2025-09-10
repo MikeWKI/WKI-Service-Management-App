@@ -88,13 +88,16 @@ const addPercentageIfNeeded = (value: string): string => {
   return value;
 };
 
-// Helper function to map metric titles to backend field names
+// FIXED: Helper function to map metric titles to backend field names
 const getMetricFieldName = (title: string): string => {
+  console.log(`🔍 getMetricFieldName called with title: "${title}"`);
+  
+  // EXACT mapping - titles must match exactly
   const metricMapping: Record<string, string> = {
     'VSC Case Requirements': 'vscCaseRequirements',
     'VSC Closed Correctly': 'vscClosedCorrectly',
     'TT+ Activation': 'ttActivation',
-    'SM Monthly Dwell Avg': 'smMonthlyDwellAvg',
+    'SM Monthly Dwell Avg': 'smMonthlyDwellAvg',  // Fixed: consistent naming
     'SM YTD Dwell Avg Days': 'smYtdDwellAvgDays',
     'Triage % < 4 Hours': 'triagePercentLess4Hours',
     'SM Average Triage Hours': 'triageHours',
@@ -103,7 +106,26 @@ const getMetricFieldName = (title: string): string => {
     'RDS Dwell Monthly Avg Days': 'rdsMonthlyAvgDays',
     'RDS YTD Dwell Avg Days': 'rdsYtdDwellAvgDays'
   };
-  return metricMapping[title] || title.toLowerCase().replace(/[^a-z0-9]/g, '');
+  
+  const result = metricMapping[title];
+  if (result) {
+    console.log(`✅ Found exact mapping: "${title}" → "${result}"`);
+    return result;
+  } else {
+    console.warn(`❌ No exact mapping found for: "${title}"`);
+    console.warn(`Available mappings:`, Object.keys(metricMapping));
+    // IMPROVED: Better fallback that preserves some structure
+    // Convert to camelCase instead of stripping everything
+    const fallback = title
+      .split(' ')
+      .map((word, index) => {
+        const clean = word.replace(/[^a-zA-Z0-9]/g, '');
+        return index === 0 ? clean.toLowerCase() : clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
+      })
+      .join('');
+    console.warn(`Using fallback: "${title}" → "${fallback}"`);
+    return fallback;
+  }
 };
 
 /** ----------------------------------------------------------------
@@ -221,7 +243,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           trend: 'stable'
         },
         {
-          title: 'SM Monthly Dwell Average',
+          title: 'SM Monthly Dwell Avg', // FIXED: Use exact mapping title
           value: formatValue(currentValues.smMonthlyDwellAvg, 'smMonthlyDwellAvg'),
           target: '< 3.0 days (target)',
           status: parseDwellStatus(currentValues.smMonthlyDwellAvg),
@@ -498,7 +520,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
             description: 'Upload monthly scorecard to view current metrics'
           },
           {
-            title: 'SM Monthly Dwell Avg',
+            title: 'SM Monthly Dwell Avg', // FIXED: Consistent title
             value: `${mappedMetrics.smMonthlyDwellAvg} days`,
             target: '< 3.0 days (target)',
             status: parseDwellStatus(mappedMetrics.smMonthlyDwellAvg),
@@ -657,7 +679,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
       trend: locationScorecard.trend
     },
     {
-      title: 'SM Monthly Dwell Average',
+      title: 'SM Monthly Dwell Avg', // FIXED: Consistent title
       value: `${completeData[3]} days`,
       target: '< 3.0 days (target)',
       status: parseDwellStatus(completeData[3]),
@@ -707,7 +729,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
       trend: locationScorecard.trend
     },
     {
-      title: 'RDS Monthly Avg Days',
+      title: 'RDS Dwell Monthly Avg Days', // FIXED: Consistent title
       value: `${completeData[8]} days`,
       target: '< 6.0 days (target)',
       status: parseRdsStatus(completeData[8]),
@@ -717,7 +739,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
       trend: locationScorecard.trend
     },
     {
-      title: 'SM YTD Dwell Average',
+      title: 'SM YTD Dwell Avg Days', // FIXED: Consistent title
       value: `${completeData[9]} days`,
       target: '< 6.0 days (target)',
       status: parseRdsStatus(completeData[9]),
@@ -727,7 +749,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
       trend: locationScorecard.trend
     },
     {
-      title: 'RDS YTD Dwell Average',
+      title: 'RDS YTD Dwell Avg Days',
       value: `${completeData[10]} days`,
       target: '< 6.0 days (target)',
       status: parseRdsStatus(completeData[10]),
@@ -768,7 +790,7 @@ const getDefaultMetrics = (): MetricCard[] => [
     icon: <TrendingUp size={24} />
   },
   {
-    title: 'SM Monthly Dwell Average',
+    title: 'SM Monthly Dwell Avg', // FIXED: Consistent title
     value: 'No data',
     target: '< 3.0 days (target)',
     status: 'warning',

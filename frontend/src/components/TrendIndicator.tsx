@@ -36,17 +36,22 @@ const TrendIndicator: React.FC<TrendIndicatorProps> = ({
   const fetchTrendStatus = async () => {
     setLoading(true);
     try {
+      // Ensure metric name is passed exactly as received - no transformation
+      console.log(`TrendIndicator: Fetching trend for ${locationId}/${metric}`);
+      
       const response = await fetchTrendData(locationId, metric, 6);
       
       if (response.success && response.data && response.data.monthsOfData >= 2) {
         setTrend(response.data.trend);
         setHasData(true);
+        console.log(`TrendIndicator: Got trend data for ${metric}: ${response.data.trend}`);
       } else {
         setTrend('stable');
         setHasData(false);
+        console.log(`TrendIndicator: No sufficient data for ${metric}, setting stable`);
       }
     } catch (error) {
-      console.error('Error fetching trend status:', error);
+      console.error(`TrendIndicator: Error fetching trend status for ${metric}:`, error);
       setTrend('stable');
       setHasData(false);
     } finally {

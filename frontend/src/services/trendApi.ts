@@ -71,9 +71,13 @@ export const fetchTrendData = async (
   months = 12
 ): Promise<TrendResponse> => {
   try {
-    // First try to fetch from the specific trends endpoint if it exists
+    // DEBUG: Log the exact metric name being passed in
+    console.log(`TrendAPI: fetchTrendData called with metric: "${metric}" (length: ${metric.length})`);
+    console.log(`TrendAPI: metric character codes:`, metric.split('').map(c => `${c}(${c.charCodeAt(0)})`).join(' '));
+    
+    // CRITICAL: Do not transform the metric name at all - use exactly as passed
     const trendsUrl = `${API_BASE_URL}/api/locationMetrics/trends/${locationId}/${metric}?months=${months}`;
-    console.log('Attempting to fetch trends from:', trendsUrl);
+    console.log('🔍 TrendAPI: Attempting to fetch trends from:', trendsUrl);
     
     const trendsResponse = await fetch(trendsUrl);
     console.log('Trends response status:', trendsResponse.status);
@@ -85,33 +89,33 @@ export const fetchTrendData = async (
       
       // Check if response looks like HTML (error page)
       if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
-        console.error('Got HTML response instead of JSON - API endpoint not found!');
-        console.error('Check if your API routes are properly configured');
+        console.error('🚨 TrendAPI: Got HTML response instead of JSON - API endpoint not found!');
+        console.error('🚨 TrendAPI: Check if your API routes are properly configured');
         throw new Error('API endpoint returned HTML instead of JSON');
       }
       
       try {
         const result = JSON.parse(responseText);
-        console.log('Successfully parsed JSON response');
-        console.log('Current value from API:', result.data?.currentValue);
-        console.log('Current period from API:', result.data?.currentPeriod);
+        console.log('✅ TrendAPI: Successfully parsed JSON response');
+        console.log('✅ TrendAPI: Current value from API:', result.data?.currentValue);
+        console.log('✅ TrendAPI: Current period from API:', result.data?.currentPeriod);
         
         // Validate the response structure
         if (result.data && Array.isArray(result.data.dataPoints)) {
           return result;
         }
       } catch (parseError) {
-        console.error('JSON parsing failed:', parseError);
-        console.log('Response was not valid JSON, probably got HTML instead');
+        console.error('❌ TrendAPI: JSON parsing failed:', parseError);
+        console.log('❌ TrendAPI: Response was not valid JSON, probably got HTML instead');
       }
     }
 
     // If trends endpoint doesn't exist, fall back to building trends from uploaded data
-    console.log('Building trend data from uploaded scorecards...');
+    console.log('⚠️ TrendAPI: Building trend data from uploaded scorecards...');
     return await buildTrendFromUploadedData(locationId, metric, months);
     
   } catch (error) {
-    console.error('Error fetching trend data:', error);
+    console.error('❌ TrendAPI: Error fetching trend data:', error);
     // Fall back to building from uploaded data
     return await buildTrendFromUploadedData(locationId, metric, months);
   }
@@ -124,6 +128,8 @@ const buildTrendFromUploadedData = async (
   months: number
 ): Promise<TrendResponse> => {
   try {
+    console.log(`🔧 TrendAPI: Building trend for metric "${metric}" at location "${locationId}"`);
+    
     // Fetch the actual history of uploaded scorecards
     const historyUrl = `${API_BASE_URL}/api/locationMetrics/history`;
     console.log('Fetching upload history from:', historyUrl);
@@ -255,7 +261,7 @@ const buildTrendFromUploadedData = async (
     };
 
   } catch (error) {
-    console.error('Error building trend from actual uploaded data:', error);
+    console.error('❌ TrendAPI: Error building trend from actual uploaded data:', error);
     // Return empty response - NO FAKE DATA
     return {
       success: false,
@@ -289,17 +295,29 @@ const getMonthNumber = (monthName: string): number => {
   return months.indexOf(monthName) + 1;
 };
 
-// Extract metric value from location data
+// Extract metric value from location data - PRESERVE EXACT METRIC NAMES
 const extractMetricValue = (location: any, metric: string): number | null => {
+  console.log(`🔍 TrendAPI: Extracting value for metric "${metric}" from location data`);
+  console.log(`🔍 TrendAPI: Available fields in location:`, Object.keys(location));
+  
   const value = location[metric];
-  if (value === undefined || value === null || value === 'N/A') return null;
+  console.log(`🔍 TrendAPI: Raw value for "${metric}":`, value);
+  
+  if (value === undefined || value === null || value === 'N/A') {
+    console.log(`⚠️ TrendAPI: No value found for metric "${metric}"`);
+    return null;
+  }
   
   // Handle percentage values
   if (typeof value === 'string' && value.includes('%')) {
-    return parseFloat(value.replace('%', ''));
+    const parsed = parseFloat(value.replace('%', ''));
+    console.log(`✅ TrendAPI: Parsed percentage value "${value}" to ${parsed}`);
+    return parsed;
   }
   
-  return parseFloat(value) || null;
+  const parsed = parseFloat(value);
+  console.log(`✅ TrendAPI: Parsed numeric value "${value}" to ${parsed}`);
+  return isNaN(parsed) ? null : parsed;
 };
 
 // Calculate volatility of data points
