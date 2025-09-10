@@ -719,7 +719,7 @@ export default function LocationSpecificMetrics({ locationId, locationName, loca
               </div>
             </div>
             <Link 
-              to="/metrics/scorecard-manager"
+              to="/scorecard-manager"
               className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg"
             >
               <Shield className="w-4 h-4" />
@@ -997,14 +997,14 @@ export default function LocationSpecificMetrics({ locationId, locationName, loca
             
             <div className="flex flex-wrap gap-4 justify-center">
               <Link 
-                to="/metrics/scorecard-manager"
+                to="/scorecard-manager"
                 className="group flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-green-600 to-green-700 text-white font-medium rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
               >
                 <Shield className="w-5 h-5" />
                 <span>Upload New Monthly Report</span>
               </Link>
               <Link 
-                to="/metrics/locations"
+                to="/location-metrics"
                 className="group flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-medium rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
               >
                 <BarChart3 className="w-5 h-5" />

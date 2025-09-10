@@ -270,11 +270,23 @@ function TechnicianMetrics() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="flex items-center mb-8">
-        <Link to="/metrics" className="flex items-center text-green-400 hover:text-green-300 mr-4 transition-colors">
-          <ArrowLeft size={20} className="mr-2" />
-          Back to Role Selection
-        </Link>
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center space-x-4">
+          <Link 
+            to="/metrics" 
+            className="flex items-center text-green-400 hover:text-green-300 transition-colors"
+          >
+            <ArrowLeft size={20} className="mr-2" />
+            Back to Role Selection
+          </Link>
+          <div className="text-slate-600">|</div>
+          <Link 
+            to="/" 
+            className="flex items-center text-slate-400 hover:text-white transition-colors"
+          >
+            Back to Workflow
+          </Link>
+        </div>
       </div>
 
       <div className="mb-8">

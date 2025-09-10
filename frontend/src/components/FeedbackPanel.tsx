@@ -135,7 +135,7 @@ Time: ${new Date().toISOString()}
           console.log('Feedback toggle clicked, current state:', isExpanded);
           togglePanel();
         }}
-        className="w-full p-2 xl:p-3 flex items-center justify-center hover:bg-slate-700/50 transition-colors duration-200 relative lg:rounded-lg border border-blue-500/30 hover:border-blue-400/50"
+        className="w-full p-2 xl:p-3 flex items-center justify-center hover:bg-slate-700/50 transition-colors duration-200 relative lg:rounded-lg border border-slate-600/30 hover:border-slate-500/50"
         aria-label={isExpanded ? 'Minimize Feedback' : 'Expand Feedback'}
       >
         {isExpanded ? (
@@ -157,7 +157,7 @@ Time: ${new Date().toISOString()}
 
       {/* Expanded Content */}
       {isExpanded && (
-        <div className="lg:fixed lg:top-20 lg:right-4 w-full lg:w-80 xl:w-96 p-3 xl:p-4 lg:bg-slate-900 lg:border lg:border-blue-500/30 lg:rounded-lg lg:shadow-2xl lg:z-50 max-h-96 lg:max-h-[calc(100vh-6rem)] overflow-y-auto">
+        <div className="lg:fixed lg:top-20 lg:right-4 w-full lg:w-80 xl:w-96 p-3 xl:p-4 lg:bg-slate-900 lg:border lg:border-slate-600/30 lg:rounded-lg lg:shadow-2xl lg:z-50 max-h-96 lg:max-h-[calc(100vh-6rem)] overflow-y-auto">
           
           {!showForm ? (
             /* Feedback Options */

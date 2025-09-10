@@ -31,7 +31,7 @@ const LocationMetricsManager: React.FC = () => {
       title: 'Upload Scorecards',
       description: 'Upload new monthly W370 Service Scorecards',
       icon: <Upload className="w-8 h-8" />,
-      link: '/metrics/scorecard-manager',
+      link: '/scorecard-manager',
       color: 'from-green-600 to-green-700',
       hoverColor: 'hover:from-green-700 hover:to-green-800'
     },
@@ -47,7 +47,7 @@ const LocationMetricsManager: React.FC = () => {
       title: 'Location Comparison',
       description: 'Compare metrics across all WKI locations',
       icon: <TrendingUp className="w-8 h-8" />,
-      link: '/metrics/locations',
+      link: '/location-metrics',
       color: 'from-blue-600 to-blue-700',
       hoverColor: 'hover:from-blue-700 hover:to-blue-800'
     },
@@ -172,7 +172,7 @@ const LocationMetricsManager: React.FC = () => {
         
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Link
-            to="/metrics/scorecard-manager"
+            to="/scorecard-manager"
             className="flex items-center p-4 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-green-500 transition-colors group"
           >
             <div className="bg-green-600 p-2 rounded-lg mr-4 group-hover:bg-green-500 transition-colors">
