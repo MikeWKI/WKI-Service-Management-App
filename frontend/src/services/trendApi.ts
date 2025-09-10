@@ -648,6 +648,24 @@ export const testBackendConnection = async (): Promise<boolean> => {
       const data = await response.json();
       console.log('Backend is responding with JSON data');
       console.log('Available locations:', data.data?.locations?.length || 0);
+      
+      // Test metric extraction to verify values are landing on correct cards
+      if (data.data?.locations?.length > 0) {
+        const firstLocation = data.data.locations[0];
+        console.log('Testing metric extraction for first location:');
+        console.log('VSC Case Requirements:', firstLocation.vscCaseRequirements);
+        console.log('VSC Closed Correctly:', firstLocation.vscClosedCorrectly);
+        console.log('TT+ Activation:', firstLocation.ttActivation);
+        console.log('SM Monthly Dwell Avg:', firstLocation.smMonthlyDwellAvg);
+        console.log('SM YTD Dwell Avg Days:', firstLocation.smYtdDwellAvgDays);
+        console.log('Triage % < 4 Hours:', firstLocation.triagePercentLess4Hours);
+        console.log('Triage Hours:', firstLocation.triageHours);
+        console.log('ETR % Cases:', firstLocation.etrPercentCases);
+        console.log('% Cases with 3+ Notes:', firstLocation.percentCasesWith3Notes);
+        console.log('RDS Monthly Avg Days:', firstLocation.rdsMonthlyAvgDays);
+        console.log('RDS YTD Dwell Avg Days:', firstLocation.rdsYtdDwellAvgDays);
+      }
+      
       return true;
     } else {
       console.log('Backend returned error status:', response.status);

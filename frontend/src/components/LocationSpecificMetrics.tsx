@@ -178,17 +178,17 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
         
         if (locationName === 'Wichita Kenworth') {
           completeData = [
-            getFieldValue('vscCaseRequirements', '96%'),       // 0. VSC Case Requirements
-            getFieldValue('vscClosedCorrectly', '92%'),        // 1. VSC Closed Correctly  
-            getFieldValue('ttActivation', '99%'),              // 2. TT+ Activation
-            getFieldValue('smMonthlyDwellAvg', '2.7'),         // 3. SM Monthly Dwell Avg
-            getFieldValue('smYtdDwellAvgDays', '1.9'),         // 4. SM YTD Dwell Avg Days (CORRECTED)
-            getFieldValue('triagePercentLess4Hours', '87.9%'), // 5. Triage % < 4 Hours
-            getFieldValue('triageHours', '1.8'),               // 6. SM Average Triage Hours (CORRECTED)
-            getFieldValue('etrPercentCases', '1.3%'),          // 7. ETR % of Cases (CORRECTED)
-            getFieldValue('percentCasesWith3Notes', '10.1%'),  // 8. % Cases with 3+ Notes (CORRECTED)
-            getFieldValue('rdsMonthlyAvgDays', '5.8'),         // 9. RDS Dwell Monthly Avg Days (CORRECTED)
-            getFieldValue('rdsYtdDwellAvgDays', '5.6')         // 10. RDS YTD Dwell Avg Days
+            getFieldValue('vscCaseRequirements', '96%'),       // 1. VSC Case Requirements
+            getFieldValue('vscClosedCorrectly', '92%'),        // 2. VSC Closed Correctly  
+            getFieldValue('ttActivation', '99%'),              // 3. TT+ Activation
+            getFieldValue('smMonthlyDwellAvg', '2.7'),         // 4. SM Monthly Dwell Avg
+            getFieldValue('smYtdDwellAvgDays', '1.9'),         // 5. SM YTD Dwell Avg Days
+            getFieldValue('triagePercentLess4Hours', '87.9%'), // 6. Triage % < 4 Hours
+            getFieldValue('triageHours', '1.8'),               // 7. SM Average Triage Hours
+            getFieldValue('etrPercentCases', '1.3'),           // 8. ETR % of Cases (NO % symbol)
+            getFieldValue('percentCasesWith3Notes', '10.1%'),  // 9. % Cases with 3+ Notes
+            getFieldValue('rdsMonthlyAvgDays', '5.8'),         // 10. RDS Dwell Monthly Avg Days
+            getFieldValue('rdsYtdDwellAvgDays', '5.6')         // 11. RDS YTD Dwell Avg Days
           ];
         } else if (locationName === 'Dodge City Kenworth') {
           completeData = [
