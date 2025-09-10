@@ -53,18 +53,23 @@ const TrendModal: React.FC<TrendModalProps> = ({
       if (response.success && response.data) {
         setTrendData(response.data);
         
-        // Transform data for chart
-        const chartPoints: ChartDataPoint[] = response.data.dataPoints.map(point => ({
-          month: `${point.month} ${point.year}`,
-          value: point.value,
-          formattedDate: new Date(point.year, getMonthNumber(point.month) - 1).toLocaleDateString('en-US', { 
-            month: 'short', 
-            year: '2-digit' 
-          }),
-          uploadDate: point.uploadDate
-        }));
-        
-        setChartData(chartPoints);
+        // Transform data for chart - ensure dataPoints is an array
+        if (response.data.dataPoints && Array.isArray(response.data.dataPoints)) {
+          const chartPoints: ChartDataPoint[] = response.data.dataPoints.map(point => ({
+            month: `${point.month} ${point.year}`,
+            value: point.value,
+            formattedDate: new Date(point.year, getMonthNumber(point.month) - 1).toLocaleDateString('en-US', { 
+              month: 'short', 
+              year: '2-digit' 
+            }),
+            uploadDate: point.uploadDate
+          }));
+          
+          setChartData(chartPoints);
+        } else {
+          console.warn('dataPoints is not an array:', response.data.dataPoints);
+          setChartData([]);
+        }
       } else {
         setError('Unable to load trend data. This may be the first upload for this metric.');
         setTrendData(null);
