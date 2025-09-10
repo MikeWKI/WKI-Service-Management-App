@@ -1,5 +1,6 @@
 // Trend Data API Service
-const API_BASE_URL = 'https://wki-sma.onrender.com';
+// Updated to use correct backend URL
+const API_BASE_URL = 'https://wki-service-management-app.onrender.com';
 
 export interface TrendDataPoint {
   month: string;
@@ -71,16 +72,37 @@ export const fetchTrendData = async (
 ): Promise<TrendResponse> => {
   try {
     // First try to fetch from the specific trends endpoint if it exists
-    const trendsResponse = await fetch(
-      `${API_BASE_URL}/api/locationMetrics/trends/${locationId}/${metric}?months=${months}`
-    );
+    const trendsUrl = `${API_BASE_URL}/api/locationMetrics/trends/${locationId}/${metric}?months=${months}`;
+    console.log('Attempting to fetch trends from:', trendsUrl);
+    
+    const trendsResponse = await fetch(trendsUrl);
+    console.log('Trends response status:', trendsResponse.status);
+    console.log('Trends response headers:', Object.fromEntries(trendsResponse.headers.entries()));
     
     if (trendsResponse.ok) {
-      const result = await trendsResponse.json();
+      const responseText = await trendsResponse.text();
+      console.log('Raw response text:', responseText.substring(0, 200) + '...');
       
-      // Validate the response structure
-      if (result.data && Array.isArray(result.data.dataPoints)) {
-        return result;
+      // Check if response looks like HTML (error page)
+      if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
+        console.error('Got HTML response instead of JSON - API endpoint not found!');
+        console.error('Check if your API routes are properly configured');
+        throw new Error('API endpoint returned HTML instead of JSON');
+      }
+      
+      try {
+        const result = JSON.parse(responseText);
+        console.log('Successfully parsed JSON response');
+        console.log('Current value from API:', result.data?.currentValue);
+        console.log('Current period from API:', result.data?.currentPeriod);
+        
+        // Validate the response structure
+        if (result.data && Array.isArray(result.data.dataPoints)) {
+          return result;
+        }
+      } catch (parseError) {
+        console.error('JSON parsing failed:', parseError);
+        console.log('Response was not valid JSON, probably got HTML instead');
       }
     }
 
@@ -103,13 +125,32 @@ const buildTrendFromUploadedData = async (
 ): Promise<TrendResponse> => {
   try {
     // Fetch the actual history of uploaded scorecards
-    const historyResponse = await fetch(`${API_BASE_URL}/api/locationMetrics/history`);
+    const historyUrl = `${API_BASE_URL}/api/locationMetrics/history`;
+    console.log('Fetching upload history from:', historyUrl);
+    
+    const historyResponse = await fetch(historyUrl);
+    console.log('History response status:', historyResponse.status);
     
     if (!historyResponse.ok) {
       throw new Error(`Failed to fetch upload history: ${historyResponse.status}`);
     }
 
-    const historyData = await historyResponse.json();
+    const responseText = await historyResponse.text();
+    console.log('History raw response:', responseText.substring(0, 200) + '...');
+    
+    // Check if response looks like HTML
+    if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
+      console.error('History API returned HTML instead of JSON');
+      throw new Error('History API returned HTML instead of JSON');
+    }
+    
+    let historyData;
+    try {
+      historyData = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('Failed to parse history response as JSON:', parseError);
+      throw new Error('History API returned non-JSON response (probably HTML redirect)');
+    }
     
     if (!historyData.success || !historyData.data || !Array.isArray(historyData.data.history)) {
       throw new Error('No upload history available');
@@ -590,5 +631,31 @@ export const formatTrendAnalysis = (analysis: TrendAnalysis): string => {
       return `📊 Stable performance over ${monthsOfData} months with minimal variation.`;
     default:
       return `Data available for ${monthsOfData} months.`;
+  }
+};
+
+// Add connection test function
+export const testBackendConnection = async (): Promise<boolean> => {
+  try {
+    console.log('Testing backend connection...');
+    
+    const testUrl = `${API_BASE_URL}/api/locationMetrics`;
+    const response = await fetch(testUrl);
+    
+    console.log('Backend test response:', response.status);
+    
+    if (response.ok) {
+      const data = await response.json();
+      console.log('Backend is responding with JSON data');
+      console.log('Available locations:', data.data?.locations?.length || 0);
+      return true;
+    } else {
+      console.log('Backend returned error status:', response.status);
+      return false;
+    }
+    
+  } catch (error) {
+    console.error('Backend connection test failed:', error);
+    return false;
   }
 };
