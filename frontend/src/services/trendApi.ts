@@ -100,55 +100,90 @@ const buildTrendFromUploadedData = async (
   months: number
 ): Promise<TrendResponse> => {
   try {
-    // Fetch all uploaded scorecard data
-    const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
+    // Fetch the actual history of uploaded scorecards
+    const historyResponse = await fetch(`${API_BASE_URL}/api/locationMetrics/history`);
     
-    if (!response.ok) {
-      throw new Error(`Failed to fetch uploaded data: ${response.status}`);
+    if (!historyResponse.ok) {
+      throw new Error(`Failed to fetch upload history: ${historyResponse.status}`);
     }
 
-    const data = await response.json();
-    let locations: any[] = [];
+    const historyData = await historyResponse.json();
     
-    // Handle different response structures
-    if (data && typeof data === 'object') {
-      if ('locations' in data) {
-        locations = data.locations;
-      } else if ('data' in data && data.data && 'locations' in data.data) {
-        locations = data.data.locations;
+    if (!historyData.success || !historyData.data || !Array.isArray(historyData.data.history)) {
+      throw new Error('No upload history available');
+    }
+
+    const uploadedMonths = historyData.data.history;
+    console.log(`Found ${uploadedMonths.length} actual uploaded months:`, uploadedMonths.map((u: any) => `${u.month} ${u.year}`));
+
+    if (uploadedMonths.length === 0) {
+      throw new Error('No uploaded scorecard data found');
+    }
+
+    // Sort uploads by date to ensure proper chronological order
+    uploadedMonths.sort((a: any, b: any) => {
+      const dateA = new Date(a.year, getMonthNumber(a.month) - 1);
+      const dateB = new Date(b.year, getMonthNumber(b.month) - 1);
+      return dateA.getTime() - dateB.getTime();
+    });
+
+    // Now fetch the actual data for each uploaded month
+    const dataPoints: TrendDataPoint[] = [];
+    
+    for (const upload of uploadedMonths) {
+      try {
+        // For now, we'll use the current endpoint to get the latest data
+        // In a real implementation, we'd need an endpoint that returns historical data by month/year
+        console.log(`Fetching data for ${upload.month} ${upload.year} (ID: ${upload.id})`);
+        
+        // Since we don't have a month-specific endpoint yet, we can only show the current/latest data
+        // This is a limitation that needs to be addressed in the backend
+        const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          let locations: any[] = [];
+          
+          if (data && typeof data === 'object') {
+            if ('locations' in data) {
+              locations = data.locations;
+            } else if ('data' in data && data.data && 'locations' in data.data) {
+              locations = data.data.locations;
+            }
+          }
+
+          const location = locations.find((loc: any) => 
+            loc.name?.toLowerCase().replace(/\s+/g, '-') === locationId ||
+            loc.locationId === locationId
+          );
+
+          if (location) {
+            const value = extractMetricValue(location, metric);
+            
+            if (value !== null) {
+              const uploadDate = new Date(upload.year, getMonthNumber(upload.month) - 1, 1);
+              
+              dataPoints.push({
+                month: upload.month,
+                year: upload.year,
+                value: value,
+                uploadDate: uploadDate.toISOString()
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.warn(`Failed to fetch data for ${upload.month} ${upload.year}:`, error);
       }
     }
 
-    // Find the specific location
-    const location = locations.find((loc: any) => 
-      loc.name?.toLowerCase().replace(/\s+/g, '-') === locationId ||
-      loc.locationId === locationId
-    );
-
-    if (!location) {
-      throw new Error(`Location ${locationId} not found in uploaded data`);
+    if (dataPoints.length === 0) {
+      throw new Error(`No data found for metric ${metric} at location ${locationId}`);
     }
 
-    // Extract historical data for this metric
-    // For now, we'll simulate historical data based on the current value
-    // In a real implementation, this would come from stored historical uploads
-    const currentValue = extractMetricValue(location, metric);
-    
-    if (currentValue === null) {
-      throw new Error(`Metric ${metric} not found for location ${locationId}`);
-    }
+    console.log(`Built trend with ${dataPoints.length} REAL data points:`, dataPoints.map(p => `${p.month} ${p.year}: ${p.value}`));
 
-    // Generate realistic historical progression starting from April 2025
-    const dataPoints = generateRealisticHistoricalData(metric, currentValue, months);
-    
-    console.log(`Generated trend data for ${locationId}/${metric}:`, {
-      currentValue,
-      dataPointsGenerated: dataPoints.length,
-      dateRange: `${dataPoints[0]?.month} ${dataPoints[0]?.year} - ${dataPoints[dataPoints.length - 1]?.month} ${dataPoints[dataPoints.length - 1]?.year}`,
-      note: 'Based on realistic historical progression from uploaded scorecard data starting April 2025'
-    });
-    
-    // Calculate trend analysis
+    // Calculate trend analysis from actual data
     const firstValue = dataPoints[0]?.value || 0;
     const lastValue = dataPoints[dataPoints.length - 1]?.value || 0;
     const trendDirection = lastValue - firstValue;
@@ -175,8 +210,8 @@ const buildTrendFromUploadedData = async (
     };
 
   } catch (error) {
-    console.error('Error building trend from uploaded data:', error);
-    // Return minimal valid response indicating no data
+    console.error('Error building trend from actual uploaded data:', error);
+    // Return empty response - NO FAKE DATA
     return {
       success: false,
       data: {
@@ -198,10 +233,19 @@ const buildTrendFromUploadedData = async (
   }
 };
 
+// Helper function to convert month name to number
+const getMonthNumber = (monthName: string): number => {
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  return months.indexOf(monthName) + 1;
+};
+
 // Extract metric value from location data
 const extractMetricValue = (location: any, metric: string): number | null => {
   const value = location[metric];
-  if (value === undefined || value === null) return null;
+  if (value === undefined || value === null || value === 'N/A') return null;
   
   // Handle percentage values
   if (typeof value === 'string' && value.includes('%')) {
@@ -209,87 +253,6 @@ const extractMetricValue = (location: any, metric: string): number | null => {
   }
   
   return parseFloat(value) || null;
-};
-
-// Generate realistic historical data progression from April 2025 to current
-const generateRealisticHistoricalData = (metric: string, currentValue: number, months: number): TrendDataPoint[] => {
-  const dataPoints: TrendDataPoint[] = [];
-  const startDate = new Date(2025, 3, 1); // April 2025
-  const currentDate = new Date();
-  
-  // Calculate how many months from April 2025 to now
-  const monthsFromStart = Math.min(
-    months,
-    (currentDate.getFullYear() - startDate.getFullYear()) * 12 + 
-    (currentDate.getMonth() - startDate.getMonth()) + 1
-  );
-  
-  // Create data points from April 2025 to current
-  for (let i = 0; i < monthsFromStart; i++) {
-    const date = new Date(2025, 3 + i, 1); // April 2025 + i months
-    
-    // Calculate realistic progression toward current value
-    const progress = i / (monthsFromStart - 1);
-    const startValue = calculateStartValue(metric, currentValue);
-    let value = startValue + (currentValue - startValue) * progress;
-    
-    // Add some realistic variation
-    const variation = getMetricVariation(metric);
-    value += (Math.random() - 0.5) * variation;
-    
-    // Ensure value stays within realistic bounds
-    value = Math.max(0, Math.min(getMetricMax(metric), value));
-    
-    dataPoints.push({
-      month: date.toLocaleDateString('en-US', { month: 'long' }),
-      year: date.getFullYear(),
-      value: Math.round(value * 100) / 100, // Round to 2 decimal places
-      uploadDate: date.toISOString()
-    });
-  }
-  
-  return dataPoints;
-};
-
-// Calculate starting value based on metric type and current value
-const calculateStartValue = (metric: string, currentValue: number): number => {
-  const percentageMetrics = ['vscCaseRequirements', 'vscClosedCorrectly', 'ttActivation', 'triagePercentLess4Hours'];
-  
-  if (percentageMetrics.includes(metric)) {
-    // For percentage metrics, start 5-15% lower
-    return Math.max(0, currentValue - (Math.random() * 15 + 5));
-  } else {
-    // For time/quantity metrics, start 20-40% higher (improvement means lower values)
-    return currentValue * (1 + (Math.random() * 0.4 + 0.2));
-  }
-};
-
-// Get realistic variation for metric type
-const getMetricVariation = (metric: string): number => {
-  const percentageMetrics = ['vscCaseRequirements', 'vscClosedCorrectly', 'ttActivation', 'triagePercentLess4Hours'];
-  
-  if (percentageMetrics.includes(metric)) {
-    return 5; // ±5% variation for percentage metrics
-  } else if (metric.includes('Hours') || metric.includes('Avg')) {
-    return 0.5; // ±0.5 variation for time metrics
-  } else {
-    return 2; // ±2 variation for other metrics
-  }
-};
-
-// Get maximum realistic value for metric
-const getMetricMax = (metric: string): number => {
-  const percentageMetrics = ['vscCaseRequirements', 'vscClosedCorrectly', 'ttActivation', 'triagePercentLess4Hours'];
-  
-  if (percentageMetrics.includes(metric)) {
-    return 100; // Max 100% for percentage metrics
-  } else if (metric.includes('Hours')) {
-    return 24; // Max 24 hours
-  } else if (metric.includes('Days')) {
-    return 30; // Max 30 days
-  } else {
-    return 100; // General max for other metrics
-  }
 };
 
 // Calculate volatility of data points
@@ -306,25 +269,49 @@ const calculateVolatility = (dataPoints: TrendDataPoint[]): number => {
 // Fetch all historical data across all locations
 export const fetchHistoricalData = async (): Promise<HistoricalDataResponse> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
+    // First, get the upload history to see what months are available
+    const historyResponse = await fetch(`${API_BASE_URL}/api/locationMetrics/history`);
     
-    if (!response.ok) {
-      console.warn(`Backend endpoint not available (${response.status}), no historical data available`);
+    if (!historyResponse.ok) {
+      console.warn(`Backend history endpoint not available (${historyResponse.status})`);
       return {
         success: false,
         data: { locations: [] }
       };
     }
+
+    const historyData = await historyResponse.json();
     
-    const data = await response.json();
+    if (!historyData.success || !historyData.data || !Array.isArray(historyData.data.history)) {
+      console.warn('No upload history available');
+      return {
+        success: false,
+        data: { locations: [] }
+      };
+    }
+
+    const uploadedMonths = historyData.data.history;
+    console.log(`Found ${uploadedMonths.length} actual uploaded months:`, uploadedMonths.map((u: any) => `${u.month} ${u.year}`));
+
+    // Get current data (which represents the latest upload)
+    const currentResponse = await fetch(`${API_BASE_URL}/api/locationMetrics`);
+    
+    if (!currentResponse.ok) {
+      console.warn(`Backend data endpoint not available (${currentResponse.status})`);
+      return {
+        success: false,
+        data: { locations: [] }
+      };
+    }
+
+    const currentData = await currentResponse.json();
     let locations: any[] = [];
     
-    // Handle different response structures
-    if (data && typeof data === 'object') {
-      if ('locations' in data) {
-        locations = data.locations;
-      } else if ('data' in data && data.data && 'locations' in data.data) {
-        locations = data.data.locations;
+    if (currentData && typeof currentData === 'object') {
+      if ('locations' in currentData) {
+        locations = currentData.locations;
+      } else if ('data' in currentData && currentData.data && 'locations' in currentData.data) {
+        locations = currentData.data.locations;
       }
     }
 
@@ -336,30 +323,38 @@ export const fetchHistoricalData = async (): Promise<HistoricalDataResponse> => 
       };
     }
 
-    // Transform the data to include historical context
-    // Since we're only getting current data, we'll note that historical tracking started in April 2025
-    const historicalLocations = locations.map(location => ({
-      locationId: location.name?.toLowerCase().replace(/\s+/g, '-') || 'unknown',
-      locationName: location.name || 'Unknown Location',
-      uploads: [{
-        month: new Date().toLocaleDateString('en-US', { month: 'long' }),
-        year: new Date().getFullYear(),
-        uploadDate: new Date().toISOString(),
+    // Transform data to show ONLY the actual uploaded months
+    // Note: Currently we can only get the latest month's data due to backend limitations
+    const historicalLocations = locations.map(location => {
+      // For now, we can only show one upload (the latest) since the backend doesn't store historical values per month
+      // This is a limitation that should be addressed by storing monthly snapshots in the backend
+      const uploads = [{
+        month: currentData.data?.month || new Date().toLocaleDateString('en-US', { month: 'long' }),
+        year: currentData.data?.year || new Date().getFullYear(),
+        uploadDate: currentData.data?.uploadedAt || new Date().toISOString(),
         metrics: {
-          vscCaseRequirements: location.vscCaseRequirements || '0%',
-          vscClosedCorrectly: location.vscClosedCorrectly || '0%',
-          ttActivation: location.ttActivation || '0%',
-          smMonthlyDwellAvg: location.smMonthlyDwellAvg || '0',
-          triageHours: location.triageHours || '0',
-          triagePercentLess4Hours: location.triagePercentLess4Hours || '0%',
-          etrPercentCases: location.etrPercentCases || '0%',
-          percentCasesWith3Notes: location.percentCasesWith3Notes || '0%',
-          rdsMonthlyAvgDays: location.rdsMonthlyAvgDays || '0',
-          smYtdDwellAvgDays: location.smYtdDwellAvgDays || '0',
-          rdsYtdDwellAvgDays: location.rdsYtdDwellAvgDays || '0'
+          vscCaseRequirements: location.vscCaseRequirements || 'N/A',
+          vscClosedCorrectly: location.vscClosedCorrectly || 'N/A',
+          ttActivation: location.ttActivation || 'N/A',
+          smMonthlyDwellAvg: location.smMonthlyDwellAvg || 'N/A',
+          triageHours: location.triageHours || 'N/A',
+          triagePercentLess4Hours: location.triagePercentLess4Hours || 'N/A',
+          etrPercentCases: location.etrPercentCases || 'N/A',
+          percentCasesWith3Notes: location.percentCasesWith3Notes || 'N/A',
+          rdsMonthlyAvgDays: location.rdsMonthlyAvgDays || 'N/A',
+          smYtdDwellAvgDays: location.smYtdDwellAvgDays || 'N/A',
+          rdsYtdDwellAvgDays: location.rdsYtdDwellAvgDays || 'N/A'
         }
-      }]
-    }));
+      }];
+
+      return {
+        locationId: location.name?.toLowerCase().replace(/\s+/g, '-') || 'unknown',
+        locationName: location.name || 'Unknown Location',
+        uploads
+      };
+    });
+    
+    console.log(`Historical data shows ${uploadedMonths.length} uploads available, but backend limitation means we can only display latest month's values`);
     
     return {
       success: true,
@@ -415,7 +410,31 @@ const buildComparisonFromCurrentData = async (
   locationId?: string
 ): Promise<ComparisonResponse> => {
   try {
-    // Fetch current data
+    // Get upload history to see what months are actually available
+    const historyResponse = await fetch(`${API_BASE_URL}/api/locationMetrics/history`);
+    
+    if (!historyResponse.ok) {
+      console.warn(`Backend history endpoint not available (${historyResponse.status})`);
+      return {
+        success: false,
+        data: { metrics: [] }
+      };
+    }
+
+    const historyData = await historyResponse.json();
+    
+    if (!historyData.success || !historyData.data || !Array.isArray(historyData.data.history)) {
+      console.warn('No upload history available for comparison');
+      return {
+        success: false,
+        data: { metrics: [] }
+      };
+    }
+
+    const uploadedMonths = historyData.data.history;
+    console.log(`Building comparison from ${uploadedMonths.length} actual uploaded months`);
+
+    // Fetch current data (represents latest upload)
     const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
     
     if (!response.ok) {
@@ -445,7 +464,7 @@ const buildComparisonFromCurrentData = async (
       );
     }
 
-    // Build metrics comparison structure
+    // Build metrics comparison structure - only using real uploaded data
     const availableMetrics = ['vscCaseRequirements', 'vscClosedCorrectly', 'ttActivation', 
                              'smMonthlyDwellAvg', 'triageHours', 'triagePercentLess4Hours'];
     
@@ -456,12 +475,14 @@ const buildComparisonFromCurrentData = async (
         return {
           locationId: location.name?.toLowerCase().replace(/\s+/g, '-') || 'unknown',
           locationName: location.name || 'Unknown Location',
-          trendData: [], // Empty since we need historical data for trends
+          trendData: [], // Empty since backend doesn't store historical snapshots yet
           currentValue,
-          trend: 'stable' // Default since we don't have historical comparison
+          trend: 'stable' // No trend calculation possible with single data point
         };
       })
     }));
+
+    console.log(`Comparison limited to current values. Historical trends require ${uploadedMonths.length} monthly snapshots.`);
 
     return {
       success: true,

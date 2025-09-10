@@ -821,10 +821,10 @@ router.get('/trends/:locationId/:metric', async (req, res) => {
     
     // Get all historical metrics, sorted by date
     const allMetrics = await LocationMetric.find()
-      .sort({ 'metrics.year': -1, 'metrics.month': -1 })
+      .sort({ 'metrics.year': 1, 'metrics.month': 1 }) // Oldest first for proper trend calculation
       .limit(parseInt(months));
     
-    const trendData = [];
+    const dataPoints = [];
     const locationName = locationId.charAt(0).toUpperCase() + locationId.slice(1).replace('-', ' ') + ' Kenworth';
     
     for (const record of allMetrics) {
@@ -832,30 +832,46 @@ router.get('/trends/:locationId/:metric', async (req, res) => {
         loc.locationId === locationId || loc.name === locationName
       );
       
-      if (location && location[metric] !== undefined) {
-        trendData.push({
-          month: record.metrics.month,
-          year: record.metrics.year,
-          value: location[metric],
-          date: `${record.metrics.year}-${String(getMonthNumber(record.metrics.month)).padStart(2, '0')}-01`,
-          fileName: record.metrics.fileName,
-          uploadedAt: record.metrics.uploadedAt
-        });
+      if (location && location[metric] !== undefined && location[metric] !== 'N/A') {
+        let value = location[metric];
+        // Convert percentage strings to numbers
+        if (typeof value === 'string' && value.includes('%')) {
+          value = parseFloat(value.replace('%', ''));
+        } else if (typeof value === 'string') {
+          value = parseFloat(value);
+        }
+        
+        if (!isNaN(value)) {
+          dataPoints.push({
+            month: record.metrics.month,
+            year: record.metrics.year,
+            value: value,
+            uploadDate: record.metrics.uploadedAt || record.metrics.extractedAt
+          });
+        }
       }
     }
     
     // Calculate trend analysis
-    const analysis = calculateTrendAnalysis(trendData, metric);
+    const analysis = calculateAdvancedTrendAnalysis(dataPoints, metric);
     
     res.json({
       success: true,
       data: {
+        metric,
         locationId,
         locationName,
-        metric,
-        trendData: trendData.reverse(), // Oldest first for charts
-        analysis,
-        dataPoints: trendData.length
+        trend: analysis.trend,
+        trendDirection: analysis.trendDirection,
+        dataPoints,
+        monthsOfData: dataPoints.length,
+        analysis: {
+          averageChange: analysis.averageChange,
+          volatility: analysis.volatility,
+          bestMonth: analysis.bestMonth,
+          worstMonth: analysis.worstMonth,
+          currentVsPrevious: analysis.currentVsPrevious
+        }
       }
     });
   } catch (error) {
@@ -867,19 +883,39 @@ router.get('/trends/:locationId/:metric', async (req, res) => {
   }
 });
 
-// GET /api/location-metrics/history - Get all historical months available
+// GET /api/location-metrics/history - Get all historical months with full data
 router.get('/history', async (req, res) => {
   try {
-    const allMetrics = await LocationMetric.find({}, 'metrics.month metrics.year metrics.fileName metrics.uploadedAt')
+    const { includeData = 'false' } = req.query;
+    
+    const allMetrics = await LocationMetric.find()
       .sort({ 'metrics.year': -1, 'metrics.month': -1 });
     
-    const history = allMetrics.map(record => ({
-      month: record.metrics.month,
-      year: record.metrics.year,
-      fileName: record.metrics.fileName,
-      uploadedAt: record.metrics.uploadedAt,
-      id: record._id
-    }));
+    let history;
+    
+    if (includeData === 'true') {
+      // Include full metric data for each month
+      history = allMetrics.map(record => ({
+        month: record.metrics.month,
+        year: record.metrics.year,
+        fileName: record.metrics.fileName,
+        uploadedAt: record.metrics.uploadedAt,
+        extractedAt: record.metrics.extractedAt,
+        id: record._id,
+        dealership: record.metrics.dealership,
+        locations: record.metrics.locations
+      }));
+    } else {
+      // Just metadata (original behavior)
+      history = allMetrics.map(record => ({
+        month: record.metrics.month,
+        year: record.metrics.year,
+        fileName: record.metrics.fileName,
+        uploadedAt: record.metrics.uploadedAt,
+        extractedAt: record.metrics.extractedAt,
+        id: record._id
+      }));
+    }
     
     res.json({
       success: true,
@@ -901,45 +937,172 @@ router.get('/history', async (req, res) => {
   }
 });
 
-// GET /api/location-metrics/compare - Compare metrics across time periods
+// GET /api/location-metrics/compare - Compare metrics across time periods and locations
 router.get('/compare', async (req, res) => {
   try {
-    const { months = 6, locationId } = req.query;
+    const { months = 6, locationId, metric } = req.query;
     
     // Get recent historical data
     const recentMetrics = await LocationMetric.find()
-      .sort({ 'metrics.year': -1, 'metrics.month': -1 })
+      .sort({ 'metrics.year': 1, 'metrics.month': 1 }) // Chronological order
       .limit(parseInt(months));
     
+    if (recentMetrics.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'No historical data found'
+      });
+    }
+    
+    const timeRange = {
+      startMonth: recentMetrics[0].metrics.month,
+      startYear: recentMetrics[0].metrics.year,
+      endMonth: recentMetrics[recentMetrics.length - 1].metrics.month,
+      endYear: recentMetrics[recentMetrics.length - 1].metrics.year,
+      totalMonths: recentMetrics.length
+    };
+    
+    if (locationId && metric) {
+      // Single location, single metric comparison
+      const locationName = locationId.charAt(0).toUpperCase() + locationId.slice(1).replace('-', ' ') + ' Kenworth';
+      const trendData = [];
+      
+      for (const record of recentMetrics) {
+        const location = record.metrics.locations?.find(loc => 
+          loc.locationId === locationId || loc.name === locationName
+        );
+        
+        if (location && location[metric] !== undefined && location[metric] !== 'N/A') {
+          let value = location[metric];
+          if (typeof value === 'string' && value.includes('%')) {
+            value = parseFloat(value.replace('%', ''));
+          } else if (typeof value === 'string') {
+            value = parseFloat(value);
+          }
+          
+          if (!isNaN(value)) {
+            trendData.push({
+              month: record.metrics.month,
+              year: record.metrics.year,
+              value: value
+            });
+          }
+        }
+      }
+      
+      const analysis = calculateAdvancedTrendAnalysis(trendData.map((d, i) => ({ ...d, uploadDate: new Date() })), metric);
+      
+      return res.json({
+        success: true,
+        data: {
+          timeRange,
+          metrics: [{
+            metric,
+            locations: [{
+              locationId,
+              locationName,
+              trendData,
+              currentValue: trendData.length > 0 ? trendData[trendData.length - 1].value : null,
+              trend: analysis.trend
+            }]
+          }]
+        }
+      });
+    }
+    
+    if (metric) {
+      // All locations, single metric comparison
+      const locations = ['wichita', 'dodge-city', 'liberal', 'emporia'];
+      const chartData = [];
+      const metricsData = [];
+      
+      const locationMetrics = locations.map(locId => {
+        const locationName = locId.charAt(0).toUpperCase() + locId.slice(1).replace('-', ' ') + ' Kenworth';
+        const trendData = [];
+        
+        for (const record of recentMetrics) {
+          const location = record.metrics.locations?.find(loc => 
+            loc.locationId === locId || loc.name === locationName
+          );
+          
+          if (location && location[metric] !== undefined && location[metric] !== 'N/A') {
+            let value = location[metric];
+            if (typeof value === 'string' && value.includes('%')) {
+              value = parseFloat(value.replace('%', ''));
+            } else if (typeof value === 'string') {
+              value = parseFloat(value);
+            }
+            
+            if (!isNaN(value)) {
+              trendData.push({
+                month: record.metrics.month,
+                year: record.metrics.year,
+                value: value
+              });
+            }
+          }
+        }
+        
+        const analysis = calculateAdvancedTrendAnalysis(trendData.map((d, i) => ({ ...d, uploadDate: new Date() })), metric);
+        
+        return {
+          locationId: locId,
+          locationName,
+          trendData,
+          currentValue: trendData.length > 0 ? trendData[trendData.length - 1].value : null,
+          trend: analysis.trend
+        };
+      });
+      
+      // Create chart data format
+      for (const record of recentMetrics) {
+        const chartPoint = {
+          period: `${record.metrics.month.slice(0, 3)} ${record.metrics.year.toString().slice(-2)}`
+        };
+        
+        for (const locData of locationMetrics) {
+          const dataPoint = locData.trendData.find(d => 
+            d.month === record.metrics.month && d.year === record.metrics.year
+          );
+          if (dataPoint) {
+            chartPoint[`${locData.locationId}_${metric}`] = dataPoint.value;
+          }
+        }
+        
+        chartData.push(chartPoint);
+      }
+      
+      return res.json({
+        success: true,
+        data: {
+          timeRange,
+          metrics: [{
+            metric,
+            locations: locationMetrics
+          }],
+          chartData
+        }
+      });
+    }
+    
+    // All locations, all metrics comparison (original behavior)
     const comparison = {};
     
     for (const record of recentMetrics) {
       const periodKey = `${record.metrics.month} ${record.metrics.year}`;
-      
-      if (locationId) {
-        // Single location comparison
-        const location = record.metrics.locations?.find(loc => 
-          loc.locationId === locationId
-        );
-        if (location) {
-          comparison[periodKey] = location;
-        }
-      } else {
-        // All locations comparison
-        comparison[periodKey] = {
-          dealership: record.metrics.dealership,
-          locations: record.metrics.locations,
-          summary: calculatePeriodSummary(record.metrics.locations)
-        };
-      }
+      comparison[periodKey] = {
+        dealership: record.metrics.dealership,
+        locations: record.metrics.locations,
+        summary: calculatePeriodSummary(record.metrics.locations)
+      };
     }
     
     res.json({
       success: true,
       data: {
+        timeRange,
         comparison,
-        periods: Object.keys(comparison),
-        locationId: locationId || 'all'
+        periods: Object.keys(comparison)
       }
     });
   } catch (error) {
@@ -959,6 +1122,91 @@ function getMonthNumber(monthName) {
     'September': 9, 'October': 10, 'November': 11, 'December': 12
   };
   return months[monthName] || 1;
+}
+
+// Helper function to calculate advanced trend analysis
+function calculateAdvancedTrendAnalysis(dataPoints, metric) {
+  if (dataPoints.length < 2) {
+    return {
+      trend: 'insufficient_data',
+      trendDirection: 0,
+      averageChange: 0,
+      volatility: 0,
+      bestMonth: null,
+      worstMonth: null,
+      currentVsPrevious: 0
+    };
+  }
+  
+  const values = dataPoints.map(d => d.value);
+  const n = values.length;
+  
+  // Calculate trend direction using linear regression slope
+  const xValues = Array.from({ length: n }, (_, i) => i);
+  const xMean = xValues.reduce((sum, x) => sum + x, 0) / n;
+  const yMean = values.reduce((sum, y) => sum + y, 0) / n;
+  
+  const numerator = xValues.reduce((sum, x, i) => sum + (x - xMean) * (values[i] - yMean), 0);
+  const denominator = xValues.reduce((sum, x) => sum + (x - xMean) ** 2, 0);
+  
+  const slope = denominator !== 0 ? numerator / denominator : 0;
+  
+  // Calculate average change between consecutive months
+  const changes = [];
+  for (let i = 1; i < values.length; i++) {
+    changes.push(values[i] - values[i - 1]);
+  }
+  const averageChange = changes.length > 0 ? changes.reduce((sum, change) => sum + change, 0) / changes.length : 0;
+  
+  // Calculate volatility (standard deviation of changes)
+  const changeMean = averageChange;
+  const volatility = changes.length > 1 ? Math.sqrt(
+    changes.reduce((sum, change) => sum + (change - changeMean) ** 2, 0) / (changes.length - 1)
+  ) : 0;
+  
+  // Find best and worst months
+  const valuesCopy = [...values];
+  const maxValue = Math.max(...valuesCopy);
+  const minValue = Math.min(...valuesCopy);
+  
+  const bestIndex = values.indexOf(maxValue);
+  const worstIndex = values.indexOf(minValue);
+  
+  // For metrics where lower is better
+  const lowerIsBetter = ['triageHours', 'smMonthlyDwellAvg', 'smYtdDwellAvgDays', 'rdsMonthlyAvgDays', 'rdsYtdDwellAvgDays'];
+  const bestMonth = lowerIsBetter.includes(metric) ? dataPoints[worstIndex] : dataPoints[bestIndex];
+  const worstMonth = lowerIsBetter.includes(metric) ? dataPoints[bestIndex] : dataPoints[worstIndex];
+  
+  // Current vs previous
+  const currentVsPrevious = n >= 2 ? values[n - 1] - values[n - 2] : 0;
+  
+  // Determine trend category
+  let trend = 'stable';
+  if (Math.abs(slope) > yMean * 0.02) { // 2% threshold relative to mean
+    if (lowerIsBetter.includes(metric)) {
+      trend = slope < 0 ? 'improving' : 'declining';
+    } else {
+      trend = slope > 0 ? 'improving' : 'declining';
+    }
+  }
+  
+  return {
+    trend,
+    trendDirection: Number(slope.toFixed(3)),
+    averageChange: Number(averageChange.toFixed(3)),
+    volatility: Number(volatility.toFixed(3)),
+    bestMonth: bestMonth ? {
+      month: bestMonth.month,
+      year: bestMonth.year,
+      value: bestMonth.value
+    } : null,
+    worstMonth: worstMonth ? {
+      month: worstMonth.month,
+      year: worstMonth.year,
+      value: worstMonth.value
+    } : null,
+    currentVsPrevious: Number(currentVsPrevious.toFixed(3))
+  };
 }
 
 // Helper function to calculate trend analysis
@@ -1078,6 +1326,49 @@ function calculatePeriodSummary(locations) {
   return summary;
 }
 
+// GET /api/location-metrics/{year}/{month} - Get specific month metrics
+router.get('/:year/:month', async (req, res) => {
+  try {
+    const { year, month } = req.params;
+    
+    // Convert month name to proper case (April, May, etc.)
+    const monthName = month.charAt(0).toUpperCase() + month.slice(1).toLowerCase();
+    
+    console.log(`Getting metrics for ${monthName} ${year}`);
+    
+    const metrics = await LocationMetric.findOne({
+      'metrics.month': monthName,
+      'metrics.year': parseInt(year)
+    });
+    
+    if (!metrics) {
+      return res.status(404).json({ 
+        success: false, 
+        error: `No metrics found for ${monthName} ${year}` 
+      });
+    }
+    
+    res.json({ 
+      success: true, 
+      data: {
+        dealership: metrics.metrics.dealership,
+        locations: metrics.metrics.locations,
+        extractedAt: metrics.metrics.extractedAt,
+        month: metrics.metrics.month,
+        year: metrics.metrics.year,
+        fileName: metrics.metrics.fileName,
+        uploadedAt: metrics.metrics.uploadedAt
+      }
+    });
+  } catch (error) {
+    console.error('Get specific month metrics error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
 // GET /api/location-metrics - Get latest metrics
 router.get('/', async (req, res) => {
   try {
@@ -1090,10 +1381,201 @@ router.get('/', async (req, res) => {
     }
     res.json({ 
       success: true, 
-      data: latest.metrics 
+      data: {
+        dealership: latest.metrics.dealership,
+        locations: latest.metrics.locations,
+        extractedAt: latest.metrics.extractedAt,
+        month: latest.metrics.month,
+        year: latest.metrics.year,
+        fileName: latest.metrics.fileName,
+        uploadedAt: latest.metrics.uploadedAt
+      }
     });
   } catch (error) {
     console.error('Get metrics error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// GET /api/location-metrics/batch - Get multiple months of data efficiently
+router.get('/batch', async (req, res) => {
+  try {
+    const { months } = req.query;
+    
+    if (!months) {
+      return res.status(400).json({
+        success: false,
+        error: 'months parameter is required (e.g., ?months=2025-04,2025-05,2025-06)'
+      });
+    }
+    
+    // Parse months parameter (format: 2025-04,2025-05,2025-06)
+    const requestedMonths = months.split(',').map(monthStr => {
+      const [year, month] = monthStr.trim().split('-');
+      const monthNames = {
+        '01': 'January', '02': 'February', '03': 'March', '04': 'April',
+        '05': 'May', '06': 'June', '07': 'July', '08': 'August',
+        '09': 'September', '10': 'October', '11': 'November', '12': 'December'
+      };
+      return {
+        year: parseInt(year),
+        month: monthNames[month] || month,
+        requestedFormat: monthStr
+      };
+    });
+    
+    const batchData = {};
+    
+    for (const { year, month, requestedFormat } of requestedMonths) {
+      const metrics = await LocationMetric.findOne({
+        'metrics.month': month,
+        'metrics.year': year
+      });
+      
+      if (metrics) {
+        batchData[requestedFormat] = {
+          dealership: metrics.metrics.dealership,
+          locations: metrics.metrics.locations,
+          extractedAt: metrics.metrics.extractedAt,
+          month: metrics.metrics.month,
+          year: metrics.metrics.year,
+          fileName: metrics.metrics.fileName,
+          uploadedAt: metrics.metrics.uploadedAt
+        };
+      } else {
+        batchData[requestedFormat] = null;
+      }
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        batchData,
+        requestedMonths: requestedMonths.map(m => m.requestedFormat),
+        foundMonths: Object.keys(batchData).filter(key => batchData[key] !== null),
+        missingMonths: Object.keys(batchData).filter(key => batchData[key] === null)
+      }
+    });
+  } catch (error) {
+    console.error('Get batch data error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// GET /api/location-metrics/validation - Validate data integrity and check for missing months
+router.get('/validation', async (req, res) => {
+  try {
+    // Get all uploaded months
+    const allMetrics = await LocationMetric.find({}, 'metrics.month metrics.year metrics.fileName')
+      .sort({ 'metrics.year': 1, 'metrics.month': 1 });
+    
+    const uploadedMonths = allMetrics.map(record => 
+      `${record.metrics.month} ${record.metrics.year}`
+    );
+    
+    // Expected months from April 2025 onwards
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1; // 1-based
+    
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    
+    const expectedMonths = [];
+    
+    // Start from April 2025
+    let year = 2025;
+    let month = 4; // April
+    
+    while (year < currentYear || (year === currentYear && month <= currentMonth)) {
+      expectedMonths.push(`${monthNames[month - 1]} ${year}`);
+      
+      month++;
+      if (month > 12) {
+        month = 1;
+        year++;
+      }
+    }
+    
+    const missingMonths = expectedMonths.filter(expectedMonth => 
+      !uploadedMonths.includes(expectedMonth)
+    );
+    
+    // Data integrity checks
+    const issues = [];
+    
+    for (const record of allMetrics) {
+      const metrics = record.metrics;
+      
+      // Check if dealership data exists
+      if (!metrics.dealership || Object.keys(metrics.dealership).length === 0) {
+        issues.push({
+          type: 'missing_dealership_data',
+          month: `${metrics.month} ${metrics.year}`,
+          description: 'Missing dealership-level metrics'
+        });
+      }
+      
+      // Check if location data exists
+      if (!metrics.locations || metrics.locations.length === 0) {
+        issues.push({
+          type: 'missing_location_data',
+          month: `${metrics.month} ${metrics.year}`,
+          description: 'Missing location-level metrics'
+        });
+      } else {
+        // Check if all expected locations are present
+        const expectedLocations = ['Wichita Kenworth', 'Dodge City Kenworth', 'Liberal Kenworth', 'Emporia Kenworth'];
+        const foundLocations = metrics.locations.map(loc => loc.name);
+        const missingLocations = expectedLocations.filter(loc => !foundLocations.includes(loc));
+        
+        if (missingLocations.length > 0) {
+          issues.push({
+            type: 'missing_locations',
+            month: `${metrics.month} ${metrics.year}`,
+            description: `Missing locations: ${missingLocations.join(', ')}`
+          });
+        }
+      }
+      
+      // Check for required file metadata
+      if (!metrics.fileName) {
+        issues.push({
+          type: 'missing_filename',
+          month: `${metrics.month} ${metrics.year}`,
+          description: 'Missing original file name'
+        });
+      }
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        uploadedMonths,
+        expectedMonths,
+        missingMonths,
+        dataIntegrity: {
+          complete: issues.length === 0 && missingMonths.length === 0,
+          issues
+        },
+        summary: {
+          totalUploaded: uploadedMonths.length,
+          totalExpected: expectedMonths.length,
+          totalMissing: missingMonths.length,
+          totalIssues: issues.length
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get validation error:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message 

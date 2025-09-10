@@ -54,6 +54,12 @@ const HistoricalDashboard: React.FC<HistoricalDashboardProps> = ({ className = '
 
       if (historyResponse.success) {
         setHistoricalData(historyResponse.data);
+        
+        // Check for backend limitation warning
+        const uploadCount = historyResponse.data.locations?.[0]?.uploads?.length || 0;
+        if (uploadCount === 1) {
+          console.warn('Backend limitation: Only latest month data available. Historical trends require monthly snapshots.');
+        }
       }
 
       if (comparisonResponse.success) {
