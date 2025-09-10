@@ -43,6 +43,30 @@ const TrendModal: React.FC<TrendModalProps> = ({
     }
   }, [isOpen, locationId, metric, selectedPeriod]);
 
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [isOpen]);
+
+  // Handle escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [isOpen, onClose]);
+
   const fetchTrendDataForModal = async () => {
     setLoading(true);
     setError(null);
@@ -119,10 +143,17 @@ const TrendModal: React.FC<TrendModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl border border-slate-700 shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+    <div 
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl border border-slate-700 shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-700">
+        <div className="flex items-center justify-between p-6 border-b border-slate-700 flex-shrink-0">
           <div className="flex items-center space-x-4">
             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
               <Activity className="w-6 h-6 text-white" />
@@ -141,7 +172,7 @@ const TrendModal: React.FC<TrendModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+        <div className="flex-1 overflow-y-auto p-6">{/* Changed from overflow-y-auto max-h-[calc(90vh-120px)] */}
           {loading && (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-slate-600 border-t-blue-500"></div>
@@ -234,9 +265,9 @@ const TrendModal: React.FC<TrendModalProps> = ({
               {chartData.length > 0 && (
                 <div className="bg-slate-800/50 rounded-lg p-6 border border-slate-700 mb-6">
                   <h3 className="text-lg font-semibold text-white mb-4">Trend Chart</h3>
-                  <div className="h-80">
+                  <div className="w-full" style={{ height: '320px' }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={chartData}>
+                      <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                         <XAxis 
                           dataKey="formattedDate" 
@@ -247,6 +278,7 @@ const TrendModal: React.FC<TrendModalProps> = ({
                           stroke="#9CA3AF"
                           fontSize={12}
                           tickFormatter={formatValue}
+                          width={60}
                         />
                         <Tooltip 
                           contentStyle={{
