@@ -20,7 +20,8 @@ import {
   DodgeCityMetrics,
   LiberalMetrics,
   CampaignMetrics,
-  ErrorBoundary
+  ErrorBoundary,
+  HistoricalDashboard
 } from "./components";
 import QuickLinksPanel from "./components/QuickLinksPanel";
 import FeedbackPanel from "./components/FeedbackPanel";
@@ -85,6 +86,7 @@ function App() {
                 <Route path="/metrics/campaigns" element={<CampaignMetrics />} />
                 <Route path="/scorecard-manager" element={<ScorecardManager />} />
                 <Route path="/location-metrics" element={<LocationMetrics />} />
+                <Route path="/metrics/trends" element={<HistoricalDashboard />} />
                 <Route path="/metrics/wichita" element={<WichitaMetrics />} />
                 <Route path="/metrics/emporia" element={<EmporiaMetrics />} />
                 <Route path="/metrics/dodge-city" element={<DodgeCityMetrics />} />

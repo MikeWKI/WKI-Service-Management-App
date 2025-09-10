@@ -713,23 +713,39 @@ router.post('/upload', upload.single('pdf'), async (req, res) => {
       locationCount: metrics.locations?.length || 0
     });
 
-    // Remove all previous metrics (keep only latest)
-    await LocationMetric.deleteMany({});
-    console.log('Cleared previous metrics');
+    // Check if metrics for this month/year already exist
+    const existingMetrics = await LocationMetric.findOne({
+      'metrics.month': req.body.month,
+      'metrics.year': parseInt(req.body.year)
+    });
     
-    // Save new metrics with additional metadata
-    const newMetrics = new LocationMetric({ 
-      metrics: {
+    if (existingMetrics) {
+      console.log(`Updating existing metrics for ${req.body.month} ${req.body.year}`);
+      // Update existing record
+      existingMetrics.metrics = {
         ...metrics,
         month: req.body.month,
         year: parseInt(req.body.year),
         fileName: req.file.originalname,
         uploadedAt: new Date()
-      }
-    });
+      };
+      await existingMetrics.save();
+    } else {
+      console.log(`Creating new metrics record for ${req.body.month} ${req.body.year}`);
+      // Create new record (preserve historical data)
+      const newMetrics = new LocationMetric({ 
+        metrics: {
+          ...metrics,
+          month: req.body.month,
+          year: parseInt(req.body.year),
+          fileName: req.file.originalname,
+          uploadedAt: new Date()
+        }
+      });
+      await newMetrics.save();
+    }
     
-    await newMetrics.save();
-    console.log('New metrics saved to database');
+    console.log('Metrics saved to database (historical data preserved)');
     
     // FIX: Always return the exact structure the frontend expects
     const response = {
@@ -795,10 +811,277 @@ router.get('/campaigns', async (req, res) => {
   }
 });
 
+// GET /api/location-metrics/trends/:locationId/:metric - Get trend data for a specific metric
+router.get('/trends/:locationId/:metric', async (req, res) => {
+  try {
+    const { locationId, metric } = req.params;
+    const { months = 12 } = req.query; // Default to 12 months of history
+    
+    console.log(`Getting trend data for ${locationId} - ${metric} (last ${months} months)`);
+    
+    // Get all historical metrics, sorted by date
+    const allMetrics = await LocationMetric.find()
+      .sort({ 'metrics.year': -1, 'metrics.month': -1 })
+      .limit(parseInt(months));
+    
+    const trendData = [];
+    const locationName = locationId.charAt(0).toUpperCase() + locationId.slice(1).replace('-', ' ') + ' Kenworth';
+    
+    for (const record of allMetrics) {
+      const location = record.metrics.locations?.find(loc => 
+        loc.locationId === locationId || loc.name === locationName
+      );
+      
+      if (location && location[metric] !== undefined) {
+        trendData.push({
+          month: record.metrics.month,
+          year: record.metrics.year,
+          value: location[metric],
+          date: `${record.metrics.year}-${String(getMonthNumber(record.metrics.month)).padStart(2, '0')}-01`,
+          fileName: record.metrics.fileName,
+          uploadedAt: record.metrics.uploadedAt
+        });
+      }
+    }
+    
+    // Calculate trend analysis
+    const analysis = calculateTrendAnalysis(trendData, metric);
+    
+    res.json({
+      success: true,
+      data: {
+        locationId,
+        locationName,
+        metric,
+        trendData: trendData.reverse(), // Oldest first for charts
+        analysis,
+        dataPoints: trendData.length
+      }
+    });
+  } catch (error) {
+    console.error('Get trend data error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// GET /api/location-metrics/history - Get all historical months available
+router.get('/history', async (req, res) => {
+  try {
+    const allMetrics = await LocationMetric.find({}, 'metrics.month metrics.year metrics.fileName metrics.uploadedAt')
+      .sort({ 'metrics.year': -1, 'metrics.month': -1 });
+    
+    const history = allMetrics.map(record => ({
+      month: record.metrics.month,
+      year: record.metrics.year,
+      fileName: record.metrics.fileName,
+      uploadedAt: record.metrics.uploadedAt,
+      id: record._id
+    }));
+    
+    res.json({
+      success: true,
+      data: {
+        history,
+        totalRecords: history.length,
+        dateRange: history.length > 0 ? {
+          latest: `${history[0].month} ${history[0].year}`,
+          earliest: `${history[history.length - 1].month} ${history[history.length - 1].year}`
+        } : null
+      }
+    });
+  } catch (error) {
+    console.error('Get history error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// GET /api/location-metrics/compare - Compare metrics across time periods
+router.get('/compare', async (req, res) => {
+  try {
+    const { months = 6, locationId } = req.query;
+    
+    // Get recent historical data
+    const recentMetrics = await LocationMetric.find()
+      .sort({ 'metrics.year': -1, 'metrics.month': -1 })
+      .limit(parseInt(months));
+    
+    const comparison = {};
+    
+    for (const record of recentMetrics) {
+      const periodKey = `${record.metrics.month} ${record.metrics.year}`;
+      
+      if (locationId) {
+        // Single location comparison
+        const location = record.metrics.locations?.find(loc => 
+          loc.locationId === locationId
+        );
+        if (location) {
+          comparison[periodKey] = location;
+        }
+      } else {
+        // All locations comparison
+        comparison[periodKey] = {
+          dealership: record.metrics.dealership,
+          locations: record.metrics.locations,
+          summary: calculatePeriodSummary(record.metrics.locations)
+        };
+      }
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        comparison,
+        periods: Object.keys(comparison),
+        locationId: locationId || 'all'
+      }
+    });
+  } catch (error) {
+    console.error('Get comparison error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// Helper function to convert month names to numbers
+function getMonthNumber(monthName) {
+  const months = {
+    'January': 1, 'February': 2, 'March': 3, 'April': 4,
+    'May': 5, 'June': 6, 'July': 7, 'August': 8,
+    'September': 9, 'October': 10, 'November': 11, 'December': 12
+  };
+  return months[monthName] || 1;
+}
+
+// Helper function to calculate trend analysis
+function calculateTrendAnalysis(trendData, metric) {
+  if (trendData.length < 2) {
+    return {
+      trend: 'insufficient_data',
+      direction: 'stable',
+      change: 0,
+      description: 'Not enough historical data for trend analysis'
+    };
+  }
+  
+  // Get numeric values (handle percentages)
+  const values = trendData.map(d => {
+    let val = d.value;
+    if (typeof val === 'string') {
+      val = parseFloat(val.replace('%', '')) || 0;
+    }
+    return val;
+  });
+  
+  const latest = values[values.length - 1];
+  const previous = values[values.length - 2];
+  const oldest = values[0];
+  
+  const recentChange = latest - previous;
+  const overallChange = latest - oldest;
+  const avgValue = values.reduce((sum, val) => sum + val, 0) / values.length;
+  
+  // Determine trend direction
+  let direction = 'stable';
+  let trend = 'stable';
+  
+  if (Math.abs(recentChange) > avgValue * 0.05) { // 5% threshold
+    direction = recentChange > 0 ? 'increasing' : 'decreasing';
+  }
+  
+  if (Math.abs(overallChange) > avgValue * 0.1) { // 10% threshold for overall trend
+    trend = overallChange > 0 ? 'improving' : 'declining';
+  }
+  
+  // For metrics where lower is better (like triage hours, dwell times)
+  const lowerIsBetter = ['triageHours', 'smMonthlyDwellAvg', 'smYtdDwellAvgDays', 'rdsMonthlyAvgDays', 'rdsYtdDwellAvgDays'];
+  if (lowerIsBetter.includes(metric)) {
+    if (trend === 'improving') trend = 'declining';
+    else if (trend === 'declining') trend = 'improving';
+  }
+  
+  return {
+    trend,
+    direction,
+    recentChange,
+    overallChange,
+    avgValue: avgValue.toFixed(2),
+    dataPoints: values.length,
+    description: generateTrendDescription(trend, direction, recentChange, overallChange, metric)
+  };
+}
+
+// Helper function to generate trend descriptions
+function generateTrendDescription(trend, direction, recentChange, overallChange, metric) {
+  const metricNames = {
+    'vscCaseRequirements': 'VSC Case Requirements',
+    'vscClosedCorrectly': 'VSC Closed Correctly',
+    'ttActivation': 'TT+ Activation',
+    'smMonthlyDwellAvg': 'SM Monthly Dwell Average',
+    'smYtdDwellAvgDays': 'SM YTD Dwell Average',
+    'triagePercentLess4Hours': 'Triage % < 4 Hours',
+    'triageHours': 'SM Average Triage Hours',
+    'etrPercentCases': 'ETR % of Cases',
+    'percentCasesWith3Notes': '% Cases with 3+ Notes',
+    'rdsMonthlyAvgDays': 'RDS Dwell Monthly Average',
+    'rdsYtdDwellAvgDays': 'RDS YTD Dwell Average'
+  };
+  
+  const metricName = metricNames[metric] || metric;
+  const changeStr = Math.abs(recentChange).toFixed(2);
+  
+  if (trend === 'stable') {
+    return `${metricName} has remained stable with minimal variation over time.`;
+  } else if (trend === 'improving') {
+    return `${metricName} shows improving trend with recent ${direction === 'increasing' ? 'increase' : 'decrease'} of ${changeStr}.`;
+  } else {
+    return `${metricName} shows declining trend with recent ${direction === 'increasing' ? 'increase' : 'decrease'} of ${changeStr}.`;
+  }
+}
+
+// Helper function to calculate period summary
+function calculatePeriodSummary(locations) {
+  if (!locations || locations.length === 0) return null;
+  
+  const summary = {
+    totalLocations: locations.length,
+    averages: {}
+  };
+  
+  // Calculate averages across all locations for key metrics
+  const numericMetrics = ['smMonthlyDwellAvg', 'smYtdDwellAvgDays', 'triageHours', 'rdsMonthlyAvgDays', 'rdsYtdDwellAvgDays'];
+  const percentageMetrics = ['vscCaseRequirements', 'vscClosedCorrectly', 'ttActivation', 'triagePercentLess4Hours', 'etrPercentCases', 'percentCasesWith3Notes'];
+  
+  [...numericMetrics, ...percentageMetrics].forEach(metric => {
+    const values = locations.map(loc => {
+      let val = loc[metric];
+      if (typeof val === 'string') {
+        val = parseFloat(val.replace('%', '')) || 0;
+      }
+      return val;
+    }).filter(val => !isNaN(val) && val > 0);
+    
+    if (values.length > 0) {
+      const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
+      summary.averages[metric] = percentageMetrics.includes(metric) ? `${avg.toFixed(1)}%` : avg.toFixed(2);
+    }
+  });
+  
+  return summary;
+}
+
 // GET /api/location-metrics - Get latest metrics
 router.get('/', async (req, res) => {
   try {
-    const latest = await LocationMetric.findOne().sort({ uploadedAt: -1 });
+    const latest = await LocationMetric.findOne().sort({ 'metrics.year': -1, 'metrics.month': -1 });
     if (!latest) {
       return res.status(404).json({ 
         success: false, 

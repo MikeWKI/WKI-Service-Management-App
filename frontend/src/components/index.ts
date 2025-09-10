@@ -22,3 +22,6 @@ export { default as LocationSpecificMetrics } from './LocationSpecificMetrics';
 export { default as CampaignMetrics } from './CampaignMetrics';
 export { default as ErrorBoundary } from './ErrorBoundary';
 export { default as FeedbackPanel } from './FeedbackPanel';
+export { default as TrendModal } from './TrendModal';
+export { default as TrendIndicator } from './TrendIndicator';
+export { default as HistoricalDashboard } from './HistoricalDashboard';

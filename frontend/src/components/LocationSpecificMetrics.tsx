@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Clock, Users, CheckCircle, AlertTriangle, TrendingUp, TrendingDown, BarChart3, Target, Calendar, Award, Zap, Activity, FileText, Timer, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import TrendIndicator from './TrendIndicator';
 
 interface MetricCard {
   title: string;
@@ -87,6 +88,25 @@ const addPercentageIfNeeded = (value: string): string => {
     return `${value}%`;
   }
   return value;
+};
+
+// Helper function to map metric titles to backend field names
+const getMetricFieldName = (title: string): string => {
+  const metricMapping: Record<string, string> = {
+    'VSC Case Requirements': 'vscCaseRequirements',
+    'VSC Closed Correctly': 'vscClosedCorrectly',
+    'TT+ Activation': 'ttActivation',
+    'SM Monthly Dwell Avg': 'smMonthlyDwellAvg',
+    'SM YTD Dwell Avg Days': 'smYtdDwellAvgDays',
+    'Triage % < 4 Hours': 'triagePercentLess4Hours',
+    'SM Average Triage Hours': 'triageHours',
+    'ETR % of Cases': 'etrPercentCases',
+    '% Cases with 3+ Notes': 'percentCasesWith3Notes',
+    'RDS Dwell Monthly Avg Days': 'rdsMonthlyAvgDays',
+    'RDS YTD Dwell Avg Days': 'rdsYtdDwellAvgDays'
+  };
+  
+  return metricMapping[title] || title.toLowerCase().replace(/[^a-z0-9]/g, '');
 };
 
 // This would be dynamically loaded from uploaded scorecard data
@@ -820,16 +840,19 @@ export default function LocationSpecificMetrics({ locationId, locationName, loca
                       <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
                         {metric.icon}
                       </div>
-                      <div className="flex flex-col items-end">
+                      <div className="flex flex-col items-end space-y-2">
                         <span className={`${getStatusTextColor(metric.status)} text-sm font-medium capitalize`}>
                           {metric.status}
                         </span>
-                        {metric.trend && (
-                          <div className="flex items-center space-x-1 mt-1">
-                            {getTrendIcon(metric.trend)}
-                            <span className="text-white/80 text-xs">{metric.trend}</span>
-                          </div>
-                        )}
+                        <TrendIndicator
+                          locationId={locationId}
+                          locationName={locationName}
+                          metric={getMetricFieldName(metric.title)}
+                          metricDisplayName={metric.title}
+                          currentValue={metric.value}
+                          target={metric.target}
+                          className="scale-90"
+                        />
                       </div>
                     </div>
                     
@@ -867,9 +890,20 @@ export default function LocationSpecificMetrics({ locationId, locationName, loca
                       <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
                         {React.cloneElement(metric.icon as React.ReactElement, { className: "w-5 h-5 text-white" })}
                       </div>
-                      <span className={`${getStatusTextColor(metric.status)} text-xs font-medium capitalize`}>
-                        {metric.status}
-                      </span>
+                      <div className="flex flex-col items-end space-y-1">
+                        <span className={`${getStatusTextColor(metric.status)} text-xs font-medium capitalize`}>
+                          {metric.status}
+                        </span>
+                        <TrendIndicator
+                          locationId={locationId}
+                          locationName={locationName}
+                          metric={getMetricFieldName(metric.title)}
+                          metricDisplayName={metric.title}
+                          currentValue={metric.value}
+                          target={metric.target}
+                          className="scale-75"
+                        />
+                      </div>
                     </div>
                     
                     <h3 className="text-sm font-bold text-white mb-2">{metric.title}</h3>
@@ -906,9 +940,20 @@ export default function LocationSpecificMetrics({ locationId, locationName, loca
                       <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
                         {React.cloneElement(metric.icon as React.ReactElement, { className: "w-5 h-5 text-white" })}
                       </div>
-                      <span className={`${getStatusTextColor(metric.status)} text-xs font-medium capitalize`}>
-                        {metric.status}
-                      </span>
+                      <div className="flex flex-col items-end space-y-1">
+                        <span className={`${getStatusTextColor(metric.status)} text-xs font-medium capitalize`}>
+                          {metric.status}
+                        </span>
+                        <TrendIndicator
+                          locationId={locationId}
+                          locationName={locationName}
+                          metric={getMetricFieldName(metric.title)}
+                          metricDisplayName={metric.title}
+                          currentValue={metric.value}
+                          target={metric.target}
+                          className="scale-75"
+                        />
+                      </div>
                     </div>
                     
                     <h3 className="text-sm font-bold text-white mb-2">{metric.title}</h3>

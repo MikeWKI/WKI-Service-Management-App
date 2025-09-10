@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Users, Wrench, Package, BarChart3, Upload, MapPin } from 'lucide-react';
+import { Users, Wrench, Package, BarChart3, Upload, MapPin, TrendingUp } from 'lucide-react';
 
 interface RoleOption {
   id: string;
@@ -147,6 +147,14 @@ export default function MetricsRoleSelection() {
           >
             <Upload className="w-5 h-5 mr-2" />
             Upload Monthly Scorecards
+          </Link>
+
+          <Link 
+            to="/metrics/trends"
+            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-700 text-white font-medium rounded-lg hover:from-orange-700 hover:to-orange-800 transition-all duration-200 shadow-lg hover:shadow-orange-500/25"
+          >
+            <TrendingUp className="w-5 h-5 mr-2" />
+            Historical Trends Dashboard
           </Link>
 
           <Link 
