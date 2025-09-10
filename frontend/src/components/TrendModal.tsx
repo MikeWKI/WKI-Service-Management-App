@@ -153,9 +153,6 @@ const TrendModal: React.FC<TrendModalProps> = ({
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         backdropFilter: 'blur(4px)',
         zIndex: 10000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
         margin: 0,
         padding: 0,
         boxSizing: 'border-box'
@@ -168,6 +165,10 @@ const TrendModal: React.FC<TrendModalProps> = ({
     >
       <div 
         style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
           width: '90vw',
           maxWidth: '1200px',
           height: '85vh',
@@ -180,15 +181,11 @@ const TrendModal: React.FC<TrendModalProps> = ({
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          position: 'relative',
           transition: 'none',
           flexShrink: 0,
           flexGrow: 0,
           boxSizing: 'border-box',
-          margin: 0,
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)'
+          margin: 0
         }}
         onMouseEnter={(e) => e.stopPropagation()}
         onMouseLeave={(e) => e.stopPropagation()}

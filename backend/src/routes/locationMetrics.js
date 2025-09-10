@@ -518,34 +518,76 @@ function getExpectedCampaignRates() {
   };
 }
 
-// GET /api/location-metrics/debug - Debug current database state
+// GET /api/location-metrics/debug - Debug current database state (for cloud deployment)
 router.get('/debug', async (req, res) => {
   try {
+    console.log('🔍 Starting database debug...');
+    
     const allRecords = await LocationMetric.find().lean();
+    console.log(`Found ${allRecords.length} total records`);
     
     const debug = {
       totalRecords: allRecords.length,
+      connectionStatus: 'Connected to MongoDB',
       records: allRecords.map(record => ({
         id: record._id,
         month: record.metrics?.month,
         year: record.metrics?.year,
         fileName: record.metrics?.fileName,
         locationsCount: record.metrics?.locations?.length,
+        uploadedAt: record.uploadedAt,
         sampleLocationData: record.metrics?.locations?.[0] ? {
           name: record.metrics.locations[0].name,
           vscCaseRequirements: record.metrics.locations[0].vscCaseRequirements,
-          vscClosedCorrectly: record.metrics.locations[0].vscClosedCorrectly
+          vscClosedCorrectly: record.metrics.locations[0].vscClosedCorrectly,
+          triageHours: record.metrics.locations[0].triageHours
         } : null
       })),
       uniqueMonths: [...new Set(allRecords.map(r => `${r.metrics?.month} ${r.metrics?.year}`))],
       dataVariation: {
-        explanation: 'If all VSC Case Requirements values are the same, trends will be flat',
-        wichitaVSCValues: allRecords.map(r => {
+        explanation: 'Checking if all values are identical (causing flat trends)',
+        wichitaData: allRecords.map((r, index) => {
           const wichita = r.metrics?.locations?.find(loc => loc.name === 'Wichita Kenworth');
-          return wichita?.vscCaseRequirements || 'N/A';
+          return {
+            month: `${r.metrics?.month} ${r.metrics?.year}`,
+            vscCaseRequirements: wichita?.vscCaseRequirements || 'N/A',
+            triageHours: wichita?.triageHours || 'N/A'
+          };
         })
+      },
+      diagnosis: {
+        hasData: allRecords.length > 0,
+        hasMultipleMonths: allRecords.length > 1,
+        dataVariationExists: false // Will be calculated below
       }
     };
+    
+    // Check if data varies between months
+    if (allRecords.length > 1) {
+      const firstRecord = allRecords[0];
+      const firstWichita = firstRecord.metrics?.locations?.find(loc => loc.name === 'Wichita Kenworth');
+      
+      let hasVariation = false;
+      for (let i = 1; i < allRecords.length; i++) {
+        const currentWichita = allRecords[i].metrics?.locations?.find(loc => loc.name === 'Wichita Kenworth');
+        if (currentWichita?.vscCaseRequirements !== firstWichita?.vscCaseRequirements) {
+          hasVariation = true;
+          break;
+        }
+      }
+      
+      debug.diagnosis.dataVariationExists = hasVariation;
+      
+      if (!hasVariation) {
+        debug.diagnosis.problem = 'All months have identical values - this causes flat trends';
+        debug.diagnosis.solution = 'Upload different PDF scorecards with varying performance data';
+      } else {
+        debug.diagnosis.status = 'Data varies properly - trends should work';
+      }
+    } else {
+      debug.diagnosis.problem = 'Need at least 2 months of data for trends';
+      debug.diagnosis.solution = 'Upload scorecards for multiple months';
+    }
     
     res.json({
       success: true,
@@ -555,7 +597,8 @@ router.get('/debug', async (req, res) => {
     console.error('Debug error:', error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
