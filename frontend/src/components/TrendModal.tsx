@@ -11,7 +11,6 @@ interface TrendModalProps {
   locationName: string;
   metric: string;
   metricDisplayName: string;
-  currentValue: string;
   target?: string;
 }
 
@@ -29,7 +28,6 @@ const TrendModal: React.FC<TrendModalProps> = ({
   locationName,
   metric,
   metricDisplayName,
-  currentValue,
   target
 }) => {
   const [trendData, setTrendData] = useState<TrendAnalysis | null>(null);
@@ -317,7 +315,12 @@ const TrendModal: React.FC<TrendModalProps> = ({
                     <span className="text-slate-400 text-sm">Current Value</span>
                     <Target className="w-4 h-4 text-slate-400" />
                   </div>
-                  <div className="text-2xl font-bold text-white">{currentValue}</div>
+                  <div className="text-2xl font-bold text-white">
+                    {trendData?.currentValue !== undefined ? formatValue(trendData.currentValue) : 'Loading...'}
+                  </div>
+                  <div className="text-sm text-slate-300">
+                    {trendData?.currentPeriod || 'Loading period...'}
+                  </div>
                   {target && <div className="text-sm text-slate-300">Target: {target}</div>}
                 </div>
 

@@ -123,7 +123,6 @@ const TrendIndicator: React.FC<TrendIndicatorProps> = ({
           locationName={locationName}
           metric={metric}
           metricDisplayName={metricDisplayName}
-          currentValue={currentValue}
           target={target}
         />
       )}

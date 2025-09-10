@@ -1,5 +1,5 @@
 // Trend Data API Service
-const API_BASE_URL = 'https://wki-service-management-app.onrender.com';
+const API_BASE_URL = 'https://wki-sma.onrender.com';
 
 export interface TrendDataPoint {
   month: string;
@@ -11,6 +11,8 @@ export interface TrendDataPoint {
 export interface TrendAnalysis {
   metric: string;
   locationId: string;
+  currentValue: number;
+  currentPeriod: string;
   trend: 'improving' | 'declining' | 'stable';
   trendDirection: number; // Positive for improving, negative for declining
   dataPoints: TrendDataPoint[];
@@ -201,6 +203,8 @@ const buildTrendFromUploadedData = async (
       data: {
         metric,
         locationId,
+        currentValue: lastValue,
+        currentPeriod: `${dataPoints[dataPoints.length - 1]?.month} ${dataPoints[dataPoints.length - 1]?.year}`,
         trend: trendDirection > 2 ? 'improving' : trendDirection < -2 ? 'declining' : 'stable',
         trendDirection,
         dataPoints,
@@ -217,6 +221,8 @@ const buildTrendFromUploadedData = async (
       data: {
         metric,
         locationId,
+        currentValue: 0,
+        currentPeriod: 'No data',
         trend: 'stable',
         trendDirection: 0,
         dataPoints: [],
