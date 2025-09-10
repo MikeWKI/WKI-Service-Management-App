@@ -856,31 +856,49 @@ function extractLocationMetrics(text, locationName, locationNames) {
       console.log(`Found ${locationName} data line: "${line}"`);
       
       // Try to extract metrics from this line
-      // The format should be: LocationName <metrics separated by spaces/tabs>
-      const cleanLine = line.replace(locationName, '').trim();
-      console.log(`Clean metrics line: "${cleanLine}"`);
-      
-      // Extract all numeric values and percentages
-      const metrics = cleanLine.match(/(\d+%|\d+\.\d+|\d+|N\/A)/gi) || [];
-      console.log(`Extracted metrics: [${metrics.join(', ')}]`);
-      
-      if (metrics.length >= 11) {
-        // Map to corrected field order based on actual PDF structure
-        locationData = {
-          vscCaseRequirements: metrics[0] || 'N/A',      // Col 1: VSC Case Requirements
-          vscClosedCorrectly: metrics[1] || 'N/A',       // Col 2: VSC Closed Correctly 
-          ttActivation: metrics[2] || 'N/A',             // Col 3: TT+ Activation
-          smMonthlyDwellAvg: metrics[3] || 'N/A',        // Col 4: SM Monthly Dwell Avg
-          smYtdDwellAvgDays: metrics[4] || 'N/A',        // Col 5: SM YTD Dwell Avg Days
-          triagePercentLess4Hours: metrics[5] || 'N/A',  // Col 6: Triage % < 4 Hours
-          triageHours: metrics[6] || 'N/A',              // Col 7: SM Average Triage Hours
-          etrPercentCases: metrics[7] ? (metrics[7].includes('%') ? metrics[7] : `${metrics[7]}%`) : 'N/A', // Col 8: ETR % of Cases
-          percentCasesWith3Notes: metrics[8] ? (metrics[8].includes('%') ? metrics[8] : `${metrics[8]}%`) : 'N/A', // Col 9: % Cases with 3+ Notes
-          rdsMonthlyAvgDays: metrics[9] || 'N/A',        // Col 10: RDS Dwell Monthly Avg Days
-          rdsYtdDwellAvgDays: metrics[10] || 'N/A'       // Col 11: RDS YTD Dwell Avg Days
-        };
-        console.log(`✅ Successfully parsed ${locationName} from PDF`);
-        break;
+      // Find the location name in the line and extract everything after it
+      const locationIndex = line.toLowerCase().indexOf(locationName.toLowerCase());
+      if (locationIndex !== -1) {
+        const afterLocation = line.substring(locationIndex + locationName.length).trim();
+        console.log(`Text after location name: "${afterLocation}"`);
+        
+        // More comprehensive regex to capture all numeric values, percentages, and N/A
+        const metrics = afterLocation.match(/(?:N\/A|\d+(?:\.\d+)?%?)/g) || [];
+        console.log(`Extracted metrics: [${metrics.join(', ')}]`);
+        console.log(`Metrics count: ${metrics.length}`);
+        
+        // Also try a different approach - split by whitespace and filter
+        const splitMetrics = afterLocation.split(/\s+/).filter(item => {
+          return /^(?:N\/A|\d+(?:\.\d+)?%?)$/.test(item.trim());
+        });
+        console.log(`Split metrics: [${splitMetrics.join(', ')}]`);
+        console.log(`Split metrics count: ${splitMetrics.length}`);
+        
+        if (splitMetrics.length >= 8 || metrics.length >= 8) {
+          // Use the better extraction method
+          const finalMetrics = splitMetrics.length >= metrics.length ? splitMetrics : metrics;
+          console.log(`Using ${splitMetrics.length >= metrics.length ? 'split' : 'regex'} method with ${finalMetrics.length} metrics`);
+          
+          // Map to corrected field order based on actual PDF structure from June data:
+          // Wichita Kenworth   96%   81%   99%   1.9   0.7%   5 85.0%   1.4% 1 1.7   5.6
+          locationData = {
+            vscCaseRequirements: finalMetrics[0] || 'N/A',      // Col 1: 96% - VSC Case Requirements
+            vscClosedCorrectly: finalMetrics[1] || 'N/A',       // Col 2: 81% - VSC Closed Correctly 
+            ttActivation: finalMetrics[2] || 'N/A',             // Col 3: 99% - TT+ Activation
+            smMonthlyDwellAvg: finalMetrics[3] || 'N/A',        // Col 4: 1.9 - SM Monthly Dwell Avg
+            etrPercentCases: finalMetrics[4] ? (finalMetrics[4].includes('%') ? finalMetrics[4] : `${finalMetrics[4]}%`) : 'N/A', // Col 5: 0.7% - ETR % of Cases
+            rdsMonthlyAvgDays: finalMetrics[5] || 'N/A',        // Col 6: 5 - RDS Monthly Avg Days
+            triagePercentLess4Hours: finalMetrics[6] || 'N/A',  // Col 7: 85.0% - Triage % < 4 Hours
+            percentCasesWith3Notes: finalMetrics[7] ? (finalMetrics[7].includes('%') ? finalMetrics[7] : `${finalMetrics[7]}%`) : 'N/A', // Col 8: 1.4% - % Cases with 3+ Notes
+            triageHours: finalMetrics.length > 9 ? finalMetrics[9] : finalMetrics[8] || 'N/A',              // Col 10: 1.7 - SM Average Triage Hours
+            smYtdDwellAvgDays: finalMetrics[3] || 'N/A',        // Use same as monthly for now
+            rdsYtdDwellAvgDays: finalMetrics.length > 10 ? finalMetrics[10] : finalMetrics[finalMetrics.length - 1] || 'N/A'       // Last metric: 5.6 - RDS YTD Dwell Avg Days
+          };
+          console.log(`✅ Successfully parsed ${locationName} from PDF`);
+          break;
+        } else {
+          console.log(`⚠️ Only found ${Math.max(splitMetrics.length, metrics.length)} metrics, need at least 8`);
+        }
       }
     }
   }
