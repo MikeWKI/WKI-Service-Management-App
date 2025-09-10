@@ -144,14 +144,20 @@ const TrendModal: React.FC<TrendModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
       style={{ 
         position: 'fixed',
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
-        zIndex: 9999
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backdropFilter: 'blur(4px)',
+        zIndex: 9999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '16px',
+        boxSizing: 'border-box'
       }}
       onClick={(e) => {
         if (e.target === e.currentTarget) {
@@ -160,33 +166,84 @@ const TrendModal: React.FC<TrendModalProps> = ({
       }}
     >
       <div 
-        className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl border border-slate-700 shadow-2xl flex flex-col overflow-hidden"
         style={{
           width: '95vw',
           maxWidth: '1200px',
           height: '90vh',
           minHeight: '600px',
+          maxHeight: '90vh',
+          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+          borderRadius: '16px',
+          border: '1px solid #475569',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
           position: 'relative',
           transform: 'none',
-          transition: 'none'
+          transition: 'none',
+          flexShrink: 0,
+          flexGrow: 0,
+          boxSizing: 'border-box'
         }}
         onMouseEnter={(e) => e.stopPropagation()}
         onMouseLeave={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-700 flex-shrink-0">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+        <div 
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '24px',
+            borderBottom: '1px solid #475569',
+            flexShrink: 0,
+            boxSizing: 'border-box'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div 
+              style={{
+                width: '48px',
+                height: '48px',
+                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
               <Activity className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-white">{metricDisplayName}</h2>
-              <p className="text-slate-300">{locationName} - Trend Analysis</p>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: 'white', margin: 0 }}>
+                {metricDisplayName}
+              </h2>
+              <p style={{ color: '#cbd5e1', margin: 0, marginTop: '4px' }}>
+                {locationName} - Trend Analysis
+              </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg bg-slate-700 hover:bg-slate-600 flex items-center justify-center transition-colors"
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              backgroundColor: '#475569',
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              (e.target as HTMLElement).style.backgroundColor = '#64748b';
+            }}
+            onMouseLeave={(e) => {
+              (e.target as HTMLElement).style.backgroundColor = '#475569';
+            }}
           >
             <X className="w-5 h-5 text-slate-300" />
           </button>
@@ -194,11 +251,13 @@ const TrendModal: React.FC<TrendModalProps> = ({
 
         {/* Content */}
         <div 
-          className="flex-1 overflow-y-auto p-6"
           style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: '24px',
             minHeight: 0,
             position: 'relative',
-            flex: '1 1 auto'
+            boxSizing: 'border-box'
           }}
         >
           {loading && (
@@ -291,16 +350,35 @@ const TrendModal: React.FC<TrendModalProps> = ({
 
               {/* Chart */}
               {chartData.length > 0 && (
-                <div className="bg-slate-800/50 rounded-lg p-6 border border-slate-700 mb-6">
-                  <h3 className="text-lg font-semibold text-white mb-4">Trend Chart</h3>
+                <div 
+                  style={{
+                    backgroundColor: 'rgba(30, 41, 59, 0.5)',
+                    borderRadius: '8px',
+                    padding: '24px',
+                    border: '1px solid #475569',
+                    marginBottom: '24px',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <h3 style={{
+                    fontSize: '18px',
+                    fontWeight: '600',
+                    color: 'white',
+                    marginBottom: '16px',
+                    margin: 0,
+                    marginBottom: '16px'
+                  }}>
+                    Trend Chart
+                  </h3>
                   <div 
-                    className="w-full" 
                     style={{ 
+                      width: '100%',
                       height: '320px',
                       minHeight: '320px',
                       maxHeight: '320px',
                       position: 'relative',
-                      overflow: 'hidden'
+                      overflow: 'hidden',
+                      boxSizing: 'border-box'
                     }}
                   >
                     <ResponsiveContainer width="100%" height="100%">

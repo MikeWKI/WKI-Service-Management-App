@@ -778,10 +778,68 @@ router.post('/upload', upload.single('pdf'), async (req, res) => {
   }
 });
 
+// GET /api/location-metrics/{year}/{month} - Get specific month metrics (MUST be before other routes)
+router.get('/:year/:month', async (req, res) => {
+  try {
+    const { year, month } = req.params;
+    
+    // Convert various month formats to proper case
+    let monthName;
+    if (month.length <= 2) {
+      // Handle numeric month (04, 4, etc.)
+      const monthNum = parseInt(month);
+      const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+      monthName = monthNames[monthNum - 1];
+    } else {
+      // Handle month name (april, April, APRIL, etc.)
+      monthName = month.charAt(0).toUpperCase() + month.slice(1).toLowerCase();
+    }
+    
+    console.log(`Getting metrics for ${monthName} ${year}`);
+    
+    const metrics = await LocationMetric.findOne({
+      'metrics.month': monthName,
+      'metrics.year': parseInt(year)
+    });
+    
+    if (!metrics) {
+      console.log(`No metrics found for ${monthName} ${year}. Available months:`, 
+        await LocationMetric.find({}, 'metrics.month metrics.year').lean()
+      );
+      return res.status(404).json({ 
+        success: false, 
+        error: `No metrics found for ${monthName} ${year}` 
+      });
+    }
+    
+    res.json({ 
+      success: true, 
+      data: {
+        dealership: metrics.metrics.dealership,
+        locations: metrics.metrics.locations,
+        extractedAt: metrics.metrics.extractedAt,
+        month: metrics.metrics.month,
+        year: metrics.metrics.year,
+        fileName: metrics.metrics.fileName,
+        uploadedAt: metrics.metrics.uploadedAt
+      }
+    });
+  } catch (error) {
+    console.error('Get specific month metrics error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
 // GET /api/location-metrics/campaigns - Get campaign completion rates
 router.get('/campaigns', async (req, res) => {
   try {
-    const latest = await LocationMetric.findOne().sort({ uploadedAt: -1 });
+    const latest = await LocationMetric.findOne().sort({ 'metrics.year': -1, 'metrics.month': -1 });
     if (!latest) {
       return res.status(404).json({ 
         success: false, 
@@ -819,15 +877,28 @@ router.get('/trends/:locationId/:metric', async (req, res) => {
     
     console.log(`Getting trend data for ${locationId} - ${metric} (last ${months} months)`);
     
-    // Get all historical metrics, sorted by date
+    // Get all historical metrics, sorted by date (chronological order)
     const allMetrics = await LocationMetric.find()
-      .sort({ 'metrics.year': 1, 'metrics.month': 1 }) // Oldest first for proper trend calculation
-      .limit(parseInt(months));
+      .sort({ 'metrics.year': 1 }) // Sort by year first
+      .then(docs => {
+        // Custom sort by month within each year
+        return docs.sort((a, b) => {
+          if (a.metrics.year !== b.metrics.year) {
+            return a.metrics.year - b.metrics.year;
+          }
+          return getMonthNumber(a.metrics.month) - getMonthNumber(b.metrics.month);
+        });
+      });
+    
+    // Take only the last N months
+    const recentMetrics = allMetrics.slice(-parseInt(months));
     
     const dataPoints = [];
     const locationName = locationId.charAt(0).toUpperCase() + locationId.slice(1).replace('-', ' ') + ' Kenworth';
     
-    for (const record of allMetrics) {
+    console.log(`Processing ${recentMetrics.length} records for trend analysis`);
+    
+    for (const record of recentMetrics) {
       const location = record.metrics.locations?.find(loc => 
         loc.locationId === locationId || loc.name === locationName
       );
@@ -848,9 +919,12 @@ router.get('/trends/:locationId/:metric', async (req, res) => {
             value: value,
             uploadDate: record.metrics.uploadedAt || record.metrics.extractedAt
           });
+          console.log(`Added data point: ${record.metrics.month} ${record.metrics.year} = ${value}`);
         }
       }
     }
+    
+    console.log(`Found ${dataPoints.length} valid data points for trend analysis`);
     
     // Calculate trend analysis
     const analysis = calculateAdvancedTrendAnalysis(dataPoints, metric);
@@ -1326,80 +1400,6 @@ function calculatePeriodSummary(locations) {
   return summary;
 }
 
-// GET /api/location-metrics/{year}/{month} - Get specific month metrics
-router.get('/:year/:month', async (req, res) => {
-  try {
-    const { year, month } = req.params;
-    
-    // Convert month name to proper case (April, May, etc.)
-    const monthName = month.charAt(0).toUpperCase() + month.slice(1).toLowerCase();
-    
-    console.log(`Getting metrics for ${monthName} ${year}`);
-    
-    const metrics = await LocationMetric.findOne({
-      'metrics.month': monthName,
-      'metrics.year': parseInt(year)
-    });
-    
-    if (!metrics) {
-      return res.status(404).json({ 
-        success: false, 
-        error: `No metrics found for ${monthName} ${year}` 
-      });
-    }
-    
-    res.json({ 
-      success: true, 
-      data: {
-        dealership: metrics.metrics.dealership,
-        locations: metrics.metrics.locations,
-        extractedAt: metrics.metrics.extractedAt,
-        month: metrics.metrics.month,
-        year: metrics.metrics.year,
-        fileName: metrics.metrics.fileName,
-        uploadedAt: metrics.metrics.uploadedAt
-      }
-    });
-  } catch (error) {
-    console.error('Get specific month metrics error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
-    });
-  }
-});
-
-// GET /api/location-metrics - Get latest metrics
-router.get('/', async (req, res) => {
-  try {
-    const latest = await LocationMetric.findOne().sort({ 'metrics.year': -1, 'metrics.month': -1 });
-    if (!latest) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'No metrics found' 
-      });
-    }
-    res.json({ 
-      success: true, 
-      data: {
-        dealership: latest.metrics.dealership,
-        locations: latest.metrics.locations,
-        extractedAt: latest.metrics.extractedAt,
-        month: latest.metrics.month,
-        year: latest.metrics.year,
-        fileName: latest.metrics.fileName,
-        uploadedAt: latest.metrics.uploadedAt
-      }
-    });
-  } catch (error) {
-    console.error('Get metrics error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
-    });
-  }
-});
-
 // GET /api/location-metrics/batch - Get multiple months of data efficiently
 router.get('/batch', async (req, res) => {
   try {
@@ -1576,6 +1576,37 @@ router.get('/validation', async (req, res) => {
     });
   } catch (error) {
     console.error('Get validation error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// GET /api/location-metrics - Get latest metrics (MUST be last to avoid conflicts)
+router.get('/', async (req, res) => {
+  try {
+    const latest = await LocationMetric.findOne().sort({ 'metrics.year': -1, 'metrics.month': -1 });
+    if (!latest) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'No metrics found' 
+      });
+    }
+    res.json({ 
+      success: true, 
+      data: {
+        dealership: latest.metrics.dealership,
+        locations: latest.metrics.locations,
+        extractedAt: latest.metrics.extractedAt,
+        month: latest.metrics.month,
+        year: latest.metrics.year,
+        fileName: latest.metrics.fileName,
+        uploadedAt: latest.metrics.uploadedAt
+      }
+    });
+  } catch (error) {
+    console.error('Get metrics error:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message 
