@@ -111,10 +111,13 @@ const getMetricFieldName = (title: string): string => {
 
 // This would be dynamically loaded from uploaded scorecard data
 const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => {
-  const API_BASE_URL = 'https://wki-service-management-app.onrender.com';
+  const API_BASE_URL = '';  // Use relative URL for same domain
   
   try {
-    // First try to fetch from backend
+    // Fetch the latest uploaded scorecard data - same source as trend data
+    console.log('Fetching latest scorecard data for cards...');
+    
+    // Try the main endpoint first (fallback to existing behavior)
     const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
     if (response.ok) {
       const data = await response.json();
