@@ -1115,7 +1115,7 @@ router.get('/campaigns', async (req, res) => {
 router.get('/trends/:locationId/:metric', async (req, res) => {
   try {
     const { locationId, metric } = req.params;
-    const { months = 12 } = req.query; // Default to 12 months of history
+    const { months = 12 } = req.query;
     
     console.log(`Getting trend data for ${locationId} - ${metric} (last ${months} months)`);
     
@@ -1123,12 +1123,18 @@ router.get('/trends/:locationId/:metric', async (req, res) => {
     const allMetrics = await LocationMetric.find()
       .sort({ 'metrics.year': 1 }) // Sort by year first
       .then(docs => {
-        // Custom sort by month within each year
+        // FIXED: Improved month sorting to ensure correct chronological order
         return docs.sort((a, b) => {
           if (a.metrics.year !== b.metrics.year) {
             return a.metrics.year - b.metrics.year;
           }
-          return getMonthNumber(a.metrics.month) - getMonthNumber(b.metrics.month);
+          // Sort by month number within the same year
+          const monthOrder = {
+            'January': 1, 'February': 2, 'March': 3, 'April': 4,
+            'May': 5, 'June': 6, 'July': 7, 'August': 8,
+            'September': 9, 'October': 10, 'November': 11, 'December': 12
+          };
+          return monthOrder[a.metrics.month] - monthOrder[b.metrics.month];
         });
       });
     
@@ -1139,8 +1145,12 @@ router.get('/trends/:locationId/:metric', async (req, res) => {
     const locationName = locationId.charAt(0).toUpperCase() + locationId.slice(1).replace('-', ' ') + ' Kenworth';
     
     console.log(`Processing ${recentMetrics.length} records for trend analysis`);
+    console.log('Metrics processing order:');
     
-    for (const record of recentMetrics) {
+    for (let i = 0; i < recentMetrics.length; i++) {
+      const record = recentMetrics[i];
+      console.log(`${i}: ${record.metrics.month} ${record.metrics.year}`);
+      
       const location = record.metrics.locations?.find(loc => 
         loc.locationId === locationId || loc.name === locationName
       );
@@ -1155,18 +1165,24 @@ router.get('/trends/:locationId/:metric', async (req, res) => {
         }
         
         if (!isNaN(value)) {
-          dataPoints.push({
+          const dataPoint = {
             month: record.metrics.month,
             year: record.metrics.year,
             value: value,
             uploadDate: record.metrics.uploadedAt || record.metrics.extractedAt
-          });
-          console.log(`Added data point: ${record.metrics.month} ${record.metrics.year} = ${value}`);
+          };
+          dataPoints.push(dataPoint);
+          console.log(`Added data point: ${record.metrics.month} ${record.metrics.year} = ${value}% (Position: ${dataPoints.length - 1})`);
         }
       }
     }
     
     console.log(`Found ${dataPoints.length} valid data points for trend analysis`);
+    console.log('Final dataPoints order:', dataPoints.map(dp => `${dp.month} ${dp.year}: ${dp.value}`));
+    
+    // FIXED: Ensure the latest data point is clearly identified
+    const latestDataPoint = dataPoints[dataPoints.length - 1];
+    console.log(`LATEST DATA POINT: ${latestDataPoint?.month} ${latestDataPoint?.year} = ${latestDataPoint?.value}`);
     
     // Calculate trend analysis
     const analysis = calculateAdvancedTrendAnalysis(dataPoints, metric);
@@ -1181,6 +1197,9 @@ router.get('/trends/:locationId/:metric', async (req, res) => {
         trendDirection: analysis.trendDirection,
         dataPoints,
         monthsOfData: dataPoints.length,
+        // FIXED: Add explicit current value for frontend
+        currentValue: latestDataPoint?.value,
+        currentPeriod: latestDataPoint ? `${latestDataPoint.month} ${latestDataPoint.year}` : null,
         analysis: {
           averageChange: analysis.averageChange,
           volatility: analysis.volatility,
