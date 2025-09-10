@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, TrendingUp, TrendingDown, Activity, Calendar, Target, AlertCircle } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { fetchTrendData, TrendAnalysis, formatTrendAnalysis, getTrendIcon, getTrendColorClass } from '../services/trendApi';
@@ -142,7 +143,7 @@ const TrendModal: React.FC<TrendModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div 
       style={{ 
         position: 'fixed',
@@ -150,12 +151,13 @@ const TrendModal: React.FC<TrendModalProps> = ({
         left: 0,
         width: '100vw',
         height: '100vh',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        backdropFilter: 'blur(4px)',
-        zIndex: 10000,
+        backgroundColor: 'rgba(0, 0, 0, 0.75)',
+        backdropFilter: 'blur(8px)',
+        zIndex: 999999,
         margin: 0,
         padding: 0,
-        boxSizing: 'border-box'
+        boxSizing: 'border-box',
+        isolation: 'isolate'
       }}
       onClick={(e) => {
         if (e.target === e.currentTarget) {
@@ -177,7 +179,7 @@ const TrendModal: React.FC<TrendModalProps> = ({
           background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
           borderRadius: '16px',
           border: '1px solid #475569',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
@@ -185,7 +187,8 @@ const TrendModal: React.FC<TrendModalProps> = ({
           flexShrink: 0,
           flexGrow: 0,
           boxSizing: 'border-box',
-          margin: 0
+          margin: 0,
+          zIndex: 1000000
         }}
         onMouseEnter={(e) => e.stopPropagation()}
         onMouseLeave={(e) => e.stopPropagation()}
@@ -467,7 +470,8 @@ const TrendModal: React.FC<TrendModalProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
