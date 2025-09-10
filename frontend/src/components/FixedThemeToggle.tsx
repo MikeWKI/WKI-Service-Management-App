@@ -12,7 +12,7 @@ export default function FixedThemeToggle() {
   const { theme, setTheme } = useTheme();
 
   return (
-    <div className="fixed bottom-4 sm:bottom-6 right-2 sm:right-6 z-50 flex items-center space-x-1 bg-slate-800/90 backdrop-blur-md rounded-lg p-1 shadow-lg border border-slate-700/50">
+    <div className="fixed bottom-4 sm:bottom-6 left-2 sm:left-6 z-50 flex items-center space-x-1 bg-slate-800/90 backdrop-blur-md rounded-lg p-1 shadow-lg border border-slate-700/50">
       {themeOptions.map((option) => (
         <button
           key={option.value}
