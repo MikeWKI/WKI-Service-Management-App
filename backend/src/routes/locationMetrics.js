@@ -521,7 +521,7 @@ function getExpectedCampaignRates() {
 // GET /api/location-metrics/debug - Debug current database state (for cloud deployment)
 router.get('/debug', async (req, res) => {
   try {
-    console.log('🔍 Starting database debug...');
+    console.log('Starting database debug...');
     
     const allRecords = await LocationMetric.find().lean();
     console.log(`Found ${allRecords.length} total records`);
@@ -798,7 +798,7 @@ function extractLocationMetrics(text, locationName, locationNames) {
       
       // If we found enough metrics, try to parse them
       if (extractedValues.length >= 8) {
-        console.log(`✅ Found enough metrics (${extractedValues.length}) - attempting to parse`);
+        console.log(`Found enough metrics (${extractedValues.length}) - attempting to parse`);
         
         // CORRECTED MAPPING based on actual PDF data:
         // From July log: "Wichita Kenworth   96%   92%   99%   2.7   1.3%   5.8 87.9%   10.1% 1.8 1.9   5.6"
@@ -831,17 +831,17 @@ function extractLocationMetrics(text, locationName, locationNames) {
           rdsYtdDwellAvgDays: extractedValues[10] || extractedValues[extractedValues.length - 1] || 'N/A' // Last column: RDS YTD Dwell Avg
         };
         
-        console.log(`✅ Successfully parsed ${locationName} from PDF:`, locationData);
+        console.log(`Successfully parsed ${locationName} from PDF:`, locationData);
         break;
       } else {
-        console.log(`⚠️ Not enough metrics found (${extractedValues.length}), continuing search`);
+        console.log(`Not enough metrics found (${extractedValues.length}), continuing search`);
       }
     }
   }
   
   // ONLY use hardcoded data if PDF parsing completely failed
   if (!locationData) {
-    console.log(`⚠️ PDF parsing COMPLETELY FAILED for ${locationName}, using hardcoded fallback`);
+    console.log(`PDF parsing COMPLETELY FAILED for ${locationName}, using hardcoded fallback`);
     
     const expectedData = {
       'Wichita Kenworth': {
@@ -900,15 +900,15 @@ function extractLocationMetrics(text, locationName, locationNames) {
     
     locationData = expectedData[locationName];
   } else {
-    console.log(`🎉 USING REAL PDF DATA for ${locationName} instead of hardcoded values!`);
+    console.log(`USING REAL PDF DATA for ${locationName} instead of hardcoded values!`);
   }
 
   if (!locationData) {
-    console.error(`❌ No data available for ${locationName}`);
+    console.error(`No data available for ${locationName}`);
     return null;
   }
 
-  console.log(`✅ Final metrics for ${locationName}:`, locationData);
+  console.log(`Final metrics for ${locationName}:`, locationData);
   console.log(`=== End ${locationName} ===\n`);
 
   return {
@@ -1111,7 +1111,7 @@ router.get('/campaigns', async (req, res) => {
   }
 });
 
-// GET /api/location-metrics/trends/:locationId/:metric - Get trend data for a specific metric
+// GET /api/location-metrics/trends/:locationId/:metric - Get trend data for a specific metric (ENHANCED VERSION)
 router.get('/trends/:locationId/:metric', async (req, res) => {
   try {
     const { locationId, metric } = req.params;
@@ -1119,73 +1119,129 @@ router.get('/trends/:locationId/:metric', async (req, res) => {
     
     console.log(`Getting trend data for ${locationId} - ${metric} (last ${months} months)`);
     
-    // Get all historical metrics, sorted by date (chronological order)
-    const allMetrics = await LocationMetric.find()
-      .sort({ 'metrics.year': 1 }) // Sort by year first
-      .then(docs => {
-        // FIXED: Improved month sorting to ensure correct chronological order
-        return docs.sort((a, b) => {
-          if (a.metrics.year !== b.metrics.year) {
-            return a.metrics.year - b.metrics.year;
-          }
-          // Sort by month number within the same year
-          const monthOrder = {
-            'January': 1, 'February': 2, 'March': 3, 'April': 4,
-            'May': 5, 'June': 6, 'July': 7, 'August': 8,
-            'September': 9, 'October': 10, 'November': 11, 'December': 12
-          };
-          return monthOrder[a.metrics.month] - monthOrder[b.metrics.month];
-        });
-      });
+    // Get ALL historical metrics first
+    const allMetrics = await LocationMetric.find().lean();
+    console.log(`Found ${allMetrics.length} total records in database`);
+    
+    // Enhanced sorting with detailed logging
+    const sortedMetrics = allMetrics.sort((a, b) => {
+      // First sort by year
+      if (a.metrics.year !== b.metrics.year) {
+        return a.metrics.year - b.metrics.year;
+      }
+      
+      // Then sort by month within the same year
+      const monthOrder = {
+        'January': 1, 'February': 2, 'March': 3, 'April': 4,
+        'May': 5, 'June': 6, 'July': 7, 'August': 8,
+        'September': 9, 'October': 10, 'November': 11, 'December': 12
+      };
+      
+      const monthA = monthOrder[a.metrics.month] || 0;
+      const monthB = monthOrder[b.metrics.month] || 0;
+      
+      return monthA - monthB;
+    });
+    
+    // Log the sorted order to verify chronological sequence
+    console.log('\nChronological order of all records:');
+    sortedMetrics.forEach((record, index) => {
+      console.log(`  ${index + 1}. ${record.metrics.month} ${record.metrics.year} (uploaded: ${record.metrics.uploadedAt})`);
+    });
     
     // Take only the last N months
-    const recentMetrics = allMetrics.slice(-parseInt(months));
+    const recentMetrics = sortedMetrics.slice(-parseInt(months));
+    console.log(`\nUsing last ${recentMetrics.length} months for trend analysis:`);
     
     const dataPoints = [];
     const locationName = locationId.charAt(0).toUpperCase() + locationId.slice(1).replace('-', ' ') + ' Kenworth';
     
-    console.log(`Processing ${recentMetrics.length} records for trend analysis`);
-    console.log('Metrics processing order:');
-    
+    // Process each record in chronological order
     for (let i = 0; i < recentMetrics.length; i++) {
       const record = recentMetrics[i];
-      console.log(`${i}: ${record.metrics.month} ${record.metrics.year}`);
+      console.log(`\nProcessing record ${i + 1}: ${record.metrics.month} ${record.metrics.year}`);
       
       const location = record.metrics.locations?.find(loc => 
         loc.locationId === locationId || loc.name === locationName
       );
       
-      if (location && location[metric] !== undefined && location[metric] !== 'N/A') {
-        let value = location[metric];
-        // Convert percentage strings to numbers
-        if (typeof value === 'string' && value.includes('%')) {
-          value = parseFloat(value.replace('%', ''));
-        } else if (typeof value === 'string') {
-          value = parseFloat(value);
-        }
+      if (location) {
+        console.log(`   Found location data for ${locationName}`);
+        console.log(`   Raw ${metric} value: "${location[metric]}"`);
         
-        if (!isNaN(value)) {
-          const dataPoint = {
-            month: record.metrics.month,
-            year: record.metrics.year,
-            value: value,
-            uploadDate: record.metrics.uploadedAt || record.metrics.extractedAt
-          };
-          dataPoints.push(dataPoint);
-          console.log(`Added data point: ${record.metrics.month} ${record.metrics.year} = ${value}% (Position: ${dataPoints.length - 1})`);
+        if (location[metric] !== undefined && location[metric] !== 'N/A') {
+          let value = location[metric];
+          
+          // Convert percentage strings to numbers
+          if (typeof value === 'string' && value.includes('%')) {
+            value = parseFloat(value.replace('%', ''));
+          } else if (typeof value === 'string') {
+            value = parseFloat(value);
+          }
+          
+          if (!isNaN(value)) {
+            const dataPoint = {
+              month: record.metrics.month,
+              year: record.metrics.year,
+              value: value,
+              uploadDate: record.metrics.uploadedAt || record.metrics.extractedAt,
+              // Add chronological position for debugging
+              chronologicalIndex: i
+            };
+            dataPoints.push(dataPoint);
+            console.log(`   Added data point: ${record.metrics.month} ${record.metrics.year} = ${value} (index: ${dataPoints.length - 1})`);
+          } else {
+            console.log(`   Invalid numeric value: "${value}"`);
+          }
+        } else {
+          console.log(`   No data for metric ${metric} (value: ${location[metric]})`);
         }
+      } else {
+        console.log(`   No location data found for ${locationName}`);
       }
     }
     
-    console.log(`Found ${dataPoints.length} valid data points for trend analysis`);
-    console.log('Final dataPoints order:', dataPoints.map(dp => `${dp.month} ${dp.year}: ${dp.value}`));
+    console.log(`\nFinal data points summary:`);
+    console.log(`   Total data points: ${dataPoints.length}`);
     
-    // FIXED: Ensure the latest data point is clearly identified
+    if (dataPoints.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: `No data found for ${locationName} - ${metric}`
+      });
+    }
+    
+    // Log all data points in order
+    dataPoints.forEach((dp, index) => {
+      console.log(`   ${index + 1}. ${dp.month} ${dp.year}: ${dp.value}`);
+    });
+    
+    // CRITICAL: Identify the latest data point
     const latestDataPoint = dataPoints[dataPoints.length - 1];
-    console.log(`LATEST DATA POINT: ${latestDataPoint?.month} ${latestDataPoint?.year} = ${latestDataPoint?.value}`);
+    console.log(`\nLATEST DATA POINT IDENTIFIED:`);
+    console.log(`   Month/Year: ${latestDataPoint.month} ${latestDataPoint.year}`);
+    console.log(`   Value: ${latestDataPoint.value}`);
+    console.log(`   Position in array: ${dataPoints.length - 1} (last element)`);
+    
+    // Double-check by finding the most recent by date
+    const mostRecentByDate = dataPoints.reduce((latest, current) => {
+      const latestDate = new Date(latest.year, getMonthNumber(latest.month) - 1);
+      const currentDate = new Date(current.year, getMonthNumber(current.month) - 1);
+      return currentDate > latestDate ? current : latest;
+    });
+    
+    console.log(`\nVERIFICATION - Most recent by date calculation:`);
+    console.log(`   Month/Year: ${mostRecentByDate.month} ${mostRecentByDate.year}`);
+    console.log(`   Value: ${mostRecentByDate.value}`);
+    console.log(`   Matches latest data point: ${latestDataPoint.month === mostRecentByDate.month && latestDataPoint.year === mostRecentByDate.year}`);
+    
+    // Use the most recent by date as a safety check
+    const confirmedLatest = mostRecentByDate;
     
     // Calculate trend analysis
     const analysis = calculateAdvancedTrendAnalysis(dataPoints, metric);
+    
+    console.log(`\nSending response with current value: ${confirmedLatest.value}`);
     
     res.json({
       success: true,
@@ -1197,9 +1253,25 @@ router.get('/trends/:locationId/:metric', async (req, res) => {
         trendDirection: analysis.trendDirection,
         dataPoints,
         monthsOfData: dataPoints.length,
-        // FIXED: Add explicit current value for frontend
-        currentValue: latestDataPoint?.value,
-        currentPeriod: latestDataPoint ? `${latestDataPoint.month} ${latestDataPoint.year}` : null,
+        // FIXED: Use confirmed latest value
+        currentValue: confirmedLatest.value,
+        currentPeriod: `${confirmedLatest.month} ${confirmedLatest.year}`,
+        // Add debug info for troubleshooting
+        debug: {
+          latestByPosition: {
+            month: latestDataPoint.month,
+            year: latestDataPoint.year,
+            value: latestDataPoint.value
+          },
+          latestByDate: {
+            month: mostRecentByDate.month,
+            year: mostRecentByDate.year,
+            value: mostRecentByDate.value
+          },
+          totalRecordsInDB: allMetrics.length,
+          recordsProcessed: recentMetrics.length,
+          dataPointsFound: dataPoints.length
+        },
         analysis: {
           averageChange: analysis.averageChange,
           volatility: analysis.volatility,
