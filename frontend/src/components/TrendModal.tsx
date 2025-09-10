@@ -364,7 +364,6 @@ const TrendModal: React.FC<TrendModalProps> = ({
                     fontSize: '18px',
                     fontWeight: '600',
                     color: 'white',
-                    marginBottom: '16px',
                     margin: 0,
                     marginBottom: '16px'
                   }}>
