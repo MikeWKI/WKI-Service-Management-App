@@ -518,6 +518,205 @@ function getExpectedCampaignRates() {
   };
 }
 
+// GET /api/location-metrics/debug - Debug current database state
+router.get('/debug', async (req, res) => {
+  try {
+    const allRecords = await LocationMetric.find().lean();
+    
+    const debug = {
+      totalRecords: allRecords.length,
+      records: allRecords.map(record => ({
+        id: record._id,
+        month: record.metrics?.month,
+        year: record.metrics?.year,
+        fileName: record.metrics?.fileName,
+        locationsCount: record.metrics?.locations?.length,
+        sampleLocationData: record.metrics?.locations?.[0] ? {
+          name: record.metrics.locations[0].name,
+          vscCaseRequirements: record.metrics.locations[0].vscCaseRequirements,
+          vscClosedCorrectly: record.metrics.locations[0].vscClosedCorrectly
+        } : null
+      })),
+      uniqueMonths: [...new Set(allRecords.map(r => `${r.metrics?.month} ${r.metrics?.year}`))],
+      dataVariation: {
+        explanation: 'If all VSC Case Requirements values are the same, trends will be flat',
+        wichitaVSCValues: allRecords.map(r => {
+          const wichita = r.metrics?.locations?.find(loc => loc.name === 'Wichita Kenworth');
+          return wichita?.vscCaseRequirements || 'N/A';
+        })
+      }
+    };
+    
+    res.json({
+      success: true,
+      data: debug
+    });
+  } catch (error) {
+    console.error('Debug error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// GET /api/location-metrics/demo-data - Create simulated historical data for testing
+router.post('/demo-data', async (req, res) => {
+  try {
+    console.log('Creating simulated historical data for testing...');
+    
+    // Clear existing demo data
+    await LocationMetric.deleteMany({
+      'metrics.fileName': { $regex: /Demo_.*\.pdf/ }
+    });
+    
+    const months = [
+      { name: 'April', num: 4 },
+      { name: 'May', num: 5 },
+      { name: 'June', num: 6 },
+      { name: 'July', num: 7 }
+    ];
+    
+    // Create realistic variations for each location over time
+    const baseData = {
+      'Wichita Kenworth': {
+        vscCaseRequirements: [94, 96, 95, 98],       // Improving trend
+        vscClosedCorrectly: [90, 92, 91, 94],        // Slight improvement
+        ttActivation: [97, 99, 98, 99],              // Stable high
+        smMonthlyDwellAvg: [2.9, 2.7, 2.8, 2.5],    // Improving (lower is better)
+        smYtdDwellAvgDays: [2.1, 1.9, 2.0, 1.8],    // Improving
+        triagePercentLess4Hours: [85.5, 87.9, 86.2, 89.1], // Improving
+        triageHours: [2.1, 1.8, 1.9, 1.6],          // Improving (lower is better)
+        etrPercentCases: [1.5, 1.3, 1.4, 1.1],      // Improving (lower is better)
+        percentCasesWith3Notes: [12.3, 10.1, 11.2, 9.8], // Improving (lower is better)
+        rdsMonthlyAvgDays: [6.1, 5.8, 5.9, 5.5],    // Improving (lower is better)
+        rdsYtdDwellAvgDays: [5.9, 5.6, 5.7, 5.3]    // Improving (lower is better)
+      },
+      'Dodge City Kenworth': {
+        vscCaseRequirements: [65, 67, 66, 69],       // Slight improvement
+        vscClosedCorrectly: [81, 83, 82, 85],        // Improving
+        ttActivation: [83, 85, 84, 87],              // Improving
+        smMonthlyDwellAvg: [2.0, 1.8, 1.9, 1.7],    // Improving
+        smYtdDwellAvgDays: [2.4, 2.2, 2.3, 2.1],    // Improving
+        triagePercentLess4Hours: [17.5, 19.0, 18.2, 21.3], // Improving
+        triageHours: [4.5, 4.2, 4.3, 3.9],          // Improving
+        etrPercentCases: [0.2, 0, 0.1, 0],          // Stable low
+        percentCasesWith3Notes: [0.5, 0, 0.2, 0],   // Stable low
+        rdsMonthlyAvgDays: [6.3, 6.1, 6.2, 5.9],    // Improving
+        rdsYtdDwellAvgDays: [5.9, 5.7, 5.8, 5.5]    // Improving
+      },
+      'Liberal Kenworth': {
+        vscCaseRequirements: [100, 100, 100, 100],   // Perfect stable
+        vscClosedCorrectly: [100, 100, 100, 100],    // Perfect stable
+        ttActivation: [100, 100, 100, 100],          // Perfect stable
+        smMonthlyDwellAvg: [2.2, 2.0, 2.1, 1.9],    // Improving
+        smYtdDwellAvgDays: [2.8, 2.6, 2.7, 2.4],    // Improving
+        triagePercentLess4Hours: [87.1, 89.4, 88.3, 91.2], // Improving
+        triageHours: [3.3, 3.1, 3.2, 2.9],          // Improving
+        etrPercentCases: [0.2, 0, 0.1, 0],          // Stable low
+        percentCasesWith3Notes: [2.8, 2.1, 2.5, 1.9], // Improving
+        rdsMonthlyAvgDays: [5.8, 5.6, 5.7, 5.4],    // Improving
+        rdsYtdDwellAvgDays: [5.9, 5.7, 5.8, 5.5]    // Improving
+      },
+      'Emporia Kenworth': {
+        vscCaseRequirements: ['N/A', 'N/A', 'N/A', 'N/A'], // No data
+        vscClosedCorrectly: ['N/A', 'N/A', 'N/A', 'N/A'],  // No data
+        ttActivation: ['N/A', 'N/A', 'N/A', 'N/A'],        // No data
+        smMonthlyDwellAvg: [1.4, 1.2, 1.3, 1.1],    // Improving
+        smYtdDwellAvgDays: [1.0, 0.8, 0.9, 0.7],    // Improving
+        triagePercentLess4Hours: [36.5, 38.8, 37.6, 41.2], // Improving
+        triageHours: [9.8, 9.5, 9.6, 9.1],          // Improving
+        etrPercentCases: [1.2, 1.0, 1.1, 0.8],      // Improving
+        percentCasesWith3Notes: [16.1, 15.3, 15.7, 14.8], // Improving
+        rdsMonthlyAvgDays: [3.5, 3.3, 3.4, 3.1],    // Improving
+        rdsYtdDwellAvgDays: [4.5, 4.3, 4.4, 4.1]    // Improving
+      }
+    };
+    
+    // Create records for each month
+    for (let i = 0; i < months.length; i++) {
+      const month = months[i];
+      
+      // Create location data for this month
+      const locations = [];
+      Object.keys(baseData).forEach(locationName => {
+        const locationData = baseData[locationName];
+        const monthlyData = {};
+        
+        // Get values for this month (index i)
+        Object.keys(locationData).forEach(metric => {
+          const values = locationData[metric];
+          let value = values[i];
+          
+          // Format percentage values
+          if (typeof value === 'number' && ['vscCaseRequirements', 'vscClosedCorrectly', 'ttActivation', 'triagePercentLess4Hours', 'etrPercentCases', 'percentCasesWith3Notes'].includes(metric)) {
+            value = `${value}%`;
+          } else if (typeof value === 'number') {
+            value = value.toString();
+          }
+          
+          monthlyData[metric] = value;
+        });
+        
+        locations.push({
+          name: locationName,
+          locationId: locationName.toLowerCase().replace(/\s+/g, '-').replace('-kenworth', ''),
+          ...monthlyData
+        });
+      });
+      
+      // Create dealership summary (averaged where applicable)
+      const dealership = {
+        vscCaseRequirements: '90%', // Example dealership average
+        vscClosedCorrectly: '88%',
+        ttActivation: '92%',
+        smMonthlyDwellAvg: '2.1',
+        triageHours: '4.2',
+        triagePercentLess4Hours: '58.5%',
+        etrPercentCases: '0.6%',
+        percentCasesWith3Notes: '6.9%',
+        rdsMonthlyAvgDays: '5.2',
+        smYtdDwellAvgDays: '4.1',
+        rdsYtdDwellAvgDays: '5.1',
+        campaignCompletionRates: getExpectedCampaignRates()
+      };
+      
+      // Save to database
+      const newMetrics = new LocationMetric({
+        metrics: {
+          dealership: dealership,
+          locations: locations,
+          extractedAt: new Date().toISOString(),
+          month: month.name,
+          year: 2025,
+          fileName: `Demo_${month.name}_2025.pdf`,
+          uploadedAt: new Date()
+        }
+      });
+      
+      await newMetrics.save();
+      console.log(`Created demo data for ${month.name} 2025`);
+    }
+    
+    res.json({
+      success: true,
+      message: 'Demo historical data created successfully',
+      data: {
+        monthsCreated: months.map(m => `${m.name} 2025`),
+        locationsCount: Object.keys(baseData).length,
+        note: 'This is simulated data with realistic trends for demonstration purposes'
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error creating demo data:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 function extractLocationMetrics(text, locationName, locationNames) {
   console.log(`\n=== Processing ${locationName} ===`);
   

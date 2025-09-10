@@ -148,15 +148,16 @@ const TrendModal: React.FC<TrendModalProps> = ({
         position: 'fixed',
         top: 0,
         left: 0,
-        right: 0,
-        bottom: 0,
+        width: '100vw',
+        height: '100vh',
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         backdropFilter: 'blur(4px)',
-        zIndex: 9999,
+        zIndex: 10000,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '16px',
+        margin: 0,
+        padding: 0,
         boxSizing: 'border-box'
       }}
       onClick={(e) => {
@@ -167,24 +168,27 @@ const TrendModal: React.FC<TrendModalProps> = ({
     >
       <div 
         style={{
-          width: '95vw',
+          width: '90vw',
           maxWidth: '1200px',
-          height: '90vh',
+          height: '85vh',
           minHeight: '600px',
-          maxHeight: '90vh',
+          maxHeight: '900px',
           background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
           borderRadius: '16px',
           border: '1px solid #475569',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
           position: 'relative',
-          transform: 'none',
           transition: 'none',
           flexShrink: 0,
           flexGrow: 0,
-          boxSizing: 'border-box'
+          boxSizing: 'border-box',
+          margin: 0,
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)'
         }}
         onMouseEnter={(e) => e.stopPropagation()}
         onMouseLeave={(e) => e.stopPropagation()}
