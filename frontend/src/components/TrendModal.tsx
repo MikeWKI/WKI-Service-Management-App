@@ -145,13 +145,34 @@ const TrendModal: React.FC<TrendModalProps> = ({
   return (
     <div 
       className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      style={{ 
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 9999
+      }}
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onClose();
         }
       }}
     >
-      <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl border border-slate-700 shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden">
+      <div 
+        className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl border border-slate-700 shadow-2xl flex flex-col overflow-hidden"
+        style={{
+          width: '95vw',
+          maxWidth: '1200px',
+          height: '90vh',
+          minHeight: '600px',
+          position: 'relative',
+          transform: 'none',
+          transition: 'none'
+        }}
+        onMouseEnter={(e) => e.stopPropagation()}
+        onMouseLeave={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-700 flex-shrink-0">
           <div className="flex items-center space-x-4">
@@ -172,7 +193,14 @@ const TrendModal: React.FC<TrendModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">{/* Changed from overflow-y-auto max-h-[calc(90vh-120px)] */}
+        <div 
+          className="flex-1 overflow-y-auto p-6"
+          style={{
+            minHeight: 0,
+            position: 'relative',
+            flex: '1 1 auto'
+          }}
+        >
           {loading && (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-slate-600 border-t-blue-500"></div>
@@ -265,7 +293,16 @@ const TrendModal: React.FC<TrendModalProps> = ({
               {chartData.length > 0 && (
                 <div className="bg-slate-800/50 rounded-lg p-6 border border-slate-700 mb-6">
                   <h3 className="text-lg font-semibold text-white mb-4">Trend Chart</h3>
-                  <div className="w-full" style={{ height: '320px' }}>
+                  <div 
+                    className="w-full" 
+                    style={{ 
+                      height: '320px',
+                      minHeight: '320px',
+                      maxHeight: '320px',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}
+                  >
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
