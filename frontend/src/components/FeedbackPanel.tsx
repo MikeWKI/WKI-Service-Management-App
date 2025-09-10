@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronRight, ChevronLeft, MessageCircle, Send, X, User, Mail } from 'lucide-react';
 import { useNotifications } from '../contexts/NotificationContext';
+import emailjs from '@emailjs/browser';
 
 interface FeedbackFormData {
   name: string;
@@ -9,6 +10,13 @@ interface FeedbackFormData {
   message: string;
   category: 'bug' | 'feature' | 'improvement' | 'question' | 'other';
 }
+
+// EmailJS Configuration - All values configured
+const EMAILJS_CONFIG = {
+  SERVICE_ID: 'service_c1qhexh',        // Your EmailJS service ID
+  TEMPLATE_ID: 'template_a5mtdh8',      // Your EmailJS template ID
+  PUBLIC_KEY: 'FGgvoLlR7xfXljWKB'       // Your EmailJS public key
+};
 
 const FeedbackPanel: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -47,40 +55,44 @@ const FeedbackPanel: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      // Try to send via backend API first
-      const response = await fetch('/api/feedback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-      });
+      // Send email using EmailJS
+      const templateParams = {
+        to_email: 'MikeA@WichitaKenworth.com',
+        from_name: formData.name,
+        from_email: formData.email,
+        subject: formData.subject || 'No subject provided',
+        message: formData.message,
+        category: categories.find(c => c.value === formData.category)?.label || formData.category,
+        timestamp: new Date().toLocaleString()
+      };
 
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          // Reset form and show success
-          setFormData({
-            name: '',
-            email: '',
-            subject: '',
-            message: '',
-            category: 'improvement'
-          });
-          
-          setShowForm(false);
-          success('Feedback Sent', 'Your feedback has been sent to Mike successfully!');
-        } else {
-          throw new Error(result.error || 'Failed to send feedback');
-        }
+      const result = await emailjs.send(
+        EMAILJS_CONFIG.SERVICE_ID,
+        EMAILJS_CONFIG.TEMPLATE_ID,
+        templateParams,
+        EMAILJS_CONFIG.PUBLIC_KEY
+      );
+
+      if (result.status === 200) {
+        // Reset form and show success
+        setFormData({
+          name: '',
+          email: '',
+          subject: '',
+          message: '',
+          category: 'improvement'
+        });
+        
+        setShowForm(false);
+        success('Feedback Sent', 'Your feedback has been sent to Mike successfully!');
       } else {
-        throw new Error('Network error');
+        throw new Error('EmailJS returned non-200 status');
       }
       
     } catch (err) {
-      console.error('API feedback failed, falling back to mailto:', err);
+      console.error('EmailJS failed, falling back to mailto:', err);
       
-      // Fallback to mailto if API fails
+      // Fallback to mailto if EmailJS fails
       const emailBody = `
 Name: ${formData.name}
 Email: ${formData.email}
@@ -319,7 +331,7 @@ Time: ${new Date().toISOString()}
                   {isSubmitting ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Preparing...</span>
+                      <span>Sending...</span>
                     </>
                   ) : (
                     <>

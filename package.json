@@ -23,6 +23,7 @@
 	"author": "Michaela",
 	"license": "ISC",
 	"dependencies": {
+		"@emailjs/browser": "^4.4.1",
 		"multer": "^2.0.2",
 		"pdfjs-dist": "^3.11.174"
 	}
