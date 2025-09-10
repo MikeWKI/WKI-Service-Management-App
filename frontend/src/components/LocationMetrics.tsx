@@ -49,29 +49,123 @@ export default function LocationMetrics() {
   // Backend API base URL
   const API_BASE_URL = 'https://wki-service-management-app.onrender.com';
 
+  // Helper function to fetch location metrics from trends endpoint
+  const fetchLocationMetricsFromTrends = async (locationId: string): Promise<Partial<LocationMetrics['metrics']> | null> => {
+    const metricsList = [
+      'vscCaseRequirements',
+      'vscClosedCorrectly',
+      'ttActivation',
+      'smMonthlyDwellAvg',
+      'smYtdDwellAvgDays',
+      'triagePercentLess4Hours',
+      'triageHours',
+      'etrPercentCases',
+      'percentCasesWith3Notes',
+      'rdsMonthlyAvgDays',
+      'rdsYtdDwellAvgDays'
+    ];
+
+    const currentValues: Record<string, number> = {};
+    let hasAnyData = false;
+
+    for (const metric of metricsList) {
+      try {
+        const trendResponse = await fetch(`${API_BASE_URL}/api/locationMetrics/trends/${locationId}/${metric}`);
+        if (trendResponse.ok) {
+          const trendData = await trendResponse.json();
+          if (trendData && trendData.success && trendData.data) {
+            const cv = trendData.data.currentValue;
+            if (cv !== null && cv !== undefined) {
+              currentValues[metric] = parseFloat(String(cv));
+              hasAnyData = true;
+              console.log(`✅ ${locationId}/${metric}: ${cv}`);
+            }
+          }
+        }
+      } catch (err) {
+        console.error(`Error fetching trend data for ${locationId}/${metric}:`, err);
+      }
+    }
+
+    return hasAnyData ? currentValues as Partial<LocationMetrics['metrics']> : null;
+  };
+
+  // Helper function to get location name mapping
+  const getLocationNameMapping = (locationId: string): string => {
+    const locationMap: Record<string, string> = {
+      'wichita': 'Wichita Kenworth',
+      'emporia': 'Emporia Kenworth',
+      'dodge-city': 'Dodge City Kenworth',
+      'liberal': 'Liberal Kenworth'
+    };
+    return locationMap[locationId] || locationId;
+  };
+
   // Fetch data from backend
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
+      console.log('LocationMetrics: Starting data fetch...');
+      
+      // OPTION 1: Try to fetch from trends endpoint first for all locations
+      const trendsPromises = locations.map(async (location) => {
+        const metricsFromTrends = await fetchLocationMetricsFromTrends(location.id);
+        if (metricsFromTrends && Object.keys(metricsFromTrends).length > 0) {
+          return {
+            location: location.name,
+            month: 'Latest',
+            year: new Date().getFullYear(),
+            metrics: {
+              vscCaseRequirements: metricsFromTrends.vscCaseRequirements || 0,
+              vscClosedCorrectly: metricsFromTrends.vscClosedCorrectly || 0,
+              ttActivation: metricsFromTrends.ttActivation || 0,
+              smMonthlyDwellAvg: metricsFromTrends.smMonthlyDwellAvg || 0,
+              triageHours: metricsFromTrends.triageHours || 0,
+              triagePercentLess4Hours: metricsFromTrends.triagePercentLess4Hours || 0,
+              etrPercentCases: metricsFromTrends.etrPercentCases || 0,
+              percentCasesWith3Notes: metricsFromTrends.percentCasesWith3Notes || 0,
+              rdsMonthlyAvgDays: metricsFromTrends.rdsMonthlyAvgDays || 0,
+              smYtdDwellAvgDays: metricsFromTrends.smYtdDwellAvgDays || 0,
+              rdsYtdDwellAvgDays: metricsFromTrends.rdsYtdDwellAvgDays || 0
+            },
+            trend: 'stable' as const
+          };
+        }
+        return null;
+      });
+
+      const trendsResults = await Promise.all(trendsPromises);
+      const validTrendsResults = trendsResults.filter(result => result !== null) as LocationMetrics[];
+
+      if (validTrendsResults.length > 0) {
+        console.log('LocationMetrics: Using trends data for', validTrendsResults.length, 'locations');
+        setBackendMetrics(validTrendsResults);
+        setLastUpdated(new Date().toLocaleString());
+        setIsLoading(false);
+        return;
+      }
+
+      // OPTION 2: Fall back to original backend endpoint
+      console.log('LocationMetrics: Trends endpoint failed, falling back to original logic...');
       const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
       if (response.ok) {
         const data = await response.json();
-        let dealership: any, locations: any[] = [], extractedAt: string | undefined;
+        let dealership: any, locationsData: any[] = [], extractedAt: string | undefined;
         
         // Handle different response structures
         if (data && typeof data === 'object') {
           if ('dealership' in data && 'locations' in data) {
-            ({ dealership, locations, extractedAt } = data);
+            ({ dealership, locations: locationsData, extractedAt } = data);
           } else if ('data' in data && data.data && typeof data.data === 'object') {
             if ('dealership' in data.data && 'locations' in data.data) {
-              ({ dealership, locations, extractedAt } = data.data);
+              ({ dealership, locations: locationsData, extractedAt } = data.data);
             }
           }
         }
 
-        if (locations && locations.length > 0) {
+        if (locationsData && locationsData.length > 0) {
           // Convert backend data to frontend format - only legitimate W370 scorecard fields
-          const convertedMetrics: LocationMetrics[] = locations.map((location: any) => ({
+          const convertedMetrics: LocationMetrics[] = locationsData.map((location: any) => ({
             location: location.name,
             month: 'Latest',
             year: new Date().getFullYear(),
@@ -116,7 +210,7 @@ export default function LocationMetrics() {
         setDealershipMetrics(null);
       }
     } catch (error) {
-      console.error('Error fetching metrics:', error);
+      console.error('LocationMetrics: Error fetching metrics:', error);
       // No legitimate scorecard data available - show empty state
       setBackendMetrics([]);
       setDealershipMetrics(null);
@@ -148,6 +242,7 @@ export default function LocationMetrics() {
       window.removeEventListener('scorecardUploaded', handleScorecardUpload);
     };
   }, [fetchData]);
+  
   const filteredMetrics = selectedLocation === 'all' 
     ? backendMetrics 
     : backendMetrics.filter(m => m.location.toLowerCase().replace(/\s+/g, '-') === selectedLocation);
