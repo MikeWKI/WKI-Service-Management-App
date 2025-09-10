@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Clock, Users, CheckCircle, AlertTriangle, TrendingUp, TrendingDown, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Clock, Users, CheckCircle, AlertTriangle, TrendingUp, TrendingDown, BarChart3, Target, Calendar, Award, Zap, Activity, FileText, Timer, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface MetricCard {
@@ -691,140 +691,335 @@ export default function LocationSpecificMetrics({ locationId, locationName, loca
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center space-x-4">
-          <Link 
-            to="/metrics"
-            className="flex items-center text-slate-400 hover:text-white transition-colors"
-          >
-            <ArrowLeft size={20} className="mr-2" />
-            Back to Metrics
-          </Link>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      {/* Header Section */}
+      <div className="bg-gradient-to-r from-slate-800/80 to-slate-700/80 backdrop-blur-sm border-b border-slate-600/50">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-6">
+              <Link 
+                to="/metrics"
+                className="flex items-center text-slate-300 hover:text-white transition-all duration-200 group"
+              >
+                <ArrowLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" />
+                Back to Metrics
+              </Link>
+              <div className="h-8 w-px bg-slate-600"></div>
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <BarChart3 className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-white">{locationName}</h1>
+                  <p className="text-slate-300 flex items-center">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Latest Report: {lastUpdated()}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <Link 
+              to="/metrics/scorecard-manager"
+              className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg"
+            >
+              <Shield className="w-4 h-4" />
+              <span>Upload New Scorecard</span>
+            </Link>
+          </div>
         </div>
-        <Link 
-          to="/metrics/scorecard-manager"
-          className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-colors text-sm"
-        >
-          Upload New Scorecard
-        </Link>
       </div>
 
       {/* Loading State */}
       {isLoading && (
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
-          <p className="text-slate-400">Loading metrics...</p>
+        <div className="text-center py-20">
+          <div className="relative">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-slate-600 border-t-red-500 mx-auto mb-6"></div>
+            <div className="absolute inset-0 rounded-full h-16 w-16 border-4 border-slate-700 opacity-20 mx-auto"></div>
+          </div>
+          <h3 className="text-xl font-semibold text-white mb-2">Loading Performance Metrics</h3>
+          <p className="text-slate-400">Fetching latest data for {locationName}...</p>
         </div>
       )}
 
       {/* Main Content - only show when not loading */}
       {!isLoading && (
-        <>
-          {/* Location Header */}
-          <div className="text-center mb-12">
-            <div className={`w-20 h-20 bg-gradient-to-br ${locationColor} rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl`}>
-              <BarChart3 className="w-10 h-10 text-white" />
-            </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent mb-4">
-              {locationName} Performance Metrics
-            </h1>
-            <p className="text-xl text-slate-300 mb-2">
-              Service Performance Dashboard & KPI Tracking
-            </p>
-            <p className="text-slate-400">
-              Last Updated: {lastUpdated()}
-            </p>
-          </div>
-
-      {/* Metrics Grid */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-        {locationMetrics.map((metric, index) => (
-          <div
-            key={index}
-            className={`bg-gradient-to-br ${getStatusColor(metric.status)} p-8 rounded-2xl shadow-2xl border-2 hover:scale-105 transition-transform duration-300`}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <div className="bg-white/20 p-3 rounded-full">
-                {metric.icon}
-              </div>
-              {metric.trend && (
-                <div className="flex items-center space-x-1">
-                  {getTrendIcon(metric.trend)}
-                  <span className="text-sm text-white/80 capitalize">{metric.trend}</span>
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          {/* Performance Overview Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div className="bg-gradient-to-br from-green-600/20 to-green-700/20 border border-green-500/30 rounded-xl p-6 backdrop-blur-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                  <CheckCircle className="w-5 h-5 text-white" />
                 </div>
-              )}
+                <span className="text-green-400 text-sm font-medium">Excellent</span>
+              </div>
+              <div className="text-3xl font-bold text-green-400 mb-1">
+                {locationMetrics.filter(m => m.status === 'good').length}
+              </div>
+              <p className="text-slate-300 text-sm">Metrics Meeting Targets</p>
             </div>
-            
-            <h3 className="text-xl font-bold text-white mb-2">{metric.title}</h3>
-            <div className="text-3xl font-bold text-white mb-4">{metric.value}</div>
-            
-            <div className="space-y-3">
-              <div className="bg-white/10 p-3 rounded-lg">
-                <p className="text-white/80 text-sm font-medium mb-1">Target:</p>
-                <p className="text-white font-semibold">{metric.target}</p>
-              </div>
-              
-              <div className="bg-white/10 p-3 rounded-lg">
-                <p className="text-white/80 text-sm font-medium mb-1">Impact:</p>
-                <p className="text-white text-sm">{metric.impact}</p>
-              </div>
-              
-              <div className="bg-white/10 p-3 rounded-lg">
-                <p className="text-white text-sm">{metric.description}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
 
-      {/* Performance Summary */}
-      <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-2xl p-8 border border-slate-700 shadow-2xl">
-        <h3 className="text-2xl font-bold text-white mb-6 flex items-center">
-          <BarChart3 className="w-6 h-6 mr-2 text-red-400" />
-          Performance Summary - {locationName}
-        </h3>
-        
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-green-400 mb-2">
-              {locationMetrics.filter(m => m.status === 'good').length}
+            <div className="bg-gradient-to-br from-yellow-600/20 to-yellow-700/20 border border-yellow-500/30 rounded-xl p-6 backdrop-blur-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 bg-yellow-500 rounded-lg flex items-center justify-center">
+                  <AlertTriangle className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-yellow-400 text-sm font-medium">Attention</span>
+              </div>
+              <div className="text-3xl font-bold text-yellow-400 mb-1">
+                {locationMetrics.filter(m => m.status === 'warning').length}
+              </div>
+              <p className="text-slate-300 text-sm">Metrics Need Attention</p>
             </div>
-            <p className="text-slate-300">Metrics Meeting Targets</p>
+
+            <div className="bg-gradient-to-br from-red-600/20 to-red-700/20 border border-red-500/30 rounded-xl p-6 backdrop-blur-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 bg-red-500 rounded-lg flex items-center justify-center">
+                  <TrendingDown className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-red-400 text-sm font-medium">Critical</span>
+              </div>
+              <div className="text-3xl font-bold text-red-400 mb-1">
+                {locationMetrics.filter(m => m.status === 'critical').length}
+              </div>
+              <p className="text-slate-300 text-sm">Critical Metrics</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-blue-600/20 to-blue-700/20 border border-blue-500/30 rounded-xl p-6 backdrop-blur-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                  <Target className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-blue-400 text-sm font-medium">Overall</span>
+              </div>
+              <div className="text-3xl font-bold text-blue-400 mb-1">
+                {Math.round((locationMetrics.filter(m => m.status === 'good').length / locationMetrics.length) * 100)}%
+              </div>
+              <p className="text-slate-300 text-sm">Success Rate</p>
+            </div>
           </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-yellow-400 mb-2">
-              {locationMetrics.filter(m => m.status === 'warning').length}
+
+          {/* Key Performance Indicators Section */}
+          <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-2xl border border-slate-700/50 p-8 mb-8 backdrop-blur-sm">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-2">Service Quality Metrics</h2>
+                <p className="text-slate-300">Customer satisfaction and service compliance indicators</p>
+              </div>
+              <div className="flex items-center space-x-2 text-green-400">
+                <Award className="w-5 h-5" />
+                <span className="font-medium">Quality Focus</span>
+              </div>
             </div>
-            <p className="text-slate-300">Metrics Need Attention</p>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {locationMetrics.slice(0, 3).map((metric, index) => (
+                <div key={index} className="group relative">
+                  <div className={`bg-gradient-to-br ${getStatusColor(metric.status)} rounded-xl p-6 border shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:shadow-xl`}>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                        {metric.icon}
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <span className={`${getStatusTextColor(metric.status)} text-sm font-medium capitalize`}>
+                          {metric.status}
+                        </span>
+                        {metric.trend && (
+                          <div className="flex items-center space-x-1 mt-1">
+                            {getTrendIcon(metric.trend)}
+                            <span className="text-white/80 text-xs">{metric.trend}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <h3 className="text-lg font-bold text-white mb-2">{metric.title}</h3>
+                    <div className="text-4xl font-bold text-white mb-4">{metric.value}</div>
+                    
+                    <div className="bg-white/10 rounded-lg p-3 backdrop-blur-sm">
+                      <p className="text-white/80 text-xs font-medium mb-1">Target:</p>
+                      <p className="text-white font-semibold text-sm">{metric.target}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-red-400 mb-2">
-              {locationMetrics.filter(m => m.status === 'critical').length}
+
+          {/* Operational Efficiency Section */}
+          <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-2xl border border-slate-700/50 p-8 mb-8 backdrop-blur-sm">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-2">Operational Efficiency</h2>
+                <p className="text-slate-300">Time management and process optimization metrics</p>
+              </div>
+              <div className="flex items-center space-x-2 text-blue-400">
+                <Zap className="w-5 h-5" />
+                <span className="font-medium">Efficiency Focus</span>
+              </div>
             </div>
-            <p className="text-slate-300">Critical Metrics</p>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              {locationMetrics.slice(3, 7).map((metric, index) => (
+                <div key={index} className="group relative">
+                  <div className={`bg-gradient-to-br ${getStatusColor(metric.status)} rounded-xl p-6 border shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:shadow-xl`}>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                        {React.cloneElement(metric.icon as React.ReactElement, { className: "w-5 h-5 text-white" })}
+                      </div>
+                      <span className={`${getStatusTextColor(metric.status)} text-xs font-medium capitalize`}>
+                        {metric.status}
+                      </span>
+                    </div>
+                    
+                    <h3 className="text-sm font-bold text-white mb-2">{metric.title}</h3>
+                    <div className="text-2xl font-bold text-white mb-3">{metric.value}</div>
+                    
+                    <div className="bg-white/10 rounded-lg p-2 backdrop-blur-sm">
+                      <p className="text-white/80 text-xs font-medium mb-1">Target:</p>
+                      <p className="text-white font-semibold text-xs">{metric.target}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Case Management & Documentation Section */}
+          <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-2xl border border-slate-700/50 p-8 mb-8 backdrop-blur-sm">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-2">Case Management & Documentation</h2>
+                <p className="text-slate-300">Case handling, documentation quality, and processing metrics</p>
+              </div>
+              <div className="flex items-center space-x-2 text-purple-400">
+                <FileText className="w-5 h-5" />
+                <span className="font-medium">Documentation Focus</span>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              {locationMetrics.slice(7, 11).map((metric, index) => (
+                <div key={index} className="group relative">
+                  <div className={`bg-gradient-to-br ${getStatusColor(metric.status)} rounded-xl p-6 border shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:shadow-xl`}>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                        {React.cloneElement(metric.icon as React.ReactElement, { className: "w-5 h-5 text-white" })}
+                      </div>
+                      <span className={`${getStatusTextColor(metric.status)} text-xs font-medium capitalize`}>
+                        {metric.status}
+                      </span>
+                    </div>
+                    
+                    <h3 className="text-sm font-bold text-white mb-2">{metric.title}</h3>
+                    <div className="text-2xl font-bold text-white mb-3">{metric.value}</div>
+                    
+                    <div className="bg-white/10 rounded-lg p-2 backdrop-blur-sm">
+                      <p className="text-white/80 text-xs font-medium mb-1">Target:</p>
+                      <p className="text-white font-semibold text-xs">{metric.target}</p>
+                    </div>
+                    
+                    <div className="mt-3 pt-3 border-t border-white/10">
+                      <p className="text-white/70 text-xs">{metric.impact}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Detailed Metrics Table */}
+          <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-2xl border border-slate-700/50 p-8 mb-8 backdrop-blur-sm">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-2">Detailed Performance Analysis</h2>
+                <p className="text-slate-300">Comprehensive overview of all performance metrics</p>
+              </div>
+              <div className="flex items-center space-x-2 text-green-400">
+                <Activity className="w-5 h-5" />
+                <span className="font-medium">Full Analysis</span>
+              </div>
+            </div>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-700">
+                    <th className="text-left py-4 px-4 text-slate-300 font-medium">Metric</th>
+                    <th className="text-left py-4 px-4 text-slate-300 font-medium">Current Value</th>
+                    <th className="text-left py-4 px-4 text-slate-300 font-medium">Target</th>
+                    <th className="text-left py-4 px-4 text-slate-300 font-medium">Status</th>
+                    <th className="text-left py-4 px-4 text-slate-300 font-medium">Impact</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {locationMetrics.map((metric, index) => (
+                    <tr key={index} className="border-b border-slate-800 hover:bg-slate-700/20 transition-colors">
+                      <td className="py-4 px-4">
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br ${getStatusColor(metric.status)}`}>
+                            {React.cloneElement(metric.icon as React.ReactElement, { className: "w-4 h-4 text-white" })}
+                          </div>
+                          <span className="text-white font-medium">{metric.title}</span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className="text-white font-bold text-lg">{metric.value}</span>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className="text-slate-300">{metric.target}</span>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                          metric.status === 'good' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                          metric.status === 'warning' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
+                          'bg-red-500/20 text-red-400 border border-red-500/30'
+                        }`}>
+                          {metric.status === 'good' ? '✓ Good' : metric.status === 'warning' ? '⚠ Warning' : '✗ Critical'}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className="text-slate-300 text-sm">{metric.impact}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Action Center */}
+          <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-2xl border border-slate-700/50 p-8 backdrop-blur-sm">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold text-white mb-2">Action Center</h2>
+              <p className="text-slate-300">Manage reports and compare performance across locations</p>
+            </div>
+            
+            <div className="flex flex-wrap gap-4 justify-center">
+              <Link 
+                to="/metrics/scorecard-manager"
+                className="group flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-green-600 to-green-700 text-white font-medium rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                <Shield className="w-5 h-5" />
+                <span>Upload New Monthly Report</span>
+              </Link>
+              <Link 
+                to="/metrics/locations"
+                className="group flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-medium rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                <BarChart3 className="w-5 h-5" />
+                <span>Compare All Locations</span>
+              </Link>
+              <Link 
+                to="/metrics"
+                className="group flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                <Timer className="w-5 h-5" />
+                <span>View All Metrics</span>
+              </Link>
+            </div>
           </div>
         </div>
-        
-        <div className="mt-8 pt-6 border-t border-slate-700">
-          <div className="flex flex-wrap gap-4 justify-center">
-            <Link 
-              to="/metrics/scorecard-manager"
-              className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-medium rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200"
-            >
-              Upload New Monthly Report
-            </Link>
-            <Link 
-              to="/metrics/locations"
-              className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-medium rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200"
-            >
-              Compare All Locations
-            </Link>
-          </div>
-        </div>
-      </div>
-        </>
       )}
     </div>
   );
