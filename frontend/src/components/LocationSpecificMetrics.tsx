@@ -129,14 +129,14 @@ const getMetricFieldName = (title: string): string => {
 };
 
 /** ----------------------------------------------------------------
- *  MERGED: getLocationMetrics with improved trends approach
+ *  UPDATED: getLocationMetrics with parallel API calls for better performance
  *  ---------------------------------------------------------------- */
 const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => {
   const API_BASE_URL = 'https://wki-service-management-app.onrender.com';
 
   try {
-    // OPTION 1: Use trends endpoint (same source as TrendIndicator)
-    console.log('Fetching latest trend data for cards (same source as trend indicators)...');
+    // OPTION 1: Use trends endpoint with PARALLEL requests for better performance
+    console.log('Fetching latest trend data for cards (parallel requests)...');
 
     const metricsList = [
       'vscCaseRequirements',
@@ -152,10 +152,8 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
       'rdsYtdDwellAvgDays'
     ];
 
-    const currentValues: Record<string, string> = {};
-
-    // Fetch current values from the same trends endpoint that populates the trend indicators
-    for (const metric of metricsList) {
+    // Create parallel requests for all metrics
+    const metricPromises = metricsList.map(async (metric) => {
       try {
         const trendResponse = await fetch(`${API_BASE_URL}/api/locationMetrics/trends/${locationId}/${metric}`);
         if (trendResponse.ok) {
@@ -163,21 +161,38 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           // FIXED: Use currentValue directly from the API response object
           if (trendData && trendData.success && trendData.data) {
             const cv = trendData.data.currentValue;
-            currentValues[metric] = (cv !== null && cv !== undefined) ? String(cv) : 'N/A';
-            console.log(`✅ ${metric}: ${trendData.data.currentValue} (${trendData.data.currentPeriod})`);
+            const value = (cv !== null && cv !== undefined) ? String(cv) : 'N/A';
+            console.log(`✅ ${metric}: ${value} (${trendData.data.currentPeriod})`);
+            return { metric, value, success: true };
           } else {
             console.log(`❌ ${metric}: No data in response`);
-            currentValues[metric] = 'N/A';
+            return { metric, value: 'N/A', success: false };
           }
         } else {
           console.log(`❌ ${metric}: HTTP ${trendResponse.status}`);
-          currentValues[metric] = 'N/A';
+          return { metric, value: 'N/A', success: false };
         }
       } catch (err) {
         console.error(`Error fetching trend data for ${metric}:`, err);
-        currentValues[metric] = 'N/A';
+        return { metric, value: 'N/A', success: false };
       }
-    }
+    });
+
+    // Wait for all parallel requests to complete
+    console.time('Parallel API Calls');
+    const results = await Promise.all(metricPromises);
+    console.timeEnd('Parallel API Calls');
+
+    // Build the currentValues object from results
+    const currentValues: Record<string, string> = {};
+    let successCount = 0;
+    
+    results.forEach(({ metric, value, success }) => {
+      currentValues[metric] = value;
+      if (success) successCount++;
+    });
+
+    console.log(`✅ Completed ${results.length} parallel requests, ${successCount} successful`);
 
     // Format helper for card display
     const formatValue = (value: string, metric: string): string => {
@@ -207,9 +222,9 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
       return value;
     };
 
-    // If any trend values were obtained, build the cards from trends
-    if (Object.keys(currentValues).length > 0) {
-      console.log('Using trend data for card values:', currentValues);
+    // If we have some successful trend values, build the cards from trends
+    if (successCount > 0) {
+      console.log('Using parallel trend data for card values:', currentValues);
 
       return [
         {
@@ -243,7 +258,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           trend: 'stable'
         },
         {
-          title: 'SM Monthly Dwell Avg', // FIXED: Use exact mapping title
+          title: 'SM Monthly Dwell Avg',
           value: formatValue(currentValues.smMonthlyDwellAvg, 'smMonthlyDwellAvg'),
           target: '< 3.0 days (target)',
           status: parseDwellStatus(currentValues.smMonthlyDwellAvg),
@@ -326,7 +341,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
     }
 
     // OPTION 2: Fall back to original backend logic when trends not available
-    console.log('Trends endpoint failed or returned no data, falling back to original logic...');
+    console.log('Parallel trends requests failed or returned insufficient data, falling back to original logic...');
     const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
     if (response.ok) {
       const data = await response.json();

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronRight, ChevronLeft, FileText, ExternalLink, Book, Users, Wrench, Package, AlertCircle, Settings, Link } from 'lucide-react';
+import { ChevronRight, ChevronLeft, FileText, ExternalLink, Book, Users, Wrench, Package, AlertCircle, Settings, Link, X } from 'lucide-react';
 
 interface ReferenceDocument {
   id: string;
@@ -56,7 +56,6 @@ const referenceDocuments: ReferenceDocument[] = [
     icon: <Book size={16} />,
     category: 'workflow'
   },
-  // Removed Safety Procedures and Quality Standards
 ];
 
 const categoryColors = {
@@ -123,10 +122,24 @@ export default function QuickLinksPanel() {
       {isExpanded && (
         <div className="lg:fixed lg:top-1/2 lg:right-4 lg:-translate-y-1/2 w-full lg:w-80 xl:w-96 p-3 xl:p-4 lg:bg-slate-900 lg:border lg:border-slate-700 lg:rounded-lg lg:shadow-2xl lg:z-40 max-h-96 lg:max-h-[80vh] overflow-hidden">
           <div className="mb-3 xl:mb-4 hidden lg:block">
-            <h3 className="text-xl xl:text-2xl font-bold text-slate-100 mb-1 xl:mb-2 flex items-center">
-              Quick Links
-              <FileText className="w-6 h-6 xl:w-8 xl:h-8 ml-2 text-red-400" />
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl xl:text-2xl font-bold text-slate-100 mb-1 xl:mb-2 flex items-center">
+                Quick Links
+                <FileText className="w-6 h-6 xl:w-8 xl:h-8 ml-2 text-red-400" />
+              </h3>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('QuickLinks panel X clicked');
+                  setIsExpanded(false);
+                }}
+                className="p-1 hover:bg-slate-700 rounded-lg transition-colors"
+                aria-label="Close Quick Links"
+              >
+                <X className="w-5 h-5 text-slate-400 hover:text-white" />
+              </button>
+            </div>
             <p className="text-xs text-slate-400">Reference Documents & Tools</p>
           </div>
 
