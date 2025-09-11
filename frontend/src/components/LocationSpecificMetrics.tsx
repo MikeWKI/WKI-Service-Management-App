@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Clock, Users, CheckCircle, AlertTriangle, TrendingUp, TrendingDown, BarChart3, Target, Calendar, Award, Zap, Activity, FileText, Timer, Shield } from 'lucide-react';
+import { ArrowLeft, Clock, Users, CheckCircle, AlertTriangle, TrendingUp, TrendingDown, BarChart3, Target, Calendar, Award, Zap, Activity, FileText, Timer, Shield, Info, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import TrendIndicator from './TrendIndicator';
 
@@ -860,6 +860,7 @@ interface LocationMetricsProps {
 export default function LocationSpecificMetrics({ locationId, locationName, locationColor }: LocationMetricsProps) {
   const [locationMetrics, setLocationMetrics] = useState<MetricCard[]>(getDefaultMetrics());
   const [isLoading, setIsLoading] = useState(true);
+  const [showTips, setShowTips] = useState(true);
 
   useEffect(() => {
     const loadMetrics = async () => {
@@ -929,6 +930,37 @@ export default function LocationSpecificMetrics({ locationId, locationName, loca
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      {/* Tips Bubble */}
+      {showTips && (
+        <div className="fixed left-4 top-1/2 transform -translate-y-1/2 z-50 animate-pulse">
+          <div className="bg-gradient-to-br from-blue-600/90 to-blue-700/90 backdrop-blur-sm border border-blue-500/50 rounded-xl p-4 max-w-xs shadow-xl">
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex items-center space-x-2">
+                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                  <Info className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-white font-semibold text-sm">Tips</span>
+              </div>
+              <button
+                onClick={() => setShowTips(false)}
+                className="text-blue-200 hover:text-white transition-colors p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-blue-100 text-sm leading-relaxed">
+              Click on the trend indicators <span className="inline-flex items-center px-2 py-1 bg-blue-500/30 rounded text-xs mx-1">Stable</span> to view detailed trend analysis and historical data.
+            </p>
+            <div className="mt-3 pt-3 border-t border-blue-400/20">
+              <div className="flex items-center space-x-2 text-blue-200 text-xs">
+                <TrendingUp className="w-3 h-3" />
+                <span>Interactive trend data available</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header Section */}
       <div className="bg-gradient-to-r from-slate-800/80 to-slate-700/80 backdrop-blur-sm border-b border-slate-600/50">
         <div className="max-w-7xl mx-auto px-6 py-8">
