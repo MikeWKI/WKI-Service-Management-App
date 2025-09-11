@@ -1,14 +1,26 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { BarChart3, Workflow, GitBranch, BookOpen, Menu, X } from 'lucide-react';
 
 export default function Navigation() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isWorkflow = location.pathname === '/';
   const isComprehensive = location.pathname === '/comprehensive';
   const isMetricsDefinitions = location.pathname === '/metrics/definitions';
   const isMetrics = location.pathname === '/metrics' || (location.pathname.startsWith('/metrics') && !isMetricsDefinitions);
+
+  // Debug function with proper TypeScript typing
+  const handleLinkClick = (path: string, event: React.MouseEvent<HTMLAnchorElement>) => {
+    console.log('Link clicked:', path);
+    console.log('Current location:', location.pathname);
+    console.log('Event:', event);
+    
+    // Test programmatic navigation as fallback
+    event.preventDefault();
+    navigate(path);
+  };
 
   return (
     <nav className="bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 shadow-2xl border-b-4 border-red-600 mb-4 sm:mb-8">
@@ -49,6 +61,7 @@ export default function Navigation() {
               <div className="flex flex-wrap gap-1 sm:gap-2">
                 <Link
                   to="/"
+                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) => handleLinkClick('/', e)}
                   className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 ${
                     isWorkflow 
                       ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/25' 
@@ -61,6 +74,7 @@ export default function Navigation() {
                 
                 <Link
                   to="/metrics"
+                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) => handleLinkClick('/metrics', e)}
                   className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 ${
                     isMetrics 
                       ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/25' 
@@ -73,6 +87,7 @@ export default function Navigation() {
                 
                 <Link
                   to="/comprehensive"
+                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) => handleLinkClick('/comprehensive', e)}
                   className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 ${
                     isComprehensive 
                       ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/25' 
@@ -85,6 +100,7 @@ export default function Navigation() {
                 
                 <Link
                   to="/metrics/definitions"
+                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) => handleLinkClick('/metrics/definitions', e)}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 border-2 ${
                     isMetricsDefinitions 
                       ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/25 border-blue-500' 
@@ -138,7 +154,10 @@ export default function Navigation() {
               <div className="flex flex-col space-y-1 mt-2">
                 <Link
                   to="/"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
+                    handleLinkClick('/', e);
+                    setIsMobileMenuOpen(false);
+                  }}
                   className={`flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
                     isWorkflow 
                       ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg' 
@@ -151,7 +170,10 @@ export default function Navigation() {
                 
                 <Link
                   to="/metrics"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
+                    handleLinkClick('/metrics', e);
+                    setIsMobileMenuOpen(false);
+                  }}
                   className={`flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
                     isMetrics 
                       ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg' 
@@ -164,7 +186,10 @@ export default function Navigation() {
                 
                 <Link
                   to="/comprehensive"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
+                    handleLinkClick('/comprehensive', e);
+                    setIsMobileMenuOpen(false);
+                  }}
                   className={`flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
                     isComprehensive 
                       ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg' 
@@ -177,7 +202,10 @@ export default function Navigation() {
 
                 <Link
                   to="/metrics/definitions"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
+                    handleLinkClick('/metrics/definitions', e);
+                    setIsMobileMenuOpen(false);
+                  }}
                   className={`flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-all duration-200 border border-blue-500/50 ${
                     isMetricsDefinitions 
                       ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg border-blue-500' 
@@ -206,8 +234,6 @@ export default function Navigation() {
                     <span>Decisiv Portal</span>
                   </a>
                 </div>
-
-                {/* Mobile theme toggle removed - now in fixed position */}
               </div>
             </div>
           )}

@@ -11,6 +11,7 @@
 		"install:all": "npm install && cd backend && npm install && cd ../frontend && npm install"
 	},
 	"devDependencies": {
+		"@types/react-router-dom": "^5.3.3",
 		"concurrently": "^7.6.0"
 	},
 	"keywords": [
