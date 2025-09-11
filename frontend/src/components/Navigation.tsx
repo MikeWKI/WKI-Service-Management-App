@@ -5,17 +5,10 @@ import { BarChart3, Workflow, GitBranch, BookOpen, Menu, X } from 'lucide-react'
 export default function Navigation() {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
-  // Fixed navigation state logic
   const isWorkflow = location.pathname === '/';
   const isComprehensive = location.pathname === '/comprehensive';
   const isMetricsDefinitions = location.pathname === '/metrics/definitions';
-  
-  // Improved metrics detection - only highlight when on main metrics page
-  const isMetrics = location.pathname === '/metrics';
-  
-  // Alternative: If you want metrics to be highlighted for all metric-related pages except definitions:
-  // const isMetrics = location.pathname.startsWith('/metrics') && !isMetricsDefinitions;
+  const isMetrics = location.pathname === '/metrics' || (location.pathname.startsWith('/metrics') && !isMetricsDefinitions);
 
   return (
     <nav className="bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 shadow-2xl border-b-4 border-red-600 mb-4 sm:mb-8">
@@ -50,7 +43,7 @@ export default function Navigation() {
               </div>
             </div>
 
-            {/* Right side - Navigation buttons */}
+            {/* Right side - Navigation buttons and theme toggle */}
             <div className="flex flex-col space-y-2 sm:space-y-3">
               {/* Top row - Main navigation */}
               <div className="flex flex-wrap gap-1 sm:gap-2">
@@ -95,12 +88,17 @@ export default function Navigation() {
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 border-2 ${
                     isMetricsDefinitions 
                       ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/25 border-blue-500' 
-                      : 'bg-slate-800 text-slate-300 hover:bg-blue-600 hover:text-white border-blue-500/50 hover:border-blue-400'
+                      : 'bg-slate-800 text-slate-300 hover:bg-blue-600 hover:text-white border-blue-500/50 hover:border-blue-400 dark:bg-slate-800 dark:text-slate-300'
                   }`}
                 >
                   <BookOpen size={18} />
                   <span className="text-sm font-semibold">Metrics Guide</span>
                 </Link>
+              </div>
+
+              {/* Bottom row - Empty for now */}
+              <div className="flex justify-end">
+                {/* Theme toggle moved to fixed position */}
               </div>
             </div>
           </div>
@@ -109,12 +107,8 @@ export default function Navigation() {
         {/* Mobile Layout */}
         <div className="lg:hidden">
           <div className="flex items-center justify-between">
-            {/* Mobile Logo - Add click handler to go home */}
-            <Link 
-              to="/"
-              className="flex items-center space-x-1"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
+            {/* Mobile Logo */}
+            <div className="flex items-center space-x-1">
               <div className="bg-white rounded-lg p-1 shadow-lg">
                 <img 
                   src="/KWbug.png" 
@@ -126,7 +120,7 @@ export default function Navigation() {
                 <div className="text-xs text-red-400">WKI Service</div>
                 <div className="text-[10px] text-slate-300">Management</div>
               </div>
-            </Link>
+            </div>
 
             {/* Mobile Menu Button */}
             <button
@@ -212,6 +206,8 @@ export default function Navigation() {
                     <span>Decisiv Portal</span>
                   </a>
                 </div>
+
+                {/* Mobile theme toggle removed - now in fixed position */}
               </div>
             </div>
           )}
