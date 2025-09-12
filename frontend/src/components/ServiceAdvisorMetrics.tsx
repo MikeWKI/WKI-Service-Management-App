@@ -66,6 +66,192 @@ const parseDwellStatus = (value: string): 'good' | 'warning' | 'critical' => {
 const getServiceAdvisorMetrics = async (): Promise<MetricCard[]> => {
   const API_BASE_URL = 'https://wki-service-management-app.onrender.com';
   
+  try {
+    // ENHANCED: Try parallel trend API calls first for current data
+    console.log('Fetching current trend data for Service Advisor metrics (parallel requests)...');
+    
+    // Define the metrics we want to fetch for Service Advisors
+    const serviceAdvisorMetrics = [
+      'etrPercentCases',
+      'smMonthlyDwellAvg', 
+      'percentCasesWith3Notes'
+    ];
+    
+    // Define location data structure (matching your working LocationMetrics pattern)
+    const locationData = [
+      { id: 'wichita', name: 'Wichita Kenworth' },
+      { id: 'emporia', name: 'Emporia Kenworth' },
+      { id: 'dodge-city', name: 'Dodge City Kenworth' },
+      { id: 'liberal', name: 'Liberal Kenworth' }
+    ];
+    
+    // Create promises for all location/metric combinations
+    const allPromises = locationData.flatMap(location => 
+      serviceAdvisorMetrics.map(async (metric) => {
+        try {
+          const trendResponse = await fetch(`${API_BASE_URL}/api/locationMetrics/trends/${location.id}/${metric}`);
+          if (trendResponse.ok) {
+            const trendData = await trendResponse.json();
+            if (trendData?.success && trendData?.data) {
+              const cv = trendData.data.currentValue;
+              const value = (cv !== null && cv !== undefined) ? String(cv) : 'N/A';
+              console.log(`✅ ${location.id} ${metric}: ${value}`);
+              return { 
+                locationId: location.id, 
+                locationName: location.name, 
+                metric, 
+                value, 
+                success: true 
+              };
+            }
+          }
+          console.log(`❌ ${location.id} ${metric}: No data`);
+          return { 
+            locationId: location.id, 
+            locationName: location.name, 
+            metric, 
+            value: 'N/A', 
+            success: false 
+          };
+        } catch (err) {
+          console.error(`Error fetching ${location.id} ${metric}:`, err);
+          return { 
+            locationId: location.id, 
+            locationName: location.name, 
+            metric, 
+            value: 'N/A', 
+            success: false 
+          };
+        }
+      })
+    );
+    
+    console.time('Service Advisor Parallel API Calls');
+    const results = await Promise.all(allPromises);
+    console.timeEnd('Service Advisor Parallel API Calls');
+    
+    // Define proper type for location values
+    type LocationValue = {
+      location: string;
+      value: string;
+      status: 'good' | 'warning' | 'critical';
+    };
+    
+    // Organize results by metric type
+    const metricGroups = {
+      etr: { 
+        title: 'ETR % of Cases', 
+        values: [] as LocationValue[], 
+        icon: <Target className="w-6 h-6" />, 
+        target: '> 15% (target)', 
+        impact: 'Customer satisfaction and service transparency', 
+        description: 'Percentage of cases with accurate estimated time of repair provided to customers' 
+      },
+      dwell: { 
+        title: 'SM Monthly Dwell Avg', 
+        values: [] as LocationValue[], 
+        icon: <Clock className="w-6 h-6" />, 
+        target: '< 3.0 days (target)', 
+        impact: 'Workflow efficiency and customer wait times', 
+        description: 'Average time trucks spend at dealership - affects customer satisfaction and operational efficiency' 
+      },
+      notes: { 
+        title: '% Cases with 3+ Notes', 
+        values: [] as LocationValue[], 
+        icon: <MessageSquare className="w-6 h-6" />, 
+        target: '< 5% (target)', 
+        impact: 'Customer engagement and case documentation quality', 
+        description: 'Cases requiring extensive documentation indicating communication complexity' 
+      }
+    };
+    
+    // Process results into the groups
+    results.forEach(result => {
+      if (result.metric === 'etrPercentCases') {
+        const formattedValue = result.value !== 'N/A' && !result.value.includes('%') 
+          ? `${result.value}%` 
+          : result.value;
+        metricGroups.etr.values.push({
+          location: result.locationName,
+          value: formattedValue,
+          status: parseEtrStatus(result.value)
+        });
+      } else if (result.metric === 'smMonthlyDwellAvg') {
+        const formattedValue = result.value !== 'N/A' && !result.value.includes('days')
+          ? `${result.value} days`
+          : result.value;
+        metricGroups.dwell.values.push({
+          location: result.locationName,
+          value: formattedValue,
+          status: parseDwellStatus(result.value)
+        });
+      } else if (result.metric === 'percentCasesWith3Notes') {
+        const formattedValue = result.value !== 'N/A' && !result.value.includes('%')
+          ? `${result.value}%`
+          : result.value;
+        metricGroups.notes.values.push({
+          location: result.locationName,
+          value: formattedValue,
+          status: parseNotesStatus(result.value)
+        });
+      }
+    });
+    
+    // Check if we got good data from trends
+    const successfulResults = results.filter(r => r.success);
+    console.log(`✅ Got ${successfulResults.length} successful trend results out of ${results.length} total requests`);
+    
+    if (successfulResults.length > 0) {
+      console.log('Using current trend data for Service Advisor metrics');
+      
+      // Convert to MetricCard format with current data
+      return [
+        {
+          title: metricGroups.etr.title,
+          value: '', 
+          target: metricGroups.etr.target,
+          status: 'good', 
+          impact: metricGroups.etr.impact,
+          description: metricGroups.etr.description,
+          icon: metricGroups.etr.icon,
+          location: 'All Locations',
+          locations: metricGroups.etr.values
+        },
+        {
+          title: metricGroups.dwell.title,
+          value: '',
+          target: metricGroups.dwell.target,
+          status: 'good',
+          impact: metricGroups.dwell.impact,
+          description: metricGroups.dwell.description,
+          icon: metricGroups.dwell.icon,
+          location: 'All Locations',
+          locations: metricGroups.dwell.values
+        },
+        {
+          title: metricGroups.notes.title,
+          value: '',
+          target: metricGroups.notes.target,
+          status: 'good',
+          impact: metricGroups.notes.impact,
+          description: metricGroups.notes.description,
+          icon: metricGroups.notes.icon,
+          location: 'All Locations',
+          locations: metricGroups.notes.values
+        }
+      ];
+    }
+    
+    // Fallback to original logic if trends don't work
+    console.log('Trends data insufficient, falling back to original locationMetrics endpoint...');
+    
+  } catch (error) {
+    console.error('Error in enhanced metrics fetch:', error);
+  }
+
+  // ORIGINAL FALLBACK LOGIC - Completely rewritten to avoid TypeScript indexing issues
+  console.log('Using original API endpoint as fallback...');
+  
   const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
   if (!response.ok) {
     throw new Error(`Failed to fetch metrics: ${response.status} ${response.statusText}`);
@@ -73,11 +259,39 @@ const getServiceAdvisorMetrics = async (): Promise<MetricCard[]> => {
   
   const apiResponse = await response.json();
   
+  // Define proper type for location values
+  type LocationValue = {
+    location: string;
+    value: string;
+    status: 'good' | 'warning' | 'critical';
+  };
+  
   // Initialize combined metrics for all locations
   const combinedMetrics = {
-    etr: { title: 'ETR % of Cases', values: [] as any[], icon: <Target className="w-6 h-6" />, target: '> 15% (target)', impact: 'Customer satisfaction and service transparency', description: 'Percentage of cases with accurate estimated time of repair provided to customers' },
-    dwell: { title: 'SM Monthly Dwell Avg', values: [] as any[], icon: <Clock className="w-6 h-6" />, target: '< 3.0 days (target)', impact: 'Workflow efficiency and customer wait times', description: 'Average time trucks spend at dealership - affects customer satisfaction and operational efficiency' },
-    notes: { title: '% Cases with 3+ Notes', values: [] as any[], icon: <MessageSquare className="w-6 h-6" />, target: '< 5% (target)', impact: 'Customer engagement and case documentation quality', description: 'Cases requiring extensive documentation indicating communication complexity' }
+    etr: { 
+      title: 'ETR % of Cases', 
+      values: [] as LocationValue[], 
+      icon: <Target className="w-6 h-6" />, 
+      target: '> 15% (target)', 
+      impact: 'Customer satisfaction and service transparency', 
+      description: 'Percentage of cases with accurate estimated time of repair provided to customers' 
+    },
+    dwell: { 
+      title: 'SM Monthly Dwell Avg', 
+      values: [] as LocationValue[], 
+      icon: <Clock className="w-6 h-6" />, 
+      target: '< 3.0 days (target)', 
+      impact: 'Workflow efficiency and customer wait times', 
+      description: 'Average time trucks spend at dealership - affects customer satisfaction and operational efficiency' 
+    },
+    notes: { 
+      title: '% Cases with 3+ Notes', 
+      values: [] as LocationValue[], 
+      icon: <MessageSquare className="w-6 h-6" />, 
+      target: '< 5% (target)', 
+      impact: 'Customer engagement and case documentation quality', 
+      description: 'Cases requiring extensive documentation indicating communication complexity' 
+    }
   };
   
   // Handle the nested data structure
