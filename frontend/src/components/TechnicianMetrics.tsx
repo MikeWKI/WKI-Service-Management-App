@@ -52,15 +52,229 @@ const getTechnicianMetrics = async (): Promise<MetricCard[]> => {
   const API_BASE_URL = 'https://wki-service-management-app.onrender.com';
   
   try {
+    // ENHANCED: Try parallel trend API calls first for current data
+    console.log('Fetching current trend data for Technician metrics (parallel requests)...');
+    
+    // Define the metrics we want to fetch for Technicians
+    const technicianMetrics = [
+      'etrPercentCases',
+      'triageHours',
+      'percentCasesWith3Notes'
+    ];
+    
+    // Define location data structure (matching working LocationMetrics pattern)
+    const locationData = [
+      { id: 'wichita', name: 'Wichita Kenworth' },
+      { id: 'emporia', name: 'Emporia Kenworth' },
+      { id: 'dodge-city', name: 'Dodge City Kenworth' },
+      { id: 'liberal', name: 'Liberal Kenworth' }
+    ];
+    
+    // Create promises for all location/metric combinations
+    const allPromises = locationData.flatMap(location => 
+      technicianMetrics.map(async (metric) => {
+        try {
+          const trendResponse = await fetch(`${API_BASE_URL}/api/locationMetrics/trends/${location.id}/${metric}`);
+          if (trendResponse.ok) {
+            const trendData = await trendResponse.json();
+            if (trendData?.success && trendData?.data) {
+              const cv = trendData.data.currentValue;
+              const value = (cv !== null && cv !== undefined) ? String(cv) : 'N/A';
+              console.log(`✅ ${location.id} ${metric}: ${value}`);
+              return { 
+                locationId: location.id, 
+                locationName: location.name, 
+                metric, 
+                value, 
+                success: true 
+              };
+            }
+          }
+          console.log(`❌ ${location.id} ${metric}: No data`);
+          return { 
+            locationId: location.id, 
+            locationName: location.name, 
+            metric, 
+            value: 'N/A', 
+            success: false 
+          };
+        } catch (err) {
+          console.error(`Error fetching ${location.id} ${metric}:`, err);
+          return { 
+            locationId: location.id, 
+            locationName: location.name, 
+            metric, 
+            value: 'N/A', 
+            success: false 
+          };
+        }
+      })
+    );
+    
+    console.time('Technician Parallel API Calls');
+    const results = await Promise.all(allPromises);
+    console.timeEnd('Technician Parallel API Calls');
+    
+    // Define proper type for location values
+    type LocationValue = {
+      location: string;
+      value: string;
+      status: 'good' | 'warning' | 'critical';
+    };
+    
+    // Organize results by metric type
+    const metricGroups = {
+      etr: { 
+        title: 'ETR % of Cases', 
+        values: [] as LocationValue[], 
+        icon: <Target className="w-6 h-6" />, 
+        target: '> 15% (target)', 
+        impact: 'Customer satisfaction and repair transparency', 
+        description: 'Percentage of cases with accurate estimated time of repair - critical for customer communication' 
+      },
+      triage: { 
+        title: 'SM Average Triage Hours', 
+        values: [] as LocationValue[], 
+        icon: <Clock className="w-6 h-6" />, 
+        target: '< 2.0 hrs (target)', 
+        impact: 'Initial diagnosis efficiency and workflow', 
+        description: 'Time spent on initial case assessment and diagnosis - affects overall repair timeline' 
+      },
+      notes: { 
+        title: '% Cases with 3+ Notes', 
+        values: [] as LocationValue[], 
+        icon: <MessageSquare className="w-6 h-6" />, 
+        target: '< 5% (target)', 
+        impact: 'Repair complexity and documentation quality', 
+        description: 'Cases requiring extensive documentation often indicate complex repairs or communication issues' 
+      }
+    };
+    
+    // Process results into the groups
+    results.forEach(result => {
+      if (result.metric === 'etrPercentCases') {
+        const formattedValue = result.value !== 'N/A' && !result.value.includes('%')
+          ? `${result.value}%`
+          : result.value;
+        metricGroups.etr.values.push({
+          location: result.locationName,
+          value: formattedValue,
+          status: parseEtrStatus(result.value)
+        });
+      } else if (result.metric === 'triageHours') {
+        const formattedValue = result.value !== 'N/A' && !result.value.includes('hrs')
+          ? `${result.value} hrs`
+          : result.value;
+        metricGroups.triage.values.push({
+          location: result.locationName,
+          value: formattedValue,
+          status: parseTriageStatus(result.value)
+        });
+      } else if (result.metric === 'percentCasesWith3Notes') {
+        const formattedValue = result.value !== 'N/A' && !result.value.includes('%')
+          ? `${result.value}%`
+          : result.value;
+        metricGroups.notes.values.push({
+          location: result.locationName,
+          value: formattedValue,
+          status: parseNotesStatus(result.value)
+        });
+      }
+    });
+    
+    // Check if we got good data from trends
+    const successfulResults = results.filter(r => r.success);
+    console.log(`✅ Got ${successfulResults.length} successful trend results out of ${results.length} total requests`);
+    
+    if (successfulResults.length > 0) {
+      console.log('Using current trend data for Technician metrics');
+      
+      // Convert to MetricCard format with current data
+      return [
+        {
+          title: metricGroups.etr.title,
+          value: '', 
+          target: metricGroups.etr.target,
+          status: 'good', 
+          impact: metricGroups.etr.impact,
+          description: metricGroups.etr.description,
+          icon: metricGroups.etr.icon,
+          location: 'All Locations',
+          locations: metricGroups.etr.values
+        },
+        {
+          title: metricGroups.triage.title,
+          value: '',
+          target: metricGroups.triage.target,
+          status: 'good',
+          impact: metricGroups.triage.impact,
+          description: metricGroups.triage.description,
+          icon: metricGroups.triage.icon,
+          location: 'All Locations',
+          locations: metricGroups.triage.values
+        },
+        {
+          title: metricGroups.notes.title,
+          value: '',
+          target: metricGroups.notes.target,
+          status: 'good',
+          impact: metricGroups.notes.impact,
+          description: metricGroups.notes.description,
+          icon: metricGroups.notes.icon,
+          location: 'All Locations',
+          locations: metricGroups.notes.values
+        }
+      ];
+    }
+    
+    // Fallback to original logic if trends don't work
+    console.log('Trends data insufficient, falling back to original locationMetrics endpoint...');
+    
+  } catch (error) {
+    console.error('Error in enhanced Technician metrics fetch:', error);
+  }
+
+  // ORIGINAL FALLBACK LOGIC - Use the original API endpoint
+  console.log('Using original API endpoint as fallback...');
+  
+  try {
     const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
     if (response.ok) {
       const apiResponse = await response.json();
       
+      // Define proper type for location values
+      type LocationValue = {
+        location: string;
+        value: string;
+        status: 'good' | 'warning' | 'critical';
+      };
+      
       // Initialize combined metrics for all locations
       const combinedMetrics = {
-        etr: { title: 'ETR % of Cases', values: [] as any[], icon: <Target className="w-6 h-6" />, target: '> 15% (target)', impact: 'Customer satisfaction and repair transparency', description: 'Percentage of cases with accurate estimated time of repair - critical for customer communication' },
-        triage: { title: 'SM Average Triage Hours', values: [] as any[], icon: <Clock className="w-6 h-6" />, target: '< 2.0 hrs (target)', impact: 'Initial diagnosis efficiency and workflow', description: 'Time spent on initial case assessment and diagnosis - affects overall repair timeline' },
-        notes: { title: '% Cases with 3+ Notes', values: [] as any[], icon: <MessageSquare className="w-6 h-6" />, target: '< 5% (target)', impact: 'Repair complexity and documentation quality', description: 'Cases requiring extensive documentation often indicate complex repairs or communication issues' }
+        etr: { 
+          title: 'ETR % of Cases', 
+          values: [] as LocationValue[], 
+          icon: <Target className="w-6 h-6" />, 
+          target: '> 15% (target)', 
+          impact: 'Customer satisfaction and repair transparency', 
+          description: 'Percentage of cases with accurate estimated time of repair - critical for customer communication' 
+        },
+        triage: { 
+          title: 'SM Average Triage Hours', 
+          values: [] as LocationValue[], 
+          icon: <Clock className="w-6 h-6" />, 
+          target: '< 2.0 hrs (target)', 
+          impact: 'Initial diagnosis efficiency and workflow', 
+          description: 'Time spent on initial case assessment and diagnosis - affects overall repair timeline' 
+        },
+        notes: { 
+          title: '% Cases with 3+ Notes', 
+          values: [] as LocationValue[], 
+          icon: <MessageSquare className="w-6 h-6" />, 
+          target: '< 5% (target)', 
+          impact: 'Repair complexity and documentation quality', 
+          description: 'Cases requiring extensive documentation often indicate complex repairs or communication issues' 
+        }
       };
       
       // Handle the nested data structure
@@ -138,7 +352,7 @@ const getTechnicianMetrics = async (): Promise<MetricCard[]> => {
     console.log('Using fallback data due to API error:', error);
   }
   
-  // Fallback data with combined location structure
+  // Final fallback data with combined location structure
   return [
     {
       title: 'ETR % of Cases',

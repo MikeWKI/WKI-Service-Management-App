@@ -44,14 +44,192 @@ const getPartsStaffMetrics = async (): Promise<MetricCard[]> => {
   const API_BASE_URL = 'https://wki-service-management-app.onrender.com';
   
   try {
+    // ENHANCED: Try parallel trend API calls first for current data
+    console.log('Fetching current trend data for Parts Staff metrics (parallel requests)...');
+    
+    // Define the metrics we want to fetch for Parts Staff
+    const partsStaffMetrics = [
+      'percentCasesWith3Notes',
+      'smMonthlyDwellAvg'
+    ];
+    
+    // Define location data structure (matching working LocationMetrics pattern)
+    const locationData = [
+      { id: 'wichita', name: 'Wichita Kenworth' },
+      { id: 'emporia', name: 'Emporia Kenworth' },
+      { id: 'dodge-city', name: 'Dodge City Kenworth' },
+      { id: 'liberal', name: 'Liberal Kenworth' }
+    ];
+    
+    // Create promises for all location/metric combinations
+    const allPromises = locationData.flatMap(location => 
+      partsStaffMetrics.map(async (metric) => {
+        try {
+          const trendResponse = await fetch(`${API_BASE_URL}/api/locationMetrics/trends/${location.id}/${metric}`);
+          if (trendResponse.ok) {
+            const trendData = await trendResponse.json();
+            if (trendData?.success && trendData?.data) {
+              const cv = trendData.data.currentValue;
+              const value = (cv !== null && cv !== undefined) ? String(cv) : 'N/A';
+              console.log(`✅ ${location.id} ${metric}: ${value}`);
+              return { 
+                locationId: location.id, 
+                locationName: location.name, 
+                metric, 
+                value, 
+                success: true 
+              };
+            }
+          }
+          console.log(`❌ ${location.id} ${metric}: No data`);
+          return { 
+            locationId: location.id, 
+            locationName: location.name, 
+            metric, 
+            value: 'N/A', 
+            success: false 
+          };
+        } catch (err) {
+          console.error(`Error fetching ${location.id} ${metric}:`, err);
+          return { 
+            locationId: location.id, 
+            locationName: location.name, 
+            metric, 
+            value: 'N/A', 
+            success: false 
+          };
+        }
+      })
+    );
+    
+    console.time('Parts Staff Parallel API Calls');
+    const results = await Promise.all(allPromises);
+    console.timeEnd('Parts Staff Parallel API Calls');
+    
+    // Define proper type for location values
+    type LocationValue = {
+      location: string;
+      value: string;
+      status: 'good' | 'warning' | 'critical';
+    };
+    
+    // Organize results by metric type
+    const metricGroups = {
+      notes: { 
+        title: '% Cases with 3+ Notes', 
+        values: [] as LocationValue[], 
+        icon: <MessageSquare className="w-6 h-6" />, 
+        target: '< 5% (target)', 
+        impact: 'Parts availability and procurement efficiency', 
+        description: 'Cases requiring extensive documentation often indicate parts delays or complexity' 
+      },
+      dwell: { 
+        title: 'Monthly Dwell Average', 
+        values: [] as LocationValue[], 
+        icon: <Clock className="w-6 h-6" />, 
+        target: '< 3.0 days (target)', 
+        impact: 'Customer satisfaction and service efficiency', 
+        description: 'Average time trucks spend at dealership - parts availability directly impacts dwell time' 
+      }
+    };
+    
+    // Process results into the groups
+    results.forEach(result => {
+      if (result.metric === 'percentCasesWith3Notes') {
+        const formattedValue = result.value !== 'N/A' && !result.value.includes('%')
+          ? `${result.value}%`
+          : result.value;
+        metricGroups.notes.values.push({
+          location: result.locationName,
+          value: formattedValue,
+          status: parseNotesStatus(result.value)
+        });
+      } else if (result.metric === 'smMonthlyDwellAvg') {
+        const formattedValue = result.value !== 'N/A' && !result.value.includes('days')
+          ? `${result.value} days`
+          : result.value;
+        metricGroups.dwell.values.push({
+          location: result.locationName,
+          value: formattedValue,
+          status: parseDwellStatus(result.value)
+        });
+      }
+    });
+    
+    // Check if we got good data from trends
+    const successfulResults = results.filter(r => r.success);
+    console.log(`✅ Got ${successfulResults.length} successful trend results out of ${results.length} total requests`);
+    
+    if (successfulResults.length > 0) {
+      console.log('Using current trend data for Parts Staff metrics');
+      
+      // Convert to MetricCard format with current data
+      return [
+        {
+          title: metricGroups.notes.title,
+          value: '', 
+          target: metricGroups.notes.target,
+          status: 'good', 
+          impact: metricGroups.notes.impact,
+          description: metricGroups.notes.description,
+          icon: metricGroups.notes.icon,
+          location: 'All Locations',
+          locations: metricGroups.notes.values
+        },
+        {
+          title: metricGroups.dwell.title,
+          value: '',
+          target: metricGroups.dwell.target,
+          status: 'good',
+          impact: metricGroups.dwell.impact,
+          description: metricGroups.dwell.description,
+          icon: metricGroups.dwell.icon,
+          location: 'All Locations',
+          locations: metricGroups.dwell.values
+        }
+      ];
+    }
+    
+    // Fallback to original logic if trends don't work
+    console.log('Trends data insufficient, falling back to original locationMetrics endpoint...');
+    
+  } catch (error) {
+    console.error('Error in enhanced Parts Staff metrics fetch:', error);
+  }
+
+  // ORIGINAL FALLBACK LOGIC - Use the original API endpoint
+  console.log('Using original API endpoint as fallback...');
+  
+  try {
     const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
     if (response.ok) {
       const apiResponse = await response.json();
       
+      // Define proper type for location values
+      type LocationValue = {
+        location: string;
+        value: string;
+        status: 'good' | 'warning' | 'critical';
+      };
+      
       // Initialize combined metrics for all locations
       const combinedMetrics = {
-        notes: { title: '% Cases with 3+ Notes', values: [] as any[], icon: <MessageSquare className="w-6 h-6" />, target: '< 5% (target)', impact: 'Parts availability and procurement efficiency', description: 'Cases requiring extensive documentation often indicate parts delays or complexity' },
-        dwell: { title: 'Monthly Dwell Average', values: [] as any[], icon: <Clock className="w-6 h-6" />, target: '< 3.0 days (target)', impact: 'Customer satisfaction and service efficiency', description: 'Average time trucks spend at dealership - parts availability directly impacts dwell time' }
+        notes: { 
+          title: '% Cases with 3+ Notes', 
+          values: [] as LocationValue[], 
+          icon: <MessageSquare className="w-6 h-6" />, 
+          target: '< 5% (target)', 
+          impact: 'Parts availability and procurement efficiency', 
+          description: 'Cases requiring extensive documentation often indicate parts delays or complexity' 
+        },
+        dwell: { 
+          title: 'Monthly Dwell Average', 
+          values: [] as LocationValue[], 
+          icon: <Clock className="w-6 h-6" />, 
+          target: '< 3.0 days (target)', 
+          impact: 'Customer satisfaction and service efficiency', 
+          description: 'Average time trucks spend at dealership - parts availability directly impacts dwell time' 
+        }
       };
       
       // Handle the nested data structure
@@ -110,7 +288,7 @@ const getPartsStaffMetrics = async (): Promise<MetricCard[]> => {
     console.log('Using fallback data due to API error:', error);
   }
   
-  // Fallback data with combined location structure
+  // Final fallback data with combined location structure
   return [
     {
       title: '% Cases with 3+ Notes',
