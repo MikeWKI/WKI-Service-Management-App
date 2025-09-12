@@ -121,7 +121,7 @@ const getPartsStaffMetrics = async (): Promise<MetricCard[]> => {
         icon: <MessageSquare className="w-6 h-6" />, 
         target: '< 5% (target)', 
         impact: 'Parts availability and procurement efficiency', 
-        description: 'Cases requiring extensive documentation often indicate parts delays or complexity' 
+        description: 'Cases require notations to be entered by everyone interacting with the case, If it impacts the repair order or the information is potentially relevant to another department there should be notes added to the case' 
       },
       dwell: { 
         title: 'Monthly Dwell Average', 
