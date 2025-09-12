@@ -119,8 +119,8 @@ const getPartsStaffMetrics = async (): Promise<MetricCard[]> => {
         title: '% Cases with 3+ Notes', 
         values: [] as LocationValue[], 
         icon: <MessageSquare className="w-6 h-6" />, 
-        target: '< 5% (target)', 
-        impact: 'Parts availability and procurement efficiency', 
+        target: '100% (target)', 
+        impact: 'Parts availability and Procurement Efficiency', 
         description: 'Cases require notations to be entered by everyone interacting with the case, If it impacts the repair order or the information is potentially relevant to another department there should be notes added to the case' 
       },
       dwell: { 
