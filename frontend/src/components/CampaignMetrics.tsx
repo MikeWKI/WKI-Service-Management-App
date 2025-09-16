@@ -34,31 +34,36 @@ const convertBackendCampaignData = (campaignData: any, extractedAt: string): Cam
       return null;
     }
     
+    // FIXED: Handle the correct backend response structure
+    // Backend returns: { success: true, data: campaignData, period: "...", extractedAt: "..." }
+    
     // Check if we have the new detailed campaign structure from pages 2-3
     if (campaignData.locations && typeof campaignData.locations === 'object') {
       // New structure with detailed campaigns by location from pages 2-3
-      const locations: LocationCampaignData[] = Object.entries(campaignData.locations).map(([locationName, locationCampaigns]: [string, any]) => {
-        const campaigns: CampaignData[] = Object.entries(locationCampaigns).map(([campaignName, campaignData]: [string, any]) => ({
-          id: campaignName.toLowerCase().replace(/[^a-z0-9]/g, '-'),
-          name: campaignName,
-          locationScore: parseFloat(campaignData.closeRate?.replace('%', '')) || 0,
-          nationalScore: parseFloat(campaignData.nationalRate?.replace('%', '')) || 0,
-          goal: parseFloat(campaignData.goal?.replace('%', '')) || 100,
-          status: getStatusFromScores(
-            parseFloat(campaignData.closeRate?.replace('%', '')) || 0,
-            parseFloat(campaignData.nationalRate?.replace('%', '')) || 0,
-            parseFloat(campaignData.goal?.replace('%', '')) || 100
-          )
-        }));
-        
-        const overallScore = campaigns.reduce((sum, camp) => sum + camp.locationScore, 0) / campaigns.length;
-        
-        return {
-          locationName,
-          campaigns,
-          overallScore
-        };
-      });
+      const locations: LocationCampaignData[] = Object.entries(campaignData.locations)
+        .filter(([locationName]) => !locationName.toLowerCase().includes('emporia')) // FIXED: Exclude Emporia
+        .map(([locationName, locationCampaigns]: [string, any]) => {
+          const campaigns: CampaignData[] = Object.entries(locationCampaigns).map(([campaignName, campaignData]: [string, any]) => ({
+            id: campaignName.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+            name: campaignName,
+            locationScore: parseFloat(campaignData.closeRate?.replace('%', '')) || 0,
+            nationalScore: parseFloat(campaignData.nationalRate?.replace('%', '')) || 0,
+            goal: parseFloat(campaignData.goal?.replace('%', '')) || 100,
+            status: getStatusFromScores(
+              parseFloat(campaignData.closeRate?.replace('%', '')) || 0,
+              parseFloat(campaignData.nationalRate?.replace('%', '')) || 0,
+              parseFloat(campaignData.goal?.replace('%', '')) || 100
+            )
+          }));
+          
+          const overallScore = campaigns.reduce((sum, camp) => sum + camp.locationScore, 0) / campaigns.length;
+          
+          return {
+            locationName,
+            campaigns,
+            overallScore
+          };
+        });
       
       return {
         locations,
@@ -72,9 +77,14 @@ const convertBackendCampaignData = (campaignData: any, extractedAt: string): Cam
       const locations: LocationCampaignData[] = [];
       const locationMap: { [key: string]: CampaignData[] } = {};
       
-      // Process each campaign and organize by location
+      // Process each campaign and organize by location (EXCLUDING Emporia)
       Object.entries(campaignData.campaigns).forEach(([campaignName, campaign]: [string, any]) => {
         Object.entries(campaign.locations || {}).forEach(([locationName, closeRate]: [string, any]) => {
+          // FIXED: Skip Emporia as they don't track campaigns
+          if (locationName.toLowerCase().includes('emporia')) {
+            return;
+          }
+          
           if (!locationMap[locationName]) {
             locationMap[locationName] = [];
           }
@@ -254,85 +264,87 @@ const createCampaignMetricsFromLocations = (backendData: any): CampaignMetricsDa
     }
 
     // Use actual campaign data from PDF parsing if available
-    const campaignLocations: LocationCampaignData[] = locations.map((location: any) => {
-      // If the location has campaign data from PDF parsing, use it
-      if (location.campaigns && location.campaigns.length > 0) {
-        const overallScore = location.campaigns.reduce((sum: number, camp: CampaignData) => sum + camp.locationScore, 0) / location.campaigns.length;
+    const campaignLocations: LocationCampaignData[] = locations
+      .filter((location: any) => !location.name.toLowerCase().includes('emporia')) // FIXED: Exclude Emporia
+      .map((location: any) => {
+        // If the location has campaign data from PDF parsing, use it
+        if (location.campaigns && location.campaigns.length > 0) {
+          const overallScore = location.campaigns.reduce((sum: number, camp: CampaignData) => sum + camp.locationScore, 0) / location.campaigns.length;
+          
+          return {
+            locationName: location.name,
+            campaigns: location.campaigns.map((campaign: any) => ({
+              id: campaign.campaignId,
+              name: campaign.campaignName,
+              locationScore: campaign.locationScore,
+              nationalScore: campaign.nationalScore,
+              goal: campaign.goal,
+              status: campaign.status || getStatusFromScores(campaign.locationScore, campaign.nationalScore, campaign.goal)
+            })),
+            overallScore
+          };
+        }
         
+        // Fallback: Create derived campaigns from service metrics (for backwards compatibility)
+        const campaigns: CampaignData[] = [
+          {
+            id: 'vsc-compliance',
+            name: 'VSC Compliance Campaign',
+            locationScore: parseFloat(location.vscCaseRequirements?.toString().replace('%', '')) || 0,
+            nationalScore: 85, // National average benchmark
+            goal: 95,
+            status: getStatusFromScores(
+              parseFloat(location.vscCaseRequirements?.toString().replace('%', '')) || 0,
+              85,
+              95
+            )
+          },
+          {
+            id: 'triage-efficiency',
+            name: 'Triage Efficiency Campaign',
+            locationScore: parseFloat(location.triagePercentLess4Hours?.toString().replace('%', '')) || 0,
+            nationalScore: 75, // National average benchmark
+            goal: 80,
+            status: getStatusFromScores(
+              parseFloat(location.triagePercentLess4Hours?.toString().replace('%', '')) || 0,
+              75,
+              80
+            )
+          },
+          {
+            id: 'case-quality',
+            name: 'Case Quality Campaign',
+            locationScore: Math.max(0, 100 - (parseFloat(location.percentCasesWith3Notes?.toString().replace('%', '')) || 0)),
+            nationalScore: 95, // Inverted metric - fewer notes is better
+            goal: 98,
+            status: getStatusFromScores(
+              Math.max(0, 100 - (parseFloat(location.percentCasesWith3Notes?.toString().replace('%', '')) || 0)),
+              95,
+              98
+            )
+          },
+          {
+            id: 'tech-activation',
+            name: 'TT+ Activation Campaign',
+            locationScore: parseFloat(location.ttActivation?.toString().replace('%', '')) || 0,
+            nationalScore: 85, // National average benchmark
+            goal: 90,
+            status: getStatusFromScores(
+              parseFloat(location.ttActivation?.toString().replace('%', '')) || 0,
+              85,
+              90
+            )
+          }
+        ];
+
+        const overallScore = campaigns.reduce((sum, camp) => sum + camp.locationScore, 0) / campaigns.length;
+
         return {
           locationName: location.name,
-          campaigns: location.campaigns.map((campaign: any) => ({
-            id: campaign.campaignId,
-            name: campaign.campaignName,
-            locationScore: campaign.locationScore,
-            nationalScore: campaign.nationalScore,
-            goal: campaign.goal,
-            status: campaign.status || getStatusFromScores(campaign.locationScore, campaign.nationalScore, campaign.goal)
-          })),
+          campaigns,
           overallScore
         };
-      }
-      
-      // Fallback: Create derived campaigns from service metrics (for backwards compatibility)
-      const campaigns: CampaignData[] = [
-        {
-          id: 'vsc-compliance',
-          name: 'VSC Compliance Campaign',
-          locationScore: parseFloat(location.vscCaseRequirements?.toString().replace('%', '')) || 0,
-          nationalScore: 85, // National average benchmark
-          goal: 95,
-          status: getStatusFromScores(
-            parseFloat(location.vscCaseRequirements?.toString().replace('%', '')) || 0,
-            85,
-            95
-          )
-        },
-        {
-          id: 'triage-efficiency',
-          name: 'Triage Efficiency Campaign',
-          locationScore: parseFloat(location.triagePercentLess4Hours?.toString().replace('%', '')) || 0,
-          nationalScore: 75, // National average benchmark
-          goal: 80,
-          status: getStatusFromScores(
-            parseFloat(location.triagePercentLess4Hours?.toString().replace('%', '')) || 0,
-            75,
-            80
-          )
-        },
-        {
-          id: 'case-quality',
-          name: 'Case Quality Campaign',
-          locationScore: Math.max(0, 100 - (parseFloat(location.percentCasesWith3Notes?.toString().replace('%', '')) || 0)),
-          nationalScore: 95, // Inverted metric - fewer notes is better
-          goal: 98,
-          status: getStatusFromScores(
-            Math.max(0, 100 - (parseFloat(location.percentCasesWith3Notes?.toString().replace('%', '')) || 0)),
-            95,
-            98
-          )
-        },
-        {
-          id: 'tech-activation',
-          name: 'TT+ Activation Campaign',
-          locationScore: parseFloat(location.ttActivation?.toString().replace('%', '')) || 0,
-          nationalScore: 85, // National average benchmark
-          goal: 90,
-          status: getStatusFromScores(
-            parseFloat(location.ttActivation?.toString().replace('%', '')) || 0,
-            85,
-            90
-          )
-        }
-      ];
-
-      const overallScore = campaigns.reduce((sum, camp) => sum + camp.locationScore, 0) / campaigns.length;
-
-      return {
-        locationName: location.name,
-        campaigns,
-        overallScore
-      };
-    });
+      });
 
     return {
       locations: campaignLocations,
@@ -343,9 +355,6 @@ const createCampaignMetricsFromLocations = (backendData: any): CampaignMetricsDa
     return null;
   }
 };
-
-// Note: Campaign data should come from legitimate scorecard uploads
-// Mock data removed - only show real data
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -383,7 +392,7 @@ export default function CampaignMetrics() {
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
-  // FIXED: Direct API integration with better error handling
+  // FIXED: Direct API integration with correct response handling
   const fetchCampaignDataDirect = async () => {
     setIsLoading(true);
     console.log('📊 Campaign Metrics: Starting data fetch...');
@@ -394,74 +403,57 @@ export default function CampaignMetrics() {
         setTimeout(() => reject(new Error('Request timeout')), 10000); // 10 second timeout
       });
 
-      // FIXED: Try multiple endpoints in order of preference
-      const campaignEndpoints = [
-        `${API_BASE_URL}/api/locationMetrics/campaigns`,
-        `${API_BASE_URL}/api/locationMetrics`
-      ];
-
-      console.log('🔍 Trying campaign-specific endpoints...');
+      console.log('🔍 Trying campaign-specific endpoint...');
       
-      for (const endpoint of campaignEndpoints) {
-        try {
-          console.log(`🌐 Fetching from: ${endpoint}`);
-          const responsePromise = fetch(endpoint);
-          const response = await Promise.race([
-            responsePromise,
-            timeoutPromise
-          ]) as Response;
+      // FIXED: Primary endpoint for campaign data
+      const endpoint = `${API_BASE_URL}/api/locationMetrics/campaigns`;
+      
+      try {
+        console.log(`🌐 Fetching from: ${endpoint}`);
+        const responsePromise = fetch(endpoint);
+        const response = await Promise.race([
+          responsePromise,
+          timeoutPromise
+        ]) as Response;
+        
+        if (response && response.ok) {
+          const data = await response.json();
+          console.log(`✅ Response from ${endpoint}:`, data);
           
-          if (response && response.ok) {
-            const data = await response.json();
-            console.log(`✅ Response from ${endpoint}:`, data);
+          // FIXED: Handle the correct backend response structure
+          if (data.success && data.data) {
+            console.log('📋 Found campaign data from backend');
+            console.log('📅 Period:', data.period);
+            console.log('📁 File:', data.fileName);
+            console.log('⏰ Extracted at:', data.extractedAt);
             
-            // Check for campaign data in response
-            if (data.success && data.data) {
-              let campaignData = null;
-              
-              // Look for campaign completion rates in different locations
-              if (data.data.campaignCompletionRates) {
-                campaignData = data.data.campaignCompletionRates;
-                console.log('📋 Found direct campaign completion rates');
-              } else if (data.data.dealership?.campaignCompletionRates) {
-                campaignData = data.data.dealership.campaignCompletionRates;
-                console.log('📋 Found dealership campaign completion rates');
-              } else if (data.data.locations && data.data.locations.length > 0) {
-                // Extract campaign data from locations (fallback approach)
-                console.log('📋 Processing campaign data from location metrics');
-                campaignData = processCampaignFromLocations(data.data.locations);
-              }
-              
-              if (campaignData) {
-                const convertedData = convertBackendCampaignData(
-                  campaignData, 
-                  data.data.extractedAt || new Date().toISOString()
-                );
-                
-                if (convertedData) {
-                  console.log('✅ Campaign data successfully converted:', convertedData);
-                  setCampaignData(convertedData);
-                  setLastUpdated(new Date(data.data.extractedAt || new Date().toISOString()).toLocaleString());
-                  setIsLoading(false);
-                  return; // Success - exit early
-                }
-              }
+            // Convert the campaign data using the corrected structure
+            const convertedData = convertBackendCampaignData(
+              data.data, // This is the actual campaign data from backend
+              data.extractedAt || new Date().toISOString()
+            );
+            
+            if (convertedData) {
+              console.log('✅ Campaign data successfully converted:', convertedData);
+              setCampaignData(convertedData);
+              setLastUpdated(data.period || new Date(data.extractedAt || new Date().toISOString()).toLocaleString());
+              setIsLoading(false);
+              return; // Success - exit early
             }
-          } else {
-            console.warn(`❌ ${endpoint} returned status: ${response?.status}`);
           }
-        } catch (endpointError) {
-          console.warn(`❌ Campaign endpoint ${endpoint} failed:`, endpointError);
-          continue; // Try next endpoint
+        } else {
+          console.warn(`❌ Campaign endpoint returned status: ${response?.status}`);
         }
+      } catch (endpointError) {
+        console.warn(`❌ Campaign endpoint failed:`, endpointError);
       }
       
-      // FIXED: Final fallback - create campaign metrics from service data
+      // FIXED: Fallback - create campaign metrics from service data
       console.log('🔄 No campaign-specific data found, creating from service metrics...');
-      const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
+      const fallbackResponse = await fetch(`${API_BASE_URL}/api/locationMetrics`);
       
-      if (response.ok) {
-        const data = await response.json();
+      if (fallbackResponse.ok) {
+        const data = await fallbackResponse.json();
         console.log('📊 Service metrics data for campaign creation:', data);
         
         const parsedData = createCampaignMetricsFromLocations(data);
@@ -494,7 +486,7 @@ export default function CampaignMetrics() {
     await fetchCampaignDataDirect();
   }, []);
 
-  // FIXED: Single event listener for scorecard uploads (removed duplicate)
+  // FIXED: Single event listener for scorecard uploads
   useEffect(() => {
     console.log('🚀 Campaign Metrics: Component mounted, fetching initial data...');
     fetchCampaignData();
@@ -628,7 +620,7 @@ export default function CampaignMetrics() {
             <span className="text-2xl font-bold text-green-400">{excellentCount}</span>
           </div>
           <p className="text-slate-300 font-medium">At Goal (100%)</p>
-          <p className="text-slate-400 text-sm">{((excellentCount / totalCampaigns) * 100).toFixed(1)}% of campaigns</p>
+          <p className="text-slate-400 text-sm">{totalCampaigns > 0 ? ((excellentCount / totalCampaigns) * 100).toFixed(1) : 0}% of campaigns</p>
         </div>
 
         <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-xl p-6 border border-slate-700">
@@ -637,7 +629,7 @@ export default function CampaignMetrics() {
             <span className="text-2xl font-bold text-red-400">{criticalCount}</span>
           </div>
           <p className="text-slate-300 font-medium">Critical Performance</p>
-          <p className="text-slate-400 text-sm">{((criticalCount / totalCampaigns) * 100).toFixed(1)}% need attention</p>
+          <p className="text-slate-400 text-sm">{totalCampaigns > 0 ? ((criticalCount / totalCampaigns) * 100).toFixed(1) : 0}% need attention</p>
         </div>
 
         <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 rounded-xl p-6 border border-slate-700">
@@ -706,63 +698,48 @@ export default function CampaignMetrics() {
             </div>
 
             {/* Campaigns Grid */}
-            {location.locationName.toLowerCase().includes('emporia') ? (
-              // Special message for Emporia Kenworth
-              <div className="bg-gradient-to-br from-slate-700 via-slate-800 to-slate-700 rounded-xl p-8 border border-slate-600 text-center">
-                <div className="text-6xl mb-4">ℹ️</div>
-                <h3 className="text-xl font-bold text-white mb-4">Campaign Metrics Not Scored</h3>
-                <p className="text-slate-300 mb-2">
-                  Campaign completion metrics are not tracked for this location.
-                </p>
-                <p className="text-slate-400 text-sm">
-                  Standard location metrics are still available and updated regularly.
-                </p>
-              </div>
-            ) : (
-              // Regular campaign display for other locations
-              <div className="grid gap-4">
-                {location.campaigns.map((campaign) => (
-                  <div key={campaign.id} className={`bg-gradient-to-r ${getStatusColor(campaign.status)} rounded-xl p-4 border-2`}>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center mb-2">
-                          {getStatusIcon(campaign.status)}
-                          <h3 className="text-white font-semibold ml-2 text-sm">{campaign.name}</h3>
+            <div className="grid gap-4">
+              {location.campaigns.map((campaign) => (
+                <div key={campaign.id} className={`bg-gradient-to-r ${getStatusColor(campaign.status)} rounded-xl p-4 border-2`}>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center mb-2">
+                        {getStatusIcon(campaign.status)}
+                        <h3 className="text-white font-semibold ml-2 text-sm">{campaign.name}</h3>
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <p className="text-white/80">Location Score</p>
+                          <p className="text-2xl font-bold text-white">{campaign.locationScore}%</p>
                         </div>
-                        
-                        <div className="grid grid-cols-3 gap-4 text-sm">
-                          <div>
-                            <p className="text-white/80">Location Score</p>
-                            <p className="text-2xl font-bold text-white">{campaign.locationScore}%</p>
-                          </div>
-                          <div>
-                            <p className="text-white/80">National Average</p>
-                            <p className="text-lg font-semibold text-white/90">{campaign.nationalScore}%</p>
-                          </div>
-                          <div>
-                            <p className="text-white/80">Goal</p>
-                            <p className="text-lg font-semibold text-white/90">{campaign.goal}%</p>
-                          </div>
+                        <div>
+                          <p className="text-white/80">National Average</p>
+                          <p className="text-lg font-semibold text-white/90">{campaign.nationalScore}%</p>
                         </div>
-                        
-                        <div className="mt-3">
-                          <div className="bg-white/20 rounded-full h-2">
-                            <div 
-                              className="bg-white rounded-full h-2 transition-all duration-500"
-                              style={{ width: `${Math.min(campaign.locationScore, 100)}%` }}
-                            />
-                          </div>
-                          <div className="flex justify-between text-xs text-white/70 mt-1">
-                            <span>0%</span>
-                            <span>Goal: {campaign.goal}%</span>
-                          </div>
+                        <div>
+                          <p className="text-white/80">Goal</p>
+                          <p className="text-lg font-semibold text-white/90">{campaign.goal}%</p>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-3">
+                        <div className="bg-white/20 rounded-full h-2">
+                          <div 
+                            className="bg-white rounded-full h-2 transition-all duration-500"
+                            style={{ width: `${Math.min(campaign.locationScore, 100)}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-xs text-white/70 mt-1">
+                          <span>0%</span>
+                          <span>Goal: {campaign.goal}%</span>
                         </div>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                </div>
+              ))}
+            </div>
           </div>
         ))}
       </div>
