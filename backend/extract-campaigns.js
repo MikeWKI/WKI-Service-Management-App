@@ -133,10 +133,12 @@ function calculateCampaignSummary(campaignData) {
   return summary;
 }
 
+// ...existing code...
+
 function extractCampaignCompletionRates(text) {
-  console.log('\n=== EXTRACTING CAMPAIGN COMPLETION RATES (FIXED VERSION) ===');
+  console.log('\n=== EXTRACTING CAMPAIGN COMPLETION RATES (CORRECTED VERSION) ===');
   
-  // Look for campaign data in the text - updated to match actual PDF format
+  // Look for campaign data in the text
   let campaignSectionStart = text.indexOf('Campaign Completion');
   
   if (campaignSectionStart === -1) {
@@ -148,6 +150,7 @@ function extractCampaignCompletionRates(text) {
   
   // Extract the campaign section text
   const campaignSection = text.substring(campaignSectionStart);
+  console.log('Campaign section preview:', campaignSection.substring(0, 500));
   
   const campaignData = {
     locations: {},
@@ -182,22 +185,38 @@ function extractCampaignCompletionRates(text) {
       
       // Extract text for this location only
       const locationText = campaignSection.substring(locationStart, locationEnd);
-      console.log(`Location text for ${locationName}: "${locationText.substring(0, 200)}..."`);
+      console.log(`Location text for ${locationName} (first 300 chars): "${locationText.substring(0, 300)}"`);
       
       // Initialize location campaigns
       campaignData.locations[locationName] = {};
       
-      // Look for campaign patterns in this location's text
-      // Pattern: campaign code + campaign name + three percentages
-      const campaignPattern = /(24KWL|25KWB|E\d+)\s+([^0-9]+?)\s+(\d+)%\s+(\d+)%\s+(\d+)%/g;
+      // CORRECTED: More flexible regex pattern to handle the actual PDF format
+      // This pattern looks for: campaign_code + campaign_name + percentage + percentage + percentage
+      const campaignPattern = /(24KWL|25KWB|E\d+)\s+([^%]+?)\s+(\d+)%\s+(\d+)%\s+(\d+)%/g;
       let match;
+      let campaignCount = 0;
       
       while ((match = campaignPattern.exec(locationText)) !== null) {
-        const [, campaignCode, campaignName, closeRate, nationalRate, goal] = match;
+        const [fullMatch, campaignCode, campaignName, closeRate, nationalRate, goal] = match;
         
-        const cleanCampaignName = campaignName.trim();
+        // Clean up campaign name - remove extra whitespace and normalize
+        let cleanCampaignName = campaignName.trim();
         
-        console.log(`  ✅ Found campaign: ${cleanCampaignName} - Close: ${closeRate}%, National: ${nationalRate}%, Goal: ${goal}%`);
+        // Handle special cases for campaign names
+        if (cleanCampaignName.includes('Bendix EC80 ABS ECU')) {
+          cleanCampaignName = 'Bendix EC80 ABS ECU Incorrect Signal Processing';
+        } else if (cleanCampaignName.includes('T180/T280/T380/T480')) {
+          cleanCampaignName = 'T180/T280/T380/T480 Exterior Lighting Programming';
+        } else if (cleanCampaignName.includes('PACCAR EPA17 MX-13')) {
+          cleanCampaignName = 'PACCAR EPA17 MX-13 Prognostic Repair-Camshaft';
+        } else if (cleanCampaignName.includes('PACCAR MX-13 EPA21')) {
+          cleanCampaignName = 'PACCAR MX-13 EPA21 Main Bearing Cap Bolts';
+        } else if (cleanCampaignName.includes('PACCAR MX-11 AND MX-13 OBD')) {
+          cleanCampaignName = 'PACCAR MX-11 AND MX-13 OBD Software Update';
+        }
+        
+        console.log(`  ✅ Campaign ${campaignCount + 1}: "${cleanCampaignName}"`);
+        console.log(`     Close Rate: ${closeRate}%, National: ${nationalRate}%, Goal: ${goal}%`);
         
         // Store by location
         campaignData.locations[locationName][cleanCampaignName] = {
@@ -215,44 +234,110 @@ function extractCampaignCompletionRates(text) {
           };
         }
         campaignData.campaigns[cleanCampaignName].locations[locationName] = `${closeRate}%`;
+        
+        campaignCount++;
       }
+      
+      console.log(`   Total campaigns found for ${locationName}: ${campaignCount}`);
     }
     
     // Calculate summary statistics
     campaignData.summary = calculateCampaignSummary(campaignData);
     
-    console.log('✅ Campaign extraction completed:', {
-      locationsCount: Object.keys(campaignData.locations).length,
-      campaignsCount: Object.keys(campaignData.campaigns).length,
-      summary: campaignData.summary
-    });
+    const totalCampaigns = Object.keys(campaignData.campaigns).length;
+    const totalLocationsWithData = Object.keys(campaignData.locations).filter(loc => 
+      Object.keys(campaignData.locations[loc]).length > 0
+    ).length;
+    
+    console.log('\n✅ Campaign extraction completed:');
+    console.log(`   Locations with data: ${totalLocationsWithData}`);
+    console.log(`   Unique campaigns: ${totalCampaigns}`);
+    console.log(`   Campaign names: ${Object.keys(campaignData.campaigns).join(', ')}`);
+    
+    // Log sample data for verification
+    if (campaignData.locations['Wichita Kenworth']) {
+      console.log('\n📋 Sample Wichita Kenworth campaigns:');
+      Object.keys(campaignData.locations['Wichita Kenworth']).forEach(campaignName => {
+        const campaign = campaignData.locations['Wichita Kenworth'][campaignName];
+        console.log(`   - ${campaignName}: ${campaign.closeRate} close rate`);
+      });
+    }
     
     return campaignData;
     
   } catch (error) {
     console.error('❌ Error extracting campaign rates:', error);
+    console.error('Error stack:', error.stack);
     return getExpectedCampaignRates();
   }
 }
 
-async function testCampaignExtraction() {
+function calculateCampaignSummary(campaignData) {
+  // Calculate overall summary statistics
+  const summary = {
+    totalCampaigns: Object.keys(campaignData.campaigns).length,
+    totalLocations: Object.keys(campaignData.locations).length,
+    overallCloseRate: '0%',
+    averageNationalRate: '0%',
+    campaignsAtGoal: 0,
+    topPerformingLocation: null,
+    lowestPerformingLocation: null
+  };
+  
   try {
-    const pdfPath = 'c:\\Users\\michaela\\Downloads\\W370 Service Scorecard August 2025.pdf';
-    const pdfBuffer = fs.readFileSync(pdfPath);
-    const data = await pdfParse(pdfBuffer);
+    // Calculate average close rates by location
+    const locationAverages = {};
     
-    console.log('=== TESTING FIXED CAMPAIGN EXTRACTION FUNCTION ===');
-    console.log('PDF Text Preview:');
-    console.log(data.text.substring(0, 500) + '...\n');
+    Object.keys(campaignData.locations).forEach(location => {
+      const campaigns = campaignData.locations[location];
+      const closeRates = Object.values(campaigns).map(c => 
+        parseFloat(c.closeRate.replace('%', ''))
+      );
+      
+      if (closeRates.length > 0) {
+        const average = closeRates.reduce((sum, rate) => sum + rate, 0) / closeRates.length;
+        locationAverages[location] = average;
+      }
+    });
     
-    const campaignRates = extractCampaignCompletionRates(data.text);
+    // Find top and lowest performing locations
+    if (Object.keys(locationAverages).length > 0) {
+      const sortedLocations = Object.entries(locationAverages)
+        .sort(([,a], [,b]) => b - a);
+      
+      summary.topPerformingLocation = {
+        name: sortedLocations[0][0],
+        averageRate: `${sortedLocations[0][1].toFixed(1)}%`
+      };
+      
+      summary.lowestPerformingLocation = {
+        name: sortedLocations[sortedLocations.length - 1][0],
+        averageRate: `${sortedLocations[sortedLocations.length - 1][1].toFixed(1)}%`
+      };
+      
+      // Calculate overall average
+      const overallAverage = Object.values(locationAverages)
+        .reduce((sum, rate) => sum + rate, 0) / Object.values(locationAverages).length;
+      summary.overallCloseRate = `${overallAverage.toFixed(1)}%`;
+    }
     
-    console.log('\n=== FINAL CAMPAIGN COMPLETION RATES ===');
-    console.log(JSON.stringify(campaignRates, null, 2));
+    // Count campaigns at goal (100%)
+    Object.values(campaignData.campaigns).forEach(campaign => {
+      const locationRates = Object.values(campaign.locations).map(rate => 
+        parseFloat(rate.replace('%', ''))
+      );
+      const averageRate = locationRates.reduce((sum, rate) => sum + rate, 0) / locationRates.length;
+      if (averageRate >= 100) {
+        summary.campaignsAtGoal++;
+      }
+    });
     
-  } catch (err) {
-    console.error('Error:', err.message);
+  } catch (error) {
+    console.error('Error calculating campaign summary:', error);
   }
+  
+  return summary;
 }
+
 
 testCampaignExtraction();
