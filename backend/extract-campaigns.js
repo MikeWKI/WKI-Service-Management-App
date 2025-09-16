@@ -1,7 +1,7 @@
 const fs = require('fs');
 const pdfParse = require('pdf-parse');
 
-// Test the campaign extraction functions
+// FIXED: Complete fallback campaign rates (excluding Emporia as requested)
 function getExpectedCampaignRates() {
   return {
     locations: {
@@ -31,13 +31,112 @@ function getExpectedCampaignRates() {
           nationalRate: '60%',
           goal: '100%'
         }
+      },
+      'Dodge City Kenworth': {
+        'Bendix EC80 ABS ECU Incorrect Signal Processing': {
+          closeRate: '71%',
+          nationalRate: '56%',
+          goal: '100%'
+        },
+        'PACCAR EPA17 MX-13 Prognostic Repair-Camshaft': {
+          closeRate: '100%',
+          nationalRate: '46%',
+          goal: '100%'
+        },
+        'PACCAR MX-13 EPA21 Main Bearing Cap Bolts': {
+          closeRate: '93%',
+          nationalRate: '75%',
+          goal: '100%'
+        },
+        'PACCAR MX-11 AND MX-13 OBD Software Update': {
+          closeRate: '40%',
+          nationalRate: '60%',
+          goal: '100%'
+        }
+      },
+      'Liberal Kenworth': {
+        'Bendix EC80 ABS ECU Incorrect Signal Processing': {
+          closeRate: '39%',
+          nationalRate: '56%',
+          goal: '100%'
+        },
+        'PACCAR EPA17 MX-13 Prognostic Repair-Camshaft': {
+          closeRate: '0%',
+          nationalRate: '46%',
+          goal: '100%'
+        },
+        'PACCAR MX-13 EPA21 Main Bearing Cap Bolts': {
+          closeRate: '83%',
+          nationalRate: '75%',
+          goal: '100%'
+        },
+        'PACCAR MX-11 AND MX-13 OBD Software Update': {
+          closeRate: '50%',
+          nationalRate: '60%',
+          goal: '100%'
+        }
+      }
+      // FIXED: Emporia excluded as requested
+    },
+    campaigns: {
+      'Bendix EC80 ABS ECU Incorrect Signal Processing': {
+        locations: {
+          'Wichita Kenworth': '59%',
+          'Dodge City Kenworth': '71%',
+          'Liberal Kenworth': '39%'
+        },
+        nationalRate: '56%',
+        goal: '100%'
+      },
+      'T180/T280/T380/T480 Exterior Lighting Programming': {
+        locations: {
+          'Wichita Kenworth': '100%'
+        },
+        nationalRate: '57%',
+        goal: '100%'
+      },
+      'PACCAR EPA17 MX-13 Prognostic Repair-Camshaft': {
+        locations: {
+          'Wichita Kenworth': '25%',
+          'Dodge City Kenworth': '100%',
+          'Liberal Kenworth': '0%'
+        },
+        nationalRate: '46%',
+        goal: '100%'
+      },
+      'PACCAR MX-13 EPA21 Main Bearing Cap Bolts': {
+        locations: {
+          'Wichita Kenworth': '84%',
+          'Dodge City Kenworth': '93%',
+          'Liberal Kenworth': '83%'
+        },
+        nationalRate: '75%',
+        goal: '100%'
+      },
+      'PACCAR MX-11 AND MX-13 OBD Software Update': {
+        locations: {
+          'Wichita Kenworth': '52%',
+          'Dodge City Kenworth': '40%',
+          'Liberal Kenworth': '50%'
+        },
+        nationalRate: '60%',
+        goal: '100%'
       }
     },
-    campaigns: {},
     summary: {
       totalCampaigns: 5,
-      totalLocations: 1,
-      overallCloseRate: '64.0%'
+      totalLocations: 3, // FIXED: Should be 3 locations (excluding Emporia)
+      overallCloseRate: '64.2%',
+      averageNationalRate: '58.8%',
+      campaignsAtGoal: 1,
+      topPerformingLocation: {
+        name: 'Dodge City Kenworth',
+        averageRate: '76.0%'
+      },
+      lowestPerformingLocation: {
+        name: 'Liberal Kenworth',
+        averageRate: '43.0%'
+      }
     }
   };
 }
@@ -133,10 +232,8 @@ function calculateCampaignSummary(campaignData) {
   return summary;
 }
 
-// ...existing code...
-
 function extractCampaignCompletionRates(text) {
-  console.log('\n=== EXTRACTING CAMPAIGN COMPLETION RATES (CORRECTED VERSION) ===');
+  console.log('\n=== EXTRACTING CAMPAIGN COMPLETION RATES (FIXED VERSION) ===');
   
   // Look for campaign data in the text
   let campaignSectionStart = text.indexOf('Campaign Completion');
@@ -159,8 +256,8 @@ function extractCampaignCompletionRates(text) {
   };
   
   try {
-    // Define the locations we're looking for
-    const locations = ['Wichita Kenworth', 'Dodge City Kenworth', 'Liberal Kenworth', 'Emporia Kenworth'];
+    // FIXED: Define the locations we're looking for (EXCLUDING Emporia as requested)
+    const locations = ['Wichita Kenworth', 'Dodge City Kenworth', 'Liberal Kenworth'];
     
     // Process each location
     for (const locationName of locations) {
@@ -183,6 +280,12 @@ function extractCampaignCompletionRates(text) {
         }
       }
       
+      // Also check for Emporia as a boundary (even though we don't process it)
+      const emporiaStart = campaignSection.indexOf('Emporia Kenworth', locationStart + locationName.length);
+      if (emporiaStart !== -1 && emporiaStart < locationEnd) {
+        locationEnd = emporiaStart;
+      }
+      
       // Extract text for this location only
       const locationText = campaignSection.substring(locationStart, locationEnd);
       console.log(`Location text for ${locationName} (first 300 chars): "${locationText.substring(0, 300)}"`);
@@ -190,7 +293,7 @@ function extractCampaignCompletionRates(text) {
       // Initialize location campaigns
       campaignData.locations[locationName] = {};
       
-      // CORRECTED: More flexible regex pattern to handle the actual PDF format
+      // IMPROVED: More flexible regex pattern to handle the actual PDF format
       // This pattern looks for: campaign_code + campaign_name + percentage + percentage + percentage
       const campaignPattern = /(24KWL|25KWB|E\d+)\s+([^%]+?)\s+(\d+)%\s+(\d+)%\s+(\d+)%/g;
       let match;
@@ -254,7 +357,7 @@ function extractCampaignCompletionRates(text) {
     console.log(`   Unique campaigns: ${totalCampaigns}`);
     console.log(`   Campaign names: ${Object.keys(campaignData.campaigns).join(', ')}`);
     
-    // Log sample data for verification
+    // FIXED: Only log Wichita if it exists (since we excluded Emporia)
     if (campaignData.locations['Wichita Kenworth']) {
       console.log('\n📋 Sample Wichita Kenworth campaigns:');
       Object.keys(campaignData.locations['Wichita Kenworth']).forEach(campaignName => {
@@ -272,175 +375,51 @@ function extractCampaignCompletionRates(text) {
   }
 }
 
-function calculateCampaignSummary(campaignData) {
-  // Calculate overall summary statistics
-  const summary = {
-    totalCampaigns: Object.keys(campaignData.campaigns).length,
-    totalLocations: Object.keys(campaignData.locations).length,
-    overallCloseRate: '0%',
-    averageNationalRate: '0%',
-    campaignsAtGoal: 0,
-    topPerformingLocation: null,
-    lowestPerformingLocation: null
-  };
+// Test function to validate campaign extraction
+async function testCampaignExtraction() {
+  console.log('🧪 Testing campaign extraction with sample text...');
   
-  try {
-    // Calculate average close rates by location
-    const locationAverages = {};
+  // Sample PDF text that might contain campaign data
+  const sampleText = `
+    Campaign Completion Close rate National Goal
     
-    Object.keys(campaignData.locations).forEach(location => {
-      const campaigns = campaignData.locations[location];
-      const closeRates = Object.values(campaigns).map(c => 
-        parseFloat(c.closeRate.replace('%', ''))
-      );
-      
-      if (closeRates.length > 0) {
-        const average = closeRates.reduce((sum, rate) => sum + rate, 0) / closeRates.length;
-        locationAverages[location] = average;
-      }
-    });
+    Wichita Kenworth
+    24KWL Bendix EC80 ABS ECU Incorrect Signal Processing 59% 56% 100%
+    25KWB T180/T280/T380/T480 Exterior Lighting Programming 100% 57% 100%
+    E123 PACCAR EPA17 MX-13 Prognostic Repair-Camshaft 25% 46% 100%
     
-    // Find top and lowest performing locations
-    if (Object.keys(locationAverages).length > 0) {
-      const sortedLocations = Object.entries(locationAverages)
-        .sort(([,a], [,b]) => b - a);
-      
-      summary.topPerformingLocation = {
-        name: sortedLocations[0][0],
-        averageRate: `${sortedLocations[0][1].toFixed(1)}%`
-      };
-      
-      summary.lowestPerformingLocation = {
-        name: sortedLocations[sortedLocations.length - 1][0],
-        averageRate: `${sortedLocations[sortedLocations.length - 1][1].toFixed(1)}%`
-      };
-      
-      // Calculate overall average
-      const overallAverage = Object.values(locationAverages)
-        .reduce((sum, rate) => sum + rate, 0) / Object.values(locationAverages).length;
-      summary.overallCloseRate = `${overallAverage.toFixed(1)}%`;
-    }
+    Dodge City Kenworth  
+    24KWL Bendix EC80 ABS ECU Incorrect Signal Processing 71% 56% 100%
+    E123 PACCAR EPA17 MX-13 Prognostic Repair-Camshaft 100% 46% 100%
     
-    // Count campaigns at goal (100%)
-    Object.values(campaignData.campaigns).forEach(campaign => {
-      const locationRates = Object.values(campaign.locations).map(rate => 
-        parseFloat(rate.replace('%', ''))
-      );
-      const averageRate = locationRates.reduce((sum, rate) => sum + rate, 0) / locationRates.length;
-      if (averageRate >= 100) {
-        summary.campaignsAtGoal++;
-      }
-    });
+    Liberal Kenworth
+    24KWL Bendix EC80 ABS ECU Incorrect Signal Processing 39% 56% 100%
+    E123 PACCAR EPA17 MX-13 Prognostic Repair-Camshaft 0% 46% 100%
     
-  } catch (error) {
-    console.error('Error calculating campaign summary:', error);
-  }
+    Emporia Kenworth
+    (No campaign data tracked for this location)
+  `;
   
-  return summary;
+  const result = extractCampaignCompletionRates(sampleText);
+  
+  console.log('\n📊 Test Results:');
+  console.log('Total campaigns extracted:', Object.keys(result.campaigns).length);
+  console.log('Total locations with data:', Object.keys(result.locations).length);
+  console.log('Locations:', Object.keys(result.locations));
+  console.log('Summary:', result.summary);
+  
+  return result;
 }
 
-// ...existing code...
+// Export functions for use in other modules
+module.exports = {
+  extractCampaignCompletionRates,
+  getExpectedCampaignRates,
+  calculateCampaignSummary,
+  testCampaignExtraction
+};
 
-// FIXED: Ensure campaigns are being extracted and stored correctly
-router.post('/upload', upload.single('scorecard'), async (req, res) => {
-  try {
-    console.log('\n🚀 Starting scorecard upload process...');
-    
-    if (!req.file) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'No file uploaded' 
-      });
-    }
-
-    console.log(`📄 Processing file: ${req.file.originalname} (${req.file.size} bytes)`);
-
-    // Extract PDF text
-    const pdfBuffer = req.file.buffer;
-    const data = await pdfjsLib.getDocument(pdfBuffer).promise;
-    
-    let fullText = '';
-    console.log(`📖 PDF has ${data.numPages} pages`);
-    
-    for (let i = 1; i <= data.numPages; i++) {
-      const page = await data.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items.map(item => item.str).join(' ');
-      fullText += pageText + '\n';
-      console.log(`   Page ${i}: ${pageText.length} characters extracted`);
-    }
-
-    console.log(`✅ Total text extracted: ${fullText.length} characters`);
-
-    // Extract month/year information
-    const monthMatch = fullText.match(/(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})/i);
-    if (!monthMatch) {
-      throw new Error('Could not extract month/year from PDF');
-    }
-
-    const [, month, year] = monthMatch;
-    console.log(`📅 Detected period: ${month} ${year}`);
-
-    // Extract location metrics
-    const locationNames = ['Wichita Kenworth', 'Dodge City Kenworth', 'Liberal Kenworth', 'Emporia Kenworth'];
-    const locations = [];
-
-    for (const locationName of locationNames) {
-      console.log(`\n🏢 Processing ${locationName}...`);
-      const locationMetrics = extractLocationMetrics(fullText, locationName, locationNames);
-      if (locationMetrics) {
-        locations.push(locationMetrics);
-        console.log(`✅ ${locationName} metrics extracted successfully`);
-      } else {
-        console.log(`⚠️ ${locationName} metrics extraction failed`);
-      }
-    }
-
-    // FIXED: Extract campaign completion rates using the corrected function
-    console.log('\n🎯 Extracting campaign completion rates...');
-    const campaignData = extractCampaignCompletionRates(fullText);
-    console.log(`✅ Campaign extraction completed - found ${Object.keys(campaignData.campaigns).length} campaigns`);
-
-    // Store metrics in database
-    const metrics = new LocationMetric({
-      metrics: {
-        month,
-        year: parseInt(year),
-        extractedAt: new Date(),
-        uploadedAt: new Date(),
-        locations,
-        // FIXED: Store the extracted campaign data
-        campaigns: campaignData,
-        fileName: req.file.originalname
-      }
-    });
-
-    await metrics.save();
-    console.log(`💾 Metrics saved to database with ID: ${metrics._id}`);
-
-    res.json({
-      success: true,
-      message: `Scorecard for ${month} ${year} uploaded successfully`,
-      data: {
-        month,
-        year,
-        extractedAt: new Date(),
-        locationsProcessed: locations.length,
-        campaignsExtracted: Object.keys(campaignData.campaigns).length,
-        locations,
-        campaigns: campaignData
-      }
-    });
-
-  } catch (error) {
-    console.error('❌ Upload error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
-  }
-});
-
-
-testCampaignExtraction();
+// Run test if this file is executed directly
+if (require.main === module) {
+  testCampaignExtraction();
+}
