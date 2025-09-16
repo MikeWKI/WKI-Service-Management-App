@@ -191,6 +191,48 @@ const getStatusFromScores = (locationScore: number, nationalScore: number, goal:
   return 'critical';
 };
 
+// Helper function to process campaign data from locations
+const processCampaignFromLocations = (locations: any[]): any => {
+  console.log('Processing campaign data from locations:', locations);
+  
+  // Extract campaign-related metrics from location data
+  const campaignMetrics = {
+    casesClosedCorrectly: '0%',
+    casesMeetingRequirements: '0%', 
+    overallCompletionRate: '0%',
+    customerSatisfaction: '85%', // Default value
+    nationalAverage: '85%',
+    goal: '95%'
+  };
+  
+  if (locations && locations.length > 0) {
+    // Calculate averages from location data
+    let vscCorrectSum = 0, vscRequirementsSum = 0, ttActivationSum = 0, count = 0;
+    
+    locations.forEach(location => {
+      if (location.vscClosedCorrectly) {
+        vscCorrectSum += parseFloat(location.vscClosedCorrectly.toString().replace('%', ''));
+        count++;
+      }
+      if (location.vscCaseRequirements) {
+        vscRequirementsSum += parseFloat(location.vscCaseRequirements.toString().replace('%', ''));
+      }
+      if (location.ttActivation) {
+        ttActivationSum += parseFloat(location.ttActivation.toString().replace('%', ''));
+      }
+    });
+    
+    if (count > 0) {
+      campaignMetrics.casesClosedCorrectly = `${(vscCorrectSum / count).toFixed(1)}%`;
+      campaignMetrics.casesMeetingRequirements = `${(vscRequirementsSum / count).toFixed(1)}%`;
+      campaignMetrics.overallCompletionRate = `${((vscCorrectSum + vscRequirementsSum + ttActivationSum) / (count * 3)).toFixed(1)}%`;
+    }
+  }
+  
+  console.log('Processed campaign metrics from locations:', campaignMetrics);
+  return campaignMetrics;
+};
+
 // Helper function to create campaign metrics from location data
 const createCampaignMetricsFromLocations = (backendData: any): CampaignMetricsData | null => {
   try {
@@ -341,123 +383,133 @@ export default function CampaignMetrics() {
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
-  // Fetch campaign data from the new backend endpoint
-  const fetchCampaignData = useCallback(async () => {
+  // FIXED: Direct API integration with better error handling
+  const fetchCampaignDataDirect = async () => {
     setIsLoading(true);
+    console.log('📊 Campaign Metrics: Starting data fetch...');
+    
     try {
       // Add timeout to API calls
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('Request timeout')), 10000); // 10 second timeout
       });
 
-      // First, try the dedicated campaign endpoint
-      console.log('Fetching from dedicated campaign endpoint...');
-      let campaignResponse = null;
-      
-      try {
-        const campaignResponsePromise = fetch(`${API_BASE_URL}/api/locationMetrics/campaigns`);
-        campaignResponse = await Promise.race([
-          campaignResponsePromise,
-          timeoutPromise
-        ]) as Response;
-        
-        if (campaignResponse && campaignResponse.ok) {
-          const campaignData = await campaignResponse.json();
-          console.log('Campaign endpoint response:', campaignData);
-          
-          if (campaignData.success && campaignData.data && campaignData.data.campaignCompletionRates) {
-            const { campaignCompletionRates, extractedAt, month, year, fileName } = campaignData.data;
-            
-            // Convert backend campaign data to frontend format
-            const convertedData = convertBackendCampaignData(campaignCompletionRates, extractedAt);
-            
-            if (convertedData) {
-              setCampaignData(convertedData);
-              setLastUpdated(new Date(extractedAt).toLocaleString());
-              return;
-            }
-          }
-        }
-      } catch (campaignError) {
-        console.warn('Dedicated campaign endpoint failed, trying main endpoint:', campaignError);
-      }
+      // FIXED: Try multiple endpoints in order of preference
+      const campaignEndpoints = [
+        `${API_BASE_URL}/api/locationMetrics/campaigns`,
+        `${API_BASE_URL}/api/locationMetrics`
+      ];
 
-      // Fallback: Check main endpoint for campaign data in dealership metrics
-      console.log('Fetching from main locationMetrics endpoint...');
-      const responsePromise = fetch(`${API_BASE_URL}/api/locationMetrics`);
-      const response = await Promise.race([
-        responsePromise,
-        timeoutPromise
-      ]) as Response;
+      console.log('🔍 Trying campaign-specific endpoints...');
       
-      if (response && response.ok) {
-        const data = await response.json();
-        console.log('Main endpoint response:', data);
-        
-        // Check if campaign data is included in dealership metrics
-        if (data.success && data.data && data.data.dealership && data.data.dealership.campaignCompletionRates) {
-          const { campaignCompletionRates, extractedAt } = data.data;
+      for (const endpoint of campaignEndpoints) {
+        try {
+          console.log(`🌐 Fetching from: ${endpoint}`);
+          const responsePromise = fetch(endpoint);
+          const response = await Promise.race([
+            responsePromise,
+            timeoutPromise
+          ]) as Response;
           
-          const convertedData = convertBackendCampaignData(campaignCompletionRates, extractedAt);
-          
-          if (convertedData) {
-            setCampaignData(convertedData);
-            setLastUpdated(new Date(extractedAt).toLocaleString());
-            return;
+          if (response && response.ok) {
+            const data = await response.json();
+            console.log(`✅ Response from ${endpoint}:`, data);
+            
+            // Check for campaign data in response
+            if (data.success && data.data) {
+              let campaignData = null;
+              
+              // Look for campaign completion rates in different locations
+              if (data.data.campaignCompletionRates) {
+                campaignData = data.data.campaignCompletionRates;
+                console.log('📋 Found direct campaign completion rates');
+              } else if (data.data.dealership?.campaignCompletionRates) {
+                campaignData = data.data.dealership.campaignCompletionRates;
+                console.log('📋 Found dealership campaign completion rates');
+              } else if (data.data.locations && data.data.locations.length > 0) {
+                // Extract campaign data from locations (fallback approach)
+                console.log('📋 Processing campaign data from location metrics');
+                campaignData = processCampaignFromLocations(data.data.locations);
+              }
+              
+              if (campaignData) {
+                const convertedData = convertBackendCampaignData(
+                  campaignData, 
+                  data.data.extractedAt || new Date().toISOString()
+                );
+                
+                if (convertedData) {
+                  console.log('✅ Campaign data successfully converted:', convertedData);
+                  setCampaignData(convertedData);
+                  setLastUpdated(new Date(data.data.extractedAt || new Date().toISOString()).toLocaleString());
+                  setIsLoading(false);
+                  return; // Success - exit early
+                }
+              }
+            }
+          } else {
+            console.warn(`❌ ${endpoint} returned status: ${response?.status}`);
           }
+        } catch (endpointError) {
+          console.warn(`❌ Campaign endpoint ${endpoint} failed:`, endpointError);
+          continue; // Try next endpoint
         }
+      }
+      
+      // FIXED: Final fallback - create campaign metrics from service data
+      console.log('🔄 No campaign-specific data found, creating from service metrics...');
+      const response = await fetch(`${API_BASE_URL}/api/locationMetrics`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('📊 Service metrics data for campaign creation:', data);
         
-        // Final fallback: Use existing location-based approach
         const parsedData = createCampaignMetricsFromLocations(data);
-        console.log('Fallback parsed campaign data:', parsedData);
         
         if (parsedData) {
+          console.log('✅ Campaign data created from service metrics:', parsedData);
           setCampaignData(parsedData);
           setLastUpdated(new Date(parsedData.extractedAt).toLocaleString());
         } else {
+          console.warn('❌ Could not create campaign data from service metrics');
           setCampaignData(null);
           setLastUpdated(null);
         }
       } else {
-        console.error('Backend endpoints are not responding');
+        console.error('❌ All backend endpoints failed');
         setCampaignData(null);
         setLastUpdated(null);
       }
     } catch (error) {
-      console.error('Error fetching campaign data:', error);
+      console.error('❌ Error fetching campaign data:', error);
       setCampaignData(null);
       setLastUpdated(null);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // FIXED: Use the direct fetch function
+  const fetchCampaignData = useCallback(async () => {
+    await fetchCampaignDataDirect();
   }, []);
 
+  // FIXED: Single event listener for scorecard uploads (removed duplicate)
   useEffect(() => {
+    console.log('🚀 Campaign Metrics: Component mounted, fetching initial data...');
     fetchCampaignData();
     
-    // Listen for scorecard upload events to refresh campaign data
+    // Single event listener for scorecard uploads
     const handleScorecardUploaded = () => {
-      console.log('Scorecard uploaded event received, refreshing campaign data...');
+      console.log('📤 Campaign Metrics: Scorecard uploaded event received, refreshing data...');
       fetchCampaignData();
     };
     
     window.addEventListener('scorecardUploaded', handleScorecardUploaded);
     
     return () => {
+      console.log('🧹 Campaign Metrics: Cleaning up event listeners');
       window.removeEventListener('scorecardUploaded', handleScorecardUploaded);
-    };
-  }, [fetchCampaignData]);
-
-  // Listen for scorecard upload events for immediate refresh
-  useEffect(() => {
-    const handleScorecardUpload = () => {
-      console.log('CampaignMetrics: New scorecard uploaded, refreshing data...');
-      fetchCampaignData();
-    };
-
-    window.addEventListener('scorecardUploaded', handleScorecardUpload);
-    return () => {
-      window.removeEventListener('scorecardUploaded', handleScorecardUpload);
     };
   }, [fetchCampaignData]);
 
