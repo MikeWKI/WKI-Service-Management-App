@@ -119,26 +119,26 @@ function extractDealershipMetrics(text) {
     percentCasesWith3Notes: /3.*?notes.*?(\d+(?:\.\d+)?%?)/i,
     rdsMonthlyAvgDays: /rds.*?monthly.*?(\d+(?:\.\d+)?)/i,
     smYtdDwellAvgDays: /sm.*?ytd.*?dwell.*?(\d+(?:\.\d+)?)/i,
-    rdsYtdDwellAvgDays: /rds.*?ytd.*?dwell.*?(\d+(?:\.\d+)?)/i,
-    // Campaign Completion rates from page 1
-    campaignCompletionRates: extractCampaignCompletionRates(dealershipData)
+    rdsYtdDwellAvgDays: /rds.*?ytd.*?dwell.*?(\d+(?:\.\d+)?)/i
   };
   
   Object.keys(patterns).forEach(key => {
-    if (key === 'campaignCompletionRates') {
-      // Campaign rates are extracted separately
-      metrics[key] = patterns[key];
-    } else {
-      const match = dealershipData.match(patterns[key]);
-      if (match) {
-        metrics[key] = match[1];
-      }
+    const match = dealershipData.match(patterns[key]);
+    if (match) {
+      metrics[key] = match[1];
     }
   });
   
+  // FIXED: Pass full PDF text to campaign extraction, not just dealership section
+  console.log('🎯 Extracting campaign completion rates from full PDF text (pages 2-3)...');
+  metrics.campaignCompletionRates = extractCampaignCompletionRates(text); // Use full text!
+  
   // If PDF parsing fails, use expected campaign completion rates
   if (!metrics.campaignCompletionRates || Object.keys(metrics.campaignCompletionRates).length === 0) {
+    console.log('⚠️ Campaign extraction failed, using fallback data');
     metrics.campaignCompletionRates = getExpectedCampaignRates();
+  } else {
+    console.log('✅ Campaign extraction successful:', Object.keys(metrics.campaignCompletionRates));
   }
   
   return metrics;
