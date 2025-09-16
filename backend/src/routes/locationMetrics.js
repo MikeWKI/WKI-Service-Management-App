@@ -1078,32 +1078,46 @@ router.get('/:year/:month', async (req, res) => {
   }
 });
 
-// GET /api/location-metrics/campaigns - Get campaign completion rates
+// GET /api/location-metrics/campaigns - Get campaign completion rates (FIXED VERSION)
 router.get('/campaigns', async (req, res) => {
   try {
-    const latest = await LocationMetric.findOne().sort({ 'metrics.year': -1, 'metrics.month': -1 });
+    console.log('📊 Getting latest campaign completion rates...');
+    
+    const latest = await LocationMetric.findOne()
+      .sort({ 'metrics.year': -1, 'metrics.month': -1 });
+    
     if (!latest) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'No metrics found' 
+      console.log('⚠️ No metrics found in database, using fallback data');
+      return res.json({ 
+        success: true, 
+        data: getExpectedCampaignRates(),
+        message: 'Using fallback campaign data - no uploaded scorecards found'
       });
     }
     
-    // Extract campaign completion rates from dealership metrics
-    const campaignData = latest.metrics?.dealership?.campaignCompletionRates || getExpectedCampaignRates();
+    console.log(`📅 Latest metrics found: ${latest.metrics.month} ${latest.metrics.year}`);
+    
+    // FIXED: Check multiple possible locations for campaign data
+    let campaignData = latest.metrics?.campaigns || // Direct in metrics
+                      latest.metrics?.dealership?.campaignCompletionRates || // In dealership
+                      null;
+    
+    if (!campaignData || Object.keys(campaignData.campaigns || campaignData || {}).length === 0) {
+      console.log('⚠️ No campaign data found in latest metrics, using fallback data');
+      campaignData = getExpectedCampaignRates();
+    } else {
+      console.log(`✅ Found campaign data with ${Object.keys(campaignData.campaigns || campaignData).length} campaigns`);
+    }
     
     res.json({ 
       success: true, 
-      data: {
-        campaignCompletionRates: campaignData,
-        extractedAt: latest.metrics?.extractedAt,
-        month: latest.metrics?.month,
-        year: latest.metrics?.year,
-        fileName: latest.metrics?.fileName
-      }
+      data: campaignData,
+      period: `${latest.metrics.month} ${latest.metrics.year}`,
+      extractedAt: latest.metrics?.extractedAt,
+      fileName: latest.metrics?.fileName
     });
   } catch (error) {
-    console.error('Get campaign metrics error:', error);
+    console.error('❌ Error getting campaign metrics:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message 

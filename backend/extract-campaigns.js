@@ -339,5 +339,108 @@ function calculateCampaignSummary(campaignData) {
   return summary;
 }
 
+// ...existing code...
+
+// FIXED: Ensure campaigns are being extracted and stored correctly
+router.post('/upload', upload.single('scorecard'), async (req, res) => {
+  try {
+    console.log('\n🚀 Starting scorecard upload process...');
+    
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No file uploaded' 
+      });
+    }
+
+    console.log(`📄 Processing file: ${req.file.originalname} (${req.file.size} bytes)`);
+
+    // Extract PDF text
+    const pdfBuffer = req.file.buffer;
+    const data = await pdfjsLib.getDocument(pdfBuffer).promise;
+    
+    let fullText = '';
+    console.log(`📖 PDF has ${data.numPages} pages`);
+    
+    for (let i = 1; i <= data.numPages; i++) {
+      const page = await data.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map(item => item.str).join(' ');
+      fullText += pageText + '\n';
+      console.log(`   Page ${i}: ${pageText.length} characters extracted`);
+    }
+
+    console.log(`✅ Total text extracted: ${fullText.length} characters`);
+
+    // Extract month/year information
+    const monthMatch = fullText.match(/(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})/i);
+    if (!monthMatch) {
+      throw new Error('Could not extract month/year from PDF');
+    }
+
+    const [, month, year] = monthMatch;
+    console.log(`📅 Detected period: ${month} ${year}`);
+
+    // Extract location metrics
+    const locationNames = ['Wichita Kenworth', 'Dodge City Kenworth', 'Liberal Kenworth', 'Emporia Kenworth'];
+    const locations = [];
+
+    for (const locationName of locationNames) {
+      console.log(`\n🏢 Processing ${locationName}...`);
+      const locationMetrics = extractLocationMetrics(fullText, locationName, locationNames);
+      if (locationMetrics) {
+        locations.push(locationMetrics);
+        console.log(`✅ ${locationName} metrics extracted successfully`);
+      } else {
+        console.log(`⚠️ ${locationName} metrics extraction failed`);
+      }
+    }
+
+    // FIXED: Extract campaign completion rates using the corrected function
+    console.log('\n🎯 Extracting campaign completion rates...');
+    const campaignData = extractCampaignCompletionRates(fullText);
+    console.log(`✅ Campaign extraction completed - found ${Object.keys(campaignData.campaigns).length} campaigns`);
+
+    // Store metrics in database
+    const metrics = new LocationMetric({
+      metrics: {
+        month,
+        year: parseInt(year),
+        extractedAt: new Date(),
+        uploadedAt: new Date(),
+        locations,
+        // FIXED: Store the extracted campaign data
+        campaigns: campaignData,
+        fileName: req.file.originalname
+      }
+    });
+
+    await metrics.save();
+    console.log(`💾 Metrics saved to database with ID: ${metrics._id}`);
+
+    res.json({
+      success: true,
+      message: `Scorecard for ${month} ${year} uploaded successfully`,
+      data: {
+        month,
+        year,
+        extractedAt: new Date(),
+        locationsProcessed: locations.length,
+        campaignsExtracted: Object.keys(campaignData.campaigns).length,
+        locations,
+        campaigns: campaignData
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Upload error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});
+
 
 testCampaignExtraction();
