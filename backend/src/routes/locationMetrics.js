@@ -145,28 +145,21 @@ function extractDealershipMetrics(text) {
 }
 
 function extractCampaignCompletionRates(text) {
-  // Extract campaign completion rates from pages 2-3 of W370 Service Scorecard
-  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  console.log('\n=== EXTRACTING CAMPAIGN COMPLETION RATES (IMPROVED VERSION) ===');
   
-  console.log('\n=== EXTRACTING CAMPAIGN COMPLETION RATES (PAGES 2-3) ===');
-  
-  // Look for "Campaign Completion Close rate National Goal" header
-  let campaignSectionStart = -1;
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].toLowerCase().includes('campaign completion') && 
-        lines[i].toLowerCase().includes('close rate') &&
-        lines[i].toLowerCase().includes('national') &&
-        lines[i].toLowerCase().includes('goal')) {
-      campaignSectionStart = i;
-      console.log(`Found campaign section at line ${i}: "${lines[i]}"`);
-      break;
-    }
-  }
+  // Look for campaign data in the text
+  let campaignSectionStart = text.indexOf('Campaign Completion');
   
   if (campaignSectionStart === -1) {
     console.log('Campaign section not found, using fallback data');
     return getExpectedCampaignRates();
   }
+  
+  console.log(`Found campaign section starting at position ${campaignSectionStart}`);
+  
+  // Extract the campaign section text
+  const campaignSection = text.substring(campaignSectionStart);
+  console.log('Campaign section preview:', campaignSection.substring(0, 500));
   
   const campaignData = {
     locations: {},
@@ -175,75 +168,121 @@ function extractCampaignCompletionRates(text) {
   };
   
   try {
-    // Define the locations we're looking for
-    const locations = ['Wichita Kenworth', 'Dodge City Kenworth', 'Liberal Kenworth', 'Emporia Kenworth'];
+    // Define the locations we're looking for (EXCLUDING Emporia as they are not tracked)
+    const locations = ['Wichita Kenworth', 'Dodge City Kenworth', 'Liberal Kenworth'];
     
-    let currentLocation = null;
-    
-    // Parse through the campaign section
-    for (let i = campaignSectionStart + 1; i < lines.length; i++) {
-      const line = lines[i];
+    // Process each location
+    for (const locationName of locations) {
+      console.log(`\n🔍 Processing campaigns for: ${locationName}`);
       
-      // Check if this line is a location header
-      const foundLocation = locations.find(loc => line.includes(loc));
-      if (foundLocation) {
-        currentLocation = foundLocation;
-        campaignData.locations[currentLocation] = {};
-        console.log(`\nProcessing campaigns for: ${currentLocation}`);
+      // Find where this location starts in the campaign section
+      const locationStart = campaignSection.indexOf(locationName);
+      if (locationStart === -1) {
+        console.log(`Location ${locationName} not found in campaign section`);
         continue;
       }
       
-      // If we have a current location and this line contains campaign data
-      if (currentLocation && line.includes('%')) {
-        // Parse campaign line format: "Campaign Name XX% YY% 100%"
-        const campaignMatch = extractCampaignLine(line);
-        if (campaignMatch) {
-          const { campaignName, closeRate, nationalRate, goal } = campaignMatch;
-          
-          // Store by location
-          if (!campaignData.locations[currentLocation]) {
-            campaignData.locations[currentLocation] = {};
-          }
-          campaignData.locations[currentLocation][campaignName] = {
-            closeRate: closeRate,
-            nationalRate: nationalRate,
-            goal: goal
-          };
-          
-          // Store by campaign (for summary across locations)
-          if (!campaignData.campaigns[campaignName]) {
-            campaignData.campaigns[campaignName] = {
-              locations: {},
-              nationalRate: nationalRate,
-              goal: goal
-            };
-          }
-          campaignData.campaigns[campaignName].locations[currentLocation] = closeRate;
-          
-          console.log(`  ${campaignName}: Close ${closeRate}, National ${nationalRate}, Goal ${goal}`);
+      // Find where the next location starts (or end of text)
+      let locationEnd = campaignSection.length;
+      for (const otherLocation of locations) {
+        if (otherLocation === locationName) continue;
+        const otherStart = campaignSection.indexOf(otherLocation, locationStart + locationName.length);
+        if (otherStart !== -1 && otherStart < locationEnd) {
+          locationEnd = otherStart;
         }
       }
       
-      // Stop if we hit the next major section
-      if (line.toLowerCase().includes('individual dealer metrics') || 
-          i > campaignSectionStart + 100) {
-        break;
+      // Also check for Emporia as a boundary (even though we don't process it)
+      const emporiaStart = campaignSection.indexOf('Emporia Kenworth', locationStart + locationName.length);
+      if (emporiaStart !== -1 && emporiaStart < locationEnd) {
+        locationEnd = emporiaStart;
       }
+      
+      // Extract text for this location only
+      const locationText = campaignSection.substring(locationStart, locationEnd);
+      console.log(`Location text for ${locationName} (first 300 chars): "${locationText.substring(0, 300)}"`);
+      
+      // Initialize location campaigns
+      campaignData.locations[locationName] = {};
+      
+      // IMPROVED: More flexible regex pattern to handle the actual PDF format
+      // This pattern looks for: campaign_code + campaign_name + percentage + percentage + percentage
+      const campaignPattern = /(24KWL|25KWB|E\d+)\s+([^%]+?)\s+(\d+)%\s+(\d+)%\s+(\d+)%/g;
+      let match;
+      let campaignCount = 0;
+      
+      while ((match = campaignPattern.exec(locationText)) !== null) {
+        const [fullMatch, campaignCode, campaignName, closeRate, nationalRate, goal] = match;
+        
+        // Clean up campaign name - remove extra whitespace and normalize
+        let cleanCampaignName = campaignName.trim();
+        
+        // Handle special cases for campaign names
+        if (cleanCampaignName.includes('Bendix EC80 ABS ECU')) {
+          cleanCampaignName = 'Bendix EC80 ABS ECU Incorrect Signal Processing';
+        } else if (cleanCampaignName.includes('T180/T280/T380/T480')) {
+          cleanCampaignName = 'T180/T280/T380/T480 Exterior Lighting Programming';
+        } else if (cleanCampaignName.includes('PACCAR EPA17 MX-13')) {
+          cleanCampaignName = 'PACCAR EPA17 MX-13 Prognostic Repair-Camshaft';
+        } else if (cleanCampaignName.includes('PACCAR MX-13 EPA21')) {
+          cleanCampaignName = 'PACCAR MX-13 EPA21 Main Bearing Cap Bolts';
+        } else if (cleanCampaignName.includes('PACCAR MX-11 AND MX-13 OBD')) {
+          cleanCampaignName = 'PACCAR MX-11 AND MX-13 OBD Software Update';
+        }
+        
+        console.log(`  ✅ Campaign ${campaignCount + 1}: "${cleanCampaignName}"`);
+        console.log(`     Close Rate: ${closeRate}%, National: ${nationalRate}%, Goal: ${goal}%`);
+        
+        // Store by location
+        campaignData.locations[locationName][cleanCampaignName] = {
+          closeRate: `${closeRate}%`,
+          nationalRate: `${nationalRate}%`,
+          goal: `${goal}%`
+        };
+        
+        // Store by campaign (for summary across locations)
+        if (!campaignData.campaigns[cleanCampaignName]) {
+          campaignData.campaigns[cleanCampaignName] = {
+            locations: {},
+            nationalRate: `${nationalRate}%`,
+            goal: `${goal}%`
+          };
+        }
+        campaignData.campaigns[cleanCampaignName].locations[locationName] = `${closeRate}%`;
+        
+        campaignCount++;
+      }
+      
+      console.log(`   Total campaigns found for ${locationName}: ${campaignCount}`);
     }
     
     // Calculate summary statistics
     campaignData.summary = calculateCampaignSummary(campaignData);
     
-    console.log('Extracted campaign completion rates:', {
-      locationsCount: Object.keys(campaignData.locations).length,
-      campaignsCount: Object.keys(campaignData.campaigns).length,
-      summary: campaignData.summary
-    });
+    const totalCampaigns = Object.keys(campaignData.campaigns).length;
+    const totalLocationsWithData = Object.keys(campaignData.locations).filter(loc => 
+      Object.keys(campaignData.locations[loc]).length > 0
+    ).length;
+    
+    console.log('\n✅ Campaign extraction completed:');
+    console.log(`   Locations with data: ${totalLocationsWithData}`);
+    console.log(`   Unique campaigns: ${totalCampaigns}`);
+    console.log(`   Campaign names: ${Object.keys(campaignData.campaigns).join(', ')}`);
+    
+    // Log sample data for verification
+    if (campaignData.locations['Wichita Kenworth']) {
+      console.log('\n📋 Sample Wichita Kenworth campaigns:');
+      Object.keys(campaignData.locations['Wichita Kenworth']).forEach(campaignName => {
+        const campaign = campaignData.locations['Wichita Kenworth'][campaignName];
+        console.log(`   - ${campaignName}: ${campaign.closeRate} close rate`);
+      });
+    }
     
     return campaignData;
     
   } catch (error) {
-    console.error('Error extracting campaign rates:', error);
+    console.error('❌ Error extracting campaign rates:', error);
+    console.error('Error stack:', error.stack);
     return getExpectedCampaignRates();
   }
 }
@@ -371,7 +410,7 @@ function calculateOverallCompletionRate(campaignData) {
 }
 
 function getExpectedCampaignRates() {
-  // Fallback campaign completion rates based on W370 Service Scorecard July 2025 (Pages 2-3)
+  // Fallback campaign completion rates based on W370 Service Scorecard (EXCLUDING Emporia)
   return {
     locations: {
       'Wichita Kenworth': {
@@ -444,15 +483,8 @@ function getExpectedCampaignRates() {
           nationalRate: '60%',
           goal: '100%'
         }
-      },
-      'Emporia Kenworth': {
-        // Emporia might not have all campaigns or different completion rates
-        'PACCAR MX-13 EPA21 Main Bearing Cap Bolts': {
-          closeRate: '75%',
-          nationalRate: '75%',
-          goal: '100%'
-        }
       }
+      // NOTE: Emporia Kenworth is EXCLUDED as they are not tracked for campaigns
     },
     campaigns: {
       'Bendix EC80 ABS ECU Incorrect Signal Processing': {
@@ -484,8 +516,7 @@ function getExpectedCampaignRates() {
         locations: {
           'Wichita Kenworth': '84%',
           'Dodge City Kenworth': '93%',
-          'Liberal Kenworth': '83%',
-          'Emporia Kenworth': '75%'
+          'Liberal Kenworth': '83%'
         },
         nationalRate: '75%',
         goal: '100%'
@@ -502,7 +533,7 @@ function getExpectedCampaignRates() {
     },
     summary: {
       totalCampaigns: 5,
-      totalLocations: 4,
+      totalLocations: 3, // Only 3 locations tracked (excluding Emporia)
       overallCloseRate: '64.2%',
       averageNationalRate: '58.8%',
       campaignsAtGoal: 1,
@@ -729,6 +760,7 @@ router.post('/demo-data', async (req, res) => {
         metrics: {
           dealership: dealership,
           locations: locations,
+          campaigns: getExpectedCampaignRates(), // Store campaigns data
           extractedAt: new Date().toISOString(),
           month: month.name,
           year: 2025,
@@ -966,6 +998,8 @@ router.post('/upload', upload.single('pdf'), async (req, res) => {
       // Update existing record
       existingMetrics.metrics = {
         ...metrics,
+        // FIXED: Store campaigns data in multiple locations for better retrieval
+        campaigns: metrics.dealership?.campaignCompletionRates || getExpectedCampaignRates(),
         month: req.body.month,
         year: parseInt(req.body.year),
         fileName: req.file.originalname,
@@ -978,6 +1012,8 @@ router.post('/upload', upload.single('pdf'), async (req, res) => {
       const newMetrics = new LocationMetric({ 
         metrics: {
           ...metrics,
+          // FIXED: Store campaigns data in multiple locations for better retrieval
+          campaigns: metrics.dealership?.campaignCompletionRates || getExpectedCampaignRates(),
           month: req.body.month,
           year: parseInt(req.body.year),
           fileName: req.file.originalname,
@@ -1078,13 +1114,18 @@ router.get('/:year/:month', async (req, res) => {
   }
 });
 
-// GET /api/location-metrics/campaigns - Get campaign completion rates (FIXED VERSION)
+// GET /api/location-metrics/campaigns - Get campaign completion rates (IMPROVED VERSION)
 router.get('/campaigns', async (req, res) => {
   try {
     console.log('📊 Getting latest campaign completion rates...');
     
+    // FIXED: Get the newest record by upload date AND by month/year
     const latest = await LocationMetric.findOne()
-      .sort({ 'metrics.year': -1, 'metrics.month': -1 });
+      .sort({ 
+        'metrics.year': -1, 
+        'metrics.month': -1,
+        'metrics.uploadedAt': -1  // Secondary sort by upload date
+      });
     
     if (!latest) {
       console.log('⚠️ No metrics found in database, using fallback data');
@@ -1096,17 +1137,27 @@ router.get('/campaigns', async (req, res) => {
     }
     
     console.log(`📅 Latest metrics found: ${latest.metrics.month} ${latest.metrics.year}`);
+    console.log(`📝 File: ${latest.metrics.fileName}`);
+    console.log(`⏰ Uploaded: ${latest.metrics.uploadedAt}`);
     
-    // FIXED: Check multiple possible locations for campaign data
-    let campaignData = latest.metrics?.campaigns || // Direct in metrics
-                      latest.metrics?.dealership?.campaignCompletionRates || // In dealership
+    // IMPROVED: Check multiple possible locations for campaign data with priority order
+    let campaignData = latest.metrics?.campaigns ||                           // Primary: Direct campaigns storage
+                      latest.metrics?.dealership?.campaignCompletionRates || // Secondary: In dealership object
+                      latest.metrics?.dealership?.campaigns ||               // Tertiary: Alternative dealership location
                       null;
     
     if (!campaignData || Object.keys(campaignData.campaigns || campaignData || {}).length === 0) {
       console.log('⚠️ No campaign data found in latest metrics, using fallback data');
       campaignData = getExpectedCampaignRates();
     } else {
-      console.log(`✅ Found campaign data with ${Object.keys(campaignData.campaigns || campaignData).length} campaigns`);
+      const campaignCount = Object.keys(campaignData.campaigns || campaignData).length;
+      console.log(`✅ Found campaign data with ${campaignCount} campaigns`);
+      
+      // Log which locations have campaign data (excluding Emporia)
+      if (campaignData.locations) {
+        const locationsWithData = Object.keys(campaignData.locations).filter(loc => loc !== 'Emporia Kenworth');
+        console.log(`📍 Locations with campaign data: ${locationsWithData.join(', ')}`);
+      }
     }
     
     res.json({ 
@@ -1114,7 +1165,8 @@ router.get('/campaigns', async (req, res) => {
       data: campaignData,
       period: `${latest.metrics.month} ${latest.metrics.year}`,
       extractedAt: latest.metrics?.extractedAt,
-      fileName: latest.metrics?.fileName
+      fileName: latest.metrics?.fileName,
+      uploadedAt: latest.metrics?.uploadedAt
     });
   } catch (error) {
     console.error('❌ Error getting campaign metrics:', error);
