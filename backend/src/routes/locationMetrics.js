@@ -145,7 +145,7 @@ function extractDealershipMetrics(text) {
 }
 
 function extractCampaignCompletionRates(text) {
-  console.log('\n=== EXTRACTING CAMPAIGN COMPLETION RATES (IMPROVED VERSION) ===');
+  console.log('\n=== EXTRACTING CAMPAIGN COMPLETION RATES (FIXED FOR AUGUST PDF) ===');
   
   // Look for campaign data in the text
   let campaignSectionStart = text.indexOf('Campaign Completion');
@@ -192,12 +192,6 @@ function extractCampaignCompletionRates(text) {
         }
       }
       
-      // Also check for Emporia as a boundary (even though we don't process it)
-      const emporiaStart = campaignSection.indexOf('Emporia Kenworth', locationStart + locationName.length);
-      if (emporiaStart !== -1 && emporiaStart < locationEnd) {
-        locationEnd = emporiaStart;
-      }
-      
       // Extract text for this location only
       const locationText = campaignSection.substring(locationStart, locationEnd);
       console.log(`Location text for ${locationName} (first 300 chars): "${locationText.substring(0, 300)}"`);
@@ -205,52 +199,53 @@ function extractCampaignCompletionRates(text) {
       // Initialize location campaigns
       campaignData.locations[locationName] = {};
       
-      // IMPROVED: More flexible regex pattern to handle the actual PDF format
-      // This pattern looks for: campaign_code + campaign_name + percentage + percentage + percentage
-      const campaignPattern = /(24KWL|25KWB|E\d+)\s+([^%]+?)\s+(\d+)%\s+(\d+)%\s+(\d+)%/g;
-      let match;
+      // FIXED: Updated regex to match the exact format from your extracted text
+      // Pattern: campaign_code campaign_name percentage% percentage% percentage%
+      // Example: "24KWL Bendix EC80 ABS ECU Incorrect Signal Processing 61% 59% 100%"
+      const lines = locationText.split('\n');
       let campaignCount = 0;
       
-      while ((match = campaignPattern.exec(locationText)) !== null) {
-        const [fullMatch, campaignCode, campaignName, closeRate, nationalRate, goal] = match;
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (!trimmedLine) continue;
         
-        // Clean up campaign name - remove extra whitespace and normalize
-        let cleanCampaignName = campaignName.trim();
-        
-        // Handle special cases for campaign names
-        if (cleanCampaignName.includes('Bendix EC80 ABS ECU')) {
-          cleanCampaignName = 'Bendix EC80 ABS ECU Incorrect Signal Processing';
-        } else if (cleanCampaignName.includes('T180/T280/T380/T480')) {
-          cleanCampaignName = 'T180/T280/T380/T480 Exterior Lighting Programming';
-        } else if (cleanCampaignName.includes('PACCAR EPA17 MX-13')) {
-          cleanCampaignName = 'PACCAR EPA17 MX-13 Prognostic Repair-Camshaft';
-        } else if (cleanCampaignName.includes('PACCAR MX-13 EPA21')) {
-          cleanCampaignName = 'PACCAR MX-13 EPA21 Main Bearing Cap Bolts';
-        } else if (cleanCampaignName.includes('PACCAR MX-11 AND MX-13 OBD')) {
-          cleanCampaignName = 'PACCAR MX-11 AND MX-13 OBD Software Update';
+        // Skip the location name line and headers
+        if (trimmedLine === locationName || trimmedLine.includes('Campaign Completion') || trimmedLine.includes('Close rate')) {
+          continue;
         }
         
-        console.log(`  ✅ Campaign ${campaignCount + 1}: "${cleanCampaignName}"`);
-        console.log(`     Close Rate: ${closeRate}%, National: ${nationalRate}%, Goal: ${goal}%`);
+        // Look for lines with campaign codes and three percentages
+        const campaignMatch = trimmedLine.match(/^(24KWL|25KWB|E\d+)\s+(.+?)\s+(\d+)%\s+(\d+)%\s+(\d+)%$/);
         
-        // Store by location
-        campaignData.locations[locationName][cleanCampaignName] = {
-          closeRate: `${closeRate}%`,
-          nationalRate: `${nationalRate}%`,
-          goal: `${goal}%`
-        };
-        
-        // Store by campaign (for summary across locations)
-        if (!campaignData.campaigns[cleanCampaignName]) {
-          campaignData.campaigns[cleanCampaignName] = {
-            locations: {},
+        if (campaignMatch) {
+          const [, campaignCode, campaignName, closeRate, nationalRate, goal] = campaignMatch;
+          
+          // Clean up campaign name
+          let cleanCampaignName = campaignName.trim();
+          
+          console.log(`  ✅ Campaign ${campaignCount + 1}: "${cleanCampaignName}"`);
+          console.log(`     Code: ${campaignCode}, Close Rate: ${closeRate}%, National: ${nationalRate}%, Goal: ${goal}%`);
+          
+          // Store by location
+          campaignData.locations[locationName][cleanCampaignName] = {
+            code: campaignCode,
+            closeRate: `${closeRate}%`,
             nationalRate: `${nationalRate}%`,
             goal: `${goal}%`
           };
+          
+          // Store by campaign (for summary across locations)
+          if (!campaignData.campaigns[cleanCampaignName]) {
+            campaignData.campaigns[cleanCampaignName] = {
+              locations: {},
+              nationalRate: `${nationalRate}%`,
+              goal: `${goal}%`
+            };
+          }
+          campaignData.campaigns[cleanCampaignName].locations[locationName] = `${closeRate}%`;
+          
+          campaignCount++;
         }
-        campaignData.campaigns[cleanCampaignName].locations[locationName] = `${closeRate}%`;
-        
-        campaignCount++;
       }
       
       console.log(`   Total campaigns found for ${locationName}: ${campaignCount}`);
@@ -410,77 +405,90 @@ function calculateOverallCompletionRate(campaignData) {
 }
 
 function getExpectedCampaignRates() {
-  // Fallback campaign completion rates based on W370 Service Scorecard (EXCLUDING Emporia)
+  // Updated fallback with August 2025 data from your screenshot
   return {
     locations: {
       'Wichita Kenworth': {
         'Bendix EC80 ABS ECU Incorrect Signal Processing': {
-          closeRate: '59%',
-          nationalRate: '56%',
+          code: '24KWL',
+          closeRate: '61%',
+          nationalRate: '59%',
           goal: '100%'
         },
-        'T180/T280/T380/T480 Exterior Lighting Programming': {
+        'T180/T280/T380/T480 Exterior LightingProgramming': {
+          code: '25KWB',
           closeRate: '100%',
-          nationalRate: '57%',
+          nationalRate: '63%',
           goal: '100%'
         },
         'PACCAR EPA17 MX-13 Prognostic Repair-Camshaft': {
+          code: 'E311',
           closeRate: '25%',
-          nationalRate: '46%',
+          nationalRate: '51%',
           goal: '100%'
         },
         'PACCAR MX-13 EPA21 Main Bearing Cap Bolts': {
-          closeRate: '84%',
-          nationalRate: '75%',
+          code: 'E316',
+          closeRate: '85%',
+          nationalRate: '78%',
           goal: '100%'
         },
         'PACCAR MX-11 AND MX-13 OBD Software Update': {
-          closeRate: '52%',
-          nationalRate: '60%',
+          code: 'E327',
+          closeRate: '63%',
+          nationalRate: '65%',
           goal: '100%'
         }
       },
       'Dodge City Kenworth': {
         'Bendix EC80 ABS ECU Incorrect Signal Processing': {
+          code: '24KWL',
           closeRate: '71%',
-          nationalRate: '56%',
+          nationalRate: '59%',
           goal: '100%'
         },
         'PACCAR EPA17 MX-13 Prognostic Repair-Camshaft': {
+          code: 'E311',
           closeRate: '100%',
-          nationalRate: '46%',
+          nationalRate: '51%',
           goal: '100%'
         },
         'PACCAR MX-13 EPA21 Main Bearing Cap Bolts': {
+          code: 'E316',
           closeRate: '93%',
-          nationalRate: '75%',
+          nationalRate: '78%',
           goal: '100%'
         },
         'PACCAR MX-11 AND MX-13 OBD Software Update': {
+          code: 'E327',
           closeRate: '40%',
-          nationalRate: '60%',
+          nationalRate: '65%',
           goal: '100%'
         }
       },
       'Liberal Kenworth': {
         'Bendix EC80 ABS ECU Incorrect Signal Processing': {
-          closeRate: '39%',
-          nationalRate: '56%',
+          code: '24KWL',
+          closeRate: '40%',
+          nationalRate: '59%',
           goal: '100%'
         },
         'PACCAR EPA17 MX-13 Prognostic Repair-Camshaft': {
+          code: 'E311',
           closeRate: '0%',
-          nationalRate: '46%',
+          nationalRate: '51%',
           goal: '100%'
         },
         'PACCAR MX-13 EPA21 Main Bearing Cap Bolts': {
-          closeRate: '83%',
-          nationalRate: '75%',
+          code: 'E316',
+          closeRate: '86%',
+          nationalRate: '78%',
           goal: '100%'
         },
         'PACCAR MX-11 AND MX-13 OBD Software Update': {
-          closeRate: '50%',
-          nationalRate: '60%',
+          code: 'E327',
+          closeRate: '56%',
+          nationalRate: '65%',
           goal: '100%'
         }
       }
@@ -489,18 +497,18 @@ function getExpectedCampaignRates() {
     campaigns: {
       'Bendix EC80 ABS ECU Incorrect Signal Processing': {
         locations: {
-          'Wichita Kenworth': '59%',
+          'Wichita Kenworth': '61%',
           'Dodge City Kenworth': '71%',
-          'Liberal Kenworth': '39%'
+          'Liberal Kenworth': '40%'
         },
-        nationalRate: '56%',
+        nationalRate: '59%',
         goal: '100%'
       },
-      'T180/T280/T380/T480 Exterior Lighting Programming': {
+      'T180/T280/T380/T480 Exterior LightingProgramming': {
         locations: {
           'Wichita Kenworth': '100%'
         },
-        nationalRate: '57%',
+        nationalRate: '63%',
         goal: '100%'
       },
       'PACCAR EPA17 MX-13 Prognostic Repair-Camshaft': {
@@ -509,33 +517,33 @@ function getExpectedCampaignRates() {
           'Dodge City Kenworth': '100%',
           'Liberal Kenworth': '0%'
         },
-        nationalRate: '46%',
+        nationalRate: '51%',
         goal: '100%'
       },
       'PACCAR MX-13 EPA21 Main Bearing Cap Bolts': {
         locations: {
-          'Wichita Kenworth': '84%',
+          'Wichita Kenworth': '85%',
           'Dodge City Kenworth': '93%',
-          'Liberal Kenworth': '83%'
+          'Liberal Kenworth': '86%'
         },
-        nationalRate: '75%',
+        nationalRate: '78%',
         goal: '100%'
       },
       'PACCAR MX-11 AND MX-13 OBD Software Update': {
         locations: {
-          'Wichita Kenworth': '52%',
+          'Wichita Kenworth': '63%',
           'Dodge City Kenworth': '40%',
-          'Liberal Kenworth': '50%'
+          'Liberal Kenworth': '56%'
         },
-        nationalRate: '60%',
+        nationalRate: '65%',
         goal: '100%'
       }
     },
     summary: {
       totalCampaigns: 5,
       totalLocations: 3, // Only 3 locations tracked (excluding Emporia)
-      overallCloseRate: '64.2%',
-      averageNationalRate: '58.8%',
+      overallCloseRate: '64.6%',
+      averageNationalRate: '63.2%',
       campaignsAtGoal: 1,
       topPerformingLocation: {
         name: 'Dodge City Kenworth',
@@ -543,7 +551,7 @@ function getExpectedCampaignRates() {
       },
       lowestPerformingLocation: {
         name: 'Liberal Kenworth',
-        averageRate: '43.0%'
+        averageRate: '45.5%'
       }
     }
   };
