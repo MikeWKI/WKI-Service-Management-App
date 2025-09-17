@@ -1114,65 +1114,41 @@ router.get('/:year/:month', async (req, res) => {
   }
 });
 
-// GET /api/location-metrics/campaigns - Get campaign completion rates (IMPROVED VERSION)
+// GET /api/location-metrics/campaigns - Get campaign completion rates (FIXED VERSION)
 router.get('/campaigns', async (req, res) => {
   try {
-    console.log('📊 Getting latest campaign completion rates...');
-    
-    // FIXED: Get the newest record by upload date AND by month/year
+    console.log('📊 Fetching campaign metrics data...');
+    // FIXED: Get the most recent record by upload date (most reliable)
     const latest = await LocationMetric.findOne()
-      .sort({ 
-        'metrics.year': -1, 
-        'metrics.month': -1,
-        'metrics.uploadedAt': -1  // Secondary sort by upload date
-      });
-    
+      .sort({ 'metrics.uploadedAt': -1 });
     if (!latest) {
-      console.log('⚠️ No metrics found in database, using fallback data');
-      return res.json({ 
-        success: true, 
-        data: getExpectedCampaignRates(),
-        message: 'Using fallback campaign data - no uploaded scorecards found'
+      console.log('❌ No campaign data found');
+      return res.status(404).json({
+        success: false,
+        message: 'No campaign data available'
       });
     }
-    
-    console.log(`📅 Latest metrics found: ${latest.metrics.month} ${latest.metrics.year}`);
-    console.log(`📝 File: ${latest.metrics.fileName}`);
-    console.log(`⏰ Uploaded: ${latest.metrics.uploadedAt}`);
-    
-    // IMPROVED: Check multiple possible locations for campaign data with priority order
-    let campaignData = latest.metrics?.campaigns ||                           // Primary: Direct campaigns storage
-                      latest.metrics?.dealership?.campaignCompletionRates || // Secondary: In dealership object
-                      latest.metrics?.dealership?.campaigns ||               // Tertiary: Alternative dealership location
-                      null;
-    
-    if (!campaignData || Object.keys(campaignData.campaigns || campaignData || {}).length === 0) {
-      console.log('⚠️ No campaign data found in latest metrics, using fallback data');
-      campaignData = getExpectedCampaignRates();
-    } else {
-      const campaignCount = Object.keys(campaignData.campaigns || campaignData).length;
-      console.log(`✅ Found campaign data with ${campaignCount} campaigns`);
-      
-      // Log which locations have campaign data (excluding Emporia)
-      if (campaignData.locations) {
-        const locationsWithData = Object.keys(campaignData.locations).filter(loc => loc !== 'Emporia Kenworth');
-        console.log(`📍 Locations with campaign data: ${locationsWithData.join(', ')}`);
-      }
-    }
-    
-    res.json({ 
-      success: true, 
+    console.log(`✅ Found latest campaign data: ${latest.metrics.month} ${latest.metrics.year}`);
+    console.log(`📅 Uploaded at: ${latest.metrics.uploadedAt}`);
+    // Convert to frontend format
+    const campaignData = {
+      locations: latest.metrics.locations || [],
+      campaigns: latest.metrics.campaigns || {},
+      summary: latest.metrics.summary || {}
+    };
+    res.json({
+      success: true,
       data: campaignData,
       period: `${latest.metrics.month} ${latest.metrics.year}`,
-      extractedAt: latest.metrics?.extractedAt,
-      fileName: latest.metrics?.fileName,
-      uploadedAt: latest.metrics?.uploadedAt
+      extractedAt: latest.metrics.uploadedAt,
+      fileName: latest.metrics.fileName || 'Unknown file'
     });
   } catch (error) {
-    console.error('❌ Error getting campaign metrics:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    console.error('❌ Error fetching campaign data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch campaign data',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
