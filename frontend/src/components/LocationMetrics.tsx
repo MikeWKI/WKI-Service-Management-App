@@ -226,7 +226,7 @@ export default function LocationMetrics() {
 
   // Auto-refresh data every 30 seconds to catch new uploads
   useEffect(() => {
-    const interval = setInterval(fetchData, 30000);
+    const interval = setInterval(fetchData, 3000000);
     return () => clearInterval(interval);
   }, [fetchData]);
 
@@ -479,7 +479,7 @@ export default function LocationMetrics() {
             <p className="text-slate-400 text-sm">Latest Data</p>
             <p className="text-white font-semibold flex items-center">
               <Calendar className="w-4 h-4 mr-1" />
-              July 2025
+              August 2025
             </p>
           </div>
         </div>
