@@ -638,7 +638,7 @@ export const formatTrendAnalysis = (analysis: TrendAnalysis): string => {
   }
   
   const changeText = data.currentVsPrevious > 0 ? 'increased' : 'decreased';
-  const changePercent = Math.abs(data.currentVsPrevious * 100).toFixed(1);
+  const changePercent = Math.abs(data.currentVsPrevious).toFixed(1);
   
   switch (trend) {
     case 'improving':

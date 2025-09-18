@@ -347,7 +347,7 @@ const TrendModal: React.FC<TrendModalProps> = ({
                         trendData.analysis.currentVsPrevious > 0 ? 'text-green-400' : 'text-red-400'
                       }`}>
                         {trendData.analysis.currentVsPrevious > 0 ? '+' : ''}
-                        {(trendData.analysis.currentVsPrevious * 100).toFixed(1)}%
+                        {trendData.analysis.currentVsPrevious.toFixed(1)}%
                       </div>
                       <div className="text-sm text-slate-300">vs last month</div>
                     </div>
