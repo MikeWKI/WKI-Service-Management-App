@@ -52,7 +52,136 @@ app.use(compression());
 app.use(morgan("combined"));
 app.use(requestLogger);
 
+// Health Check Endpoints (for Render monitoring)
+
+// Primary health check endpoint for Render (comprehensive)
+app.get("/health", async (req, res) => {
+  try {
+    const healthCheck = {
+      status: "OK",
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV || "development",
+      version: process.env.npm_package_version || "1.0.0",
+      service: "WKI Service Management Backend",
+      checks: {
+        database: "OK",
+        memory: "OK"
+      },
+      details: {
+        uptime: `${Math.floor(process.uptime())} seconds`,
+        nodeVersion: process.version,
+        platform: process.platform
+      }
+    };
+
+    // Check MongoDB connection
+    try {
+      await mongoose.connection.db.admin().ping();
+      healthCheck.checks.database = "OK";
+      healthCheck.details.database = {
+        status: "Connected",
+        readyState: mongoose.connection.readyState,
+        name: mongoose.connection.name
+      };
+    } catch (dbError) {
+      console.error('Health check - Database error:', dbError);
+      healthCheck.checks.database = "ERROR";
+      healthCheck.status = "DEGRADED";
+      healthCheck.details.database = {
+        status: "Disconnected",
+        error: dbError.message
+      };
+    }
+
+    // Check memory usage
+    const memUsage = process.memoryUsage();
+    const memUsagePercent = (memUsage.heapUsed / memUsage.heapTotal) * 100;
+    
+    if (memUsagePercent > 90) {
+      healthCheck.checks.memory = "WARNING";
+      healthCheck.status = "DEGRADED";
+    }
+    
+    healthCheck.details.memory = {
+      heapUsed: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`,
+      heapTotal: `${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`,
+      usagePercent: `${Math.round(memUsagePercent)}%`
+    };
+
+    // Return appropriate status code for Render
+    const statusCode = healthCheck.status === "OK" ? 200 : 503;
+    res.status(statusCode).json(healthCheck);
+
+  } catch (error) {
+    console.error('Health check error:', error);
+    res.status(503).json({
+      status: "ERROR",
+      timestamp: new Date().toISOString(),
+      service: "WKI Service Management Backend",
+      error: error.message
+    });
+  }
+});
+
+// Readiness check (for container orchestration)
+app.get("/ready", async (req, res) => {
+  try {
+    // Check if MongoDB is ready
+    await mongoose.connection.db.admin().ping();
+    res.status(200).json({ 
+      status: "ready",
+      timestamp: new Date().toISOString(),
+      service: "WKI Service Management Backend"
+    });
+  } catch (error) {
+    console.error('Readiness check failed:', error);
+    res.status(503).json({ 
+      status: "not ready", 
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Liveness check (simple check that service is running)
+app.get("/live", (req, res) => {
+  res.status(200).json({ 
+    status: "alive",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
+// Metrics endpoint (for monitoring and debugging)
+app.get("/metrics", (req, res) => {
+  const metrics = {
+    service: "WKI Service Management Backend",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: {
+      rss: `${Math.round(process.memoryUsage().rss / 1024 / 1024)}MB`,
+      heapTotal: `${Math.round(process.memoryUsage().heapTotal / 1024 / 1024)}MB`,
+      heapUsed: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`,
+      external: `${Math.round(process.memoryUsage().external / 1024 / 1024)}MB`
+    },
+    cpu: process.cpuUsage(),
+    version: process.env.npm_package_version || "1.0.0",
+    environment: process.env.NODE_ENV || "development",
+    nodeVersion: process.version,
+    platform: process.platform,
+    database: {
+      readyState: mongoose.connection.readyState,
+      host: mongoose.connection.host,
+      name: mongoose.connection.name
+    }
+  };
+  res.json(metrics);
+});
+
 // API Routes
+
+// Legacy health check endpoint (keep for backward compatibility)
 app.get("/api/health", (req, res) => {
   res.json({ 
     status: "OK", 

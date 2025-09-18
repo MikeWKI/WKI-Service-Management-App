@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: wki-service-management-backend
+    env: node
+    region: oregon # or your preferred region
+    plan: starter # adjust based on your plan
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: wki-service-management-frontend
+          property: host
+      - key: MONGO_URI
+        fromDatabase:
+          name: wki-mongodb
+          property: connectionString
+    autoDeploy: true
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
+
+databases:
+  - name: wki-mongodb
+    databaseName: service-management
+    user: wki-admin
+    region: oregon # should match your web service region
+    plan: starter # adjust based on your needs
+    ipAllowList:
+      - source: 0.0.0.0/0 # allows access from anywhere (adjust if needed)
+        description: Allow all connections
