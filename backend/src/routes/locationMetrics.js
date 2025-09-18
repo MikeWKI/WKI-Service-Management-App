@@ -1656,8 +1656,26 @@ function calculateAdvancedTrendAnalysis(dataPoints, metric) {
   const bestMonth = lowerIsBetter.includes(metric) ? dataPoints[worstIndex] : dataPoints[bestIndex];
   const worstMonth = lowerIsBetter.includes(metric) ? dataPoints[bestIndex] : dataPoints[worstIndex];
   
-  // Current vs previous
-  const currentVsPrevious = n >= 2 ? values[n - 1] - values[n - 2] : 0;
+  // Current vs previous (calculate percentage change)
+  let currentVsPrevious = 0;
+  if (n >= 2) {
+    const currentValue = values[n - 1];
+    const previousValue = values[n - 2];
+    
+    // Calculate percentage change: ((current - previous) / previous) * 100
+    if (previousValue !== 0) {
+      currentVsPrevious = ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
+    } else if (currentValue !== 0) {
+      // If previous was 0 but current isn't, it's a 100% increase
+      currentVsPrevious = 100;
+    }
+    // If both are 0, currentVsPrevious remains 0
+    
+    console.log(`📈 Trend calculation for ${metric}:`);
+    console.log(`   Current value: ${currentValue}`);
+    console.log(`   Previous value: ${previousValue}`);
+    console.log(`   Percentage change: ${currentVsPrevious.toFixed(2)}%`);
+  }
   
   // Determine trend category
   let trend = 'stable';
@@ -1684,7 +1702,7 @@ function calculateAdvancedTrendAnalysis(dataPoints, metric) {
       year: worstMonth.year,
       value: worstMonth.value
     } : null,
-    currentVsPrevious: Number(currentVsPrevious.toFixed(3))
+    currentVsPrevious: Number(currentVsPrevious.toFixed(2))
   };
 }
 
