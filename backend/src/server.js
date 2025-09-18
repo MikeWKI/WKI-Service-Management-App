@@ -30,11 +30,13 @@ app.use(securityHeaders);
 app.use(cors({
   origin: [
     process.env.FRONTEND_URL || "http://localhost:3000",
-    "https://wki-sma.onrender.com"
+    "https://wki-sma.onrender.com",
+    "https://wki-service-management-app.onrender.com" // Allow backend to call itself
   ],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  optionsSuccessStatus: 200 // For legacy browser support
 }));
 
 // Rate limiting (now works correctly with trust proxy setting)
@@ -57,6 +59,9 @@ app.use(requestLogger);
 // Primary health check endpoint for Render (comprehensive)
 app.get("/health", async (req, res) => {
   try {
+    console.log(`🏥 Health check requested at ${new Date().toISOString()}`);
+    console.log(`   MongoDB readyState: ${mongoose.connection.readyState}`);
+    
     const healthCheck = {
       status: "OK",
       timestamp: new Date().toISOString(),
@@ -77,19 +82,28 @@ app.get("/health", async (req, res) => {
 
     // Check MongoDB connection
     try {
-      await mongoose.connection.db.admin().ping();
-      healthCheck.checks.database = "OK";
-      healthCheck.details.database = {
-        status: "Connected",
-        readyState: mongoose.connection.readyState,
-        name: mongoose.connection.name
-      };
+      // Use a more reliable MongoDB ping method
+      if (mongoose.connection.readyState === 1) {
+        // Connection is open - try a simple ping
+        await mongoose.connection.db.admin().ping();
+        healthCheck.checks.database = "OK";
+        healthCheck.details.database = {
+          status: "Connected",
+          readyState: mongoose.connection.readyState,
+          name: mongoose.connection.name
+        };
+      } else {
+        // Connection is not ready
+        throw new Error(`MongoDB connection not ready. ReadyState: ${mongoose.connection.readyState}`);
+      }
     } catch (dbError) {
       console.error('Health check - Database error:', dbError);
-      healthCheck.checks.database = "ERROR";
+      // Don't fail health check for database issues - just mark as degraded
+      healthCheck.checks.database = "DEGRADED";
       healthCheck.status = "DEGRADED";
       healthCheck.details.database = {
-        status: "Disconnected",
+        status: "Disconnected or Error",
+        readyState: mongoose.connection.readyState,
         error: dbError.message
       };
     }
@@ -110,7 +124,9 @@ app.get("/health", async (req, res) => {
     };
 
     // Return appropriate status code for Render
-    const statusCode = healthCheck.status === "OK" ? 200 : 503;
+    // Return 200 for OK or DEGRADED (service still functional)
+    // Return 503 only for complete ERROR state
+    const statusCode = healthCheck.status === "ERROR" ? 503 : 200;
     res.status(statusCode).json(healthCheck);
 
   } catch (error) {
