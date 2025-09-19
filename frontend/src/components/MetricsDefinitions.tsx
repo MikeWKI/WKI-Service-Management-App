@@ -37,11 +37,11 @@ interface MetricDefinition {
 const metricsDefinitions: MetricDefinition[] = [
   {
     id: 'dwell-time',
-    name: 'Dwell Time',
+    name: 'Dwell Time - Less than 72 Hours',
     category: 'Operational Efficiency',
     description: 'Average time customers spend waiting for service completion. Measured in hours from service start to completion.',
     calculation: 'Extracted from monthly scorecard PDF data. Represents average hours per service case across all completed work.',
-    target: 'Less than 2.5 hours for optimal efficiency',
+    target: 'Less than 3 Days for optimal efficiency',
     impact: 'Primary customer satisfaction metric. Longer dwell times lead to customer dissatisfaction and potential business loss.',
     workflowConnection: 'Spans entire service process: Check-in through Service Completion and Vehicle Release',
     improvementTips: [
@@ -56,11 +56,11 @@ const metricsDefinitions: MetricDefinition[] = [
   },
   {
     id: 'triage-time',
-    name: 'Triage Time',
+    name: 'Triage Time - Less than 120 Minutes',
     category: 'Operational Efficiency',
     description: 'Time required to perform initial service assessment and diagnosis. Critical for setting customer expectations.',
     calculation: 'Average time from vehicle check-in to completed initial diagnosis. Measured in minutes.',
-    target: 'Less than 15 minutes for quick assessment',
+    target: 'Less than 120 minutes for quick assessment',
     impact: 'Sets the tone for entire service experience. Fast triage leads to accurate estimates and better customer confidence.',
     workflowConnection: 'First critical step: Vehicle Arrival through Initial Diagnosis and Estimate Creation',
     improvementTips: [
@@ -93,33 +93,33 @@ const metricsDefinitions: MetricDefinition[] = [
     unit: 'cases'
   },
   {
-    id: 'customer-satisfaction',
-    name: 'Customer Satisfaction',
-    category: 'Customer Experience',
-    description: 'Customer satisfaction score based on service experience surveys and feedback. May be measured on different scales.',
-    calculation: 'Average score from customer satisfaction surveys. Can be percentage-based or rating scale (e.g., 1-5).',
-    target: 'Above 4.5/5.0 or 95% satisfaction rate',
-    impact: 'Directly impacts customer retention, referrals, and business reputation. Critical for long-term business success.',
-    workflowConnection: 'Influenced by all touchpoints: Initial Contact through Service Completion and Follow-up',
+    id: 'external-notes',
+    name: 'External Notes',
+    category: 'Customer Communication',
+    description: 'Percentage of cases with minimum 3 external notes sent to valid recipients. This metric tracks communication effectiveness and customer engagement through the Decisiv platform.',
+    calculation: 'Number of cases with 3+ external notes sent to customers/owners divided by total cases, expressed as percentage.',
+    target: 'Greater than 70% of cases with 3+ external notes',
+    impact: 'Ensures proper customer communication, improves transparency, and maintains customer awareness throughout the service process.',
+    workflowConnection: 'Active throughout entire service process: from Initial Contact through Service Completion and Follow-up',
     improvementTips: [
-      'Follow up with customers after service completion',
-      'Address complaints quickly and professionally',
-      'Train staff on customer service excellence',
-      'Implement feedback systems to capture improvement opportunities'
+      'Train service advisors on effective external note communication',
+      'Establish standard communication protocols at key service milestones',
+      'Use templates for consistent and professional external notes',
+      'Monitor note quality and recipient validity regularly'
     ],
-    roleResponsible: ['Service Advisor', 'Service Manager', 'All Staff'],
+    roleResponsible: ['Service Advisor', 'Service Manager'],
     icon: <Users size={24} />,
-    unit: 'rating'
+    unit: 'percentage'
   },
   {
     id: 'etr-compliance',
-    name: 'ETR Compliance',
+    name: 'ETR Compliance - Needs Entered on ALL cases',
     category: 'Customer Experience',
     description: 'Estimated Time of Repair accuracy and compliance. Measures how well initial time estimates match actual completion times.',
-    calculation: 'Percentage of cases where actual completion time matches initial estimate within acceptable variance.',
-    target: 'Greater than 85% accuracy in time estimates',
+    calculation: 'Percentage of cases where ETR has been entered and actual completion time matches initial estimate within acceptable variance.',
+    target: '100% of cases with ETR entered and greater than 85% accuracy in time estimates',
     impact: 'Builds customer trust and enables better planning. Poor ETR accuracy leads to customer dissatisfaction.',
-    workflowConnection: 'Set during initial diagnosis and tracked through service completion',
+    workflowConnection: 'Set during initial estimate approval and tracked through service completion',
     improvementTips: [
       'Use historical data to improve estimate accuracy',
       'Account for parts availability in estimates',
@@ -136,7 +136,7 @@ const metricsDefinitions: MetricDefinition[] = [
     category: 'Quality',
     description: 'Percentage of service issues resolved correctly on the first attempt without requiring return visits.',
     calculation: 'Number of cases resolved on first attempt divided by total cases, expressed as percentage.',
-    target: 'Greater than 85% first-time resolution',
+    target: 'Greater than 95% first-time resolution',
     impact: 'Reduces rework costs, improves customer satisfaction, and demonstrates technical competency.',
     workflowConnection: 'Measured from service completion through follow-up period to confirm resolution',
     improvementTips: [
@@ -205,12 +205,8 @@ export default function MetricsDefinitions() {
         return value < 2.5 ? 'good' : value < 4 ? 'warning' : 'critical';
       case 'triage-time':
         return value < 15 ? 'good' : value < 30 ? 'warning' : 'critical';
-      case 'customer-satisfaction':
-        if (value > 10) { // Percentage scale
-          return value >= 95 ? 'good' : value >= 90 ? 'warning' : 'critical';
-        } else { // 1-5 scale
-          return value >= 4.5 ? 'good' : value >= 4 ? 'warning' : 'critical';
-        }
+      case 'external-notes':
+        return value >= 70 ? 'good' : value >= 50 ? 'warning' : 'critical';
       case 'etr-compliance':
       case 'first-time-fix':
         return value >= 85 ? 'good' : value >= 75 ? 'warning' : 'critical';
@@ -291,12 +287,12 @@ export default function MetricsDefinitions() {
               </div>
               <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-600">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-slate-300 text-sm">Satisfaction</span>
-                  {getStatusIcon(getPerformanceStatus('customer-satisfaction', currentMetrics.satisfaction))}
+                  <span className="text-slate-300 text-sm">External Notes</span>
+                  {getStatusIcon(getPerformanceStatus('external-notes', currentMetrics.externalNotes))}
                 </div>
                 <div className="text-2xl font-bold text-white">
-                  {currentMetrics.satisfaction || 'N/A'}
-                  {currentMetrics.satisfaction && (parseFloat(currentMetrics.satisfaction) > 10 ? '%' : '/5')}
+                  {currentMetrics.externalNotes || 'N/A'}
+                  {currentMetrics.externalNotes && '%'}
                 </div>
               </div>
             </div>
