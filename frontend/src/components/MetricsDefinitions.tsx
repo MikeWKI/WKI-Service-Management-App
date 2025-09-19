@@ -79,7 +79,7 @@ const metricsDefinitions: MetricDefinition[] = [
     category: 'Capacity Management',
     description: 'Total number of service cases handled during the reporting period. Indicates service capacity utilization.',
     calculation: 'Count of all completed and in-progress service cases during the monthly reporting period.',
-    target: 'Consistent workload management to optimize capacity',
+    target: 'This varies by location, service capacity and other variables. Apply consistent workload management practices to optimize capacity',
     impact: 'Reflects service department capacity and demand. Too high may indicate understaffing, too low may indicate inefficiency.',
     workflowConnection: 'Encompasses all service activities from initial contact through case closure',
     improvementTips: [
@@ -151,7 +151,7 @@ const metricsDefinitions: MetricDefinition[] = [
   }
 ];
 
-const categories = ['All Categories', 'Operational Efficiency', 'Customer Experience', 'Capacity Management', 'Quality'];
+const categories = ['All Categories', 'Operational Efficiency', 'Customer Experience', 'Capacity Management','Customer Communication', 'Quality'];
 
 export default function MetricsDefinitions() {
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
@@ -171,7 +171,8 @@ export default function MetricsDefinitions() {
       'Customer Experience': 'text-green-400',
       'Quality': 'text-purple-400',
       'Capacity Management': 'text-orange-400',
-      'Financial Performance': 'text-yellow-400'
+      'Financial Performance': 'text-yellow-400',
+      'Customer Communication': 'text-red-400'
     };
     return colors[category as keyof typeof colors] || 'text-slate-400';
   };
