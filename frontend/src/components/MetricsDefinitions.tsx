@@ -37,9 +37,9 @@ interface MetricDefinition {
 const metricsDefinitions: MetricDefinition[] = [
   {
     id: 'dwell-time',
-    name: 'Dwell Time - Less than 72 Hours',
+    name: 'Dwell Time - Less than 3 Days',
     category: 'Operational Efficiency',
-    description: 'Average time customers spend waiting for service completion. Measured in hours from service start to completion.',
+    description: 'Average time customers spend waiting for service completion. Measured in Days from service start to completion.',
     calculation: 'Extracted from monthly scorecard PDF data. Represents average hours per service case across all completed work.',
     target: 'Less than 3 Days for optimal efficiency',
     impact: 'Primary customer satisfaction metric. Longer dwell times lead to customer dissatisfaction and potential business loss.',
@@ -56,7 +56,7 @@ const metricsDefinitions: MetricDefinition[] = [
   },
   {
     id: 'triage-time',
-    name: 'Triage Time - Less than 120 Minutes',
+    name: 'Triage Time - Less than 2 Hours',
     category: 'Operational Efficiency',
     description: 'Time required to perform initial service assessment and diagnosis. Critical for setting customer expectations.',
     calculation: 'Average time from vehicle check-in to completed initial diagnosis. Measured in minutes.',
@@ -96,9 +96,9 @@ const metricsDefinitions: MetricDefinition[] = [
     id: 'external-notes',
     name: 'External Notes',
     category: 'Customer Communication',
-    description: 'Percentage of cases with minimum 3 external notes sent to valid recipients. This metric tracks communication effectiveness and customer engagement through the Decisiv platform.',
+    description: 'Percentage of cases with minimum of 3 external notes sent to valid recipients. This metric tracks communication effectiveness and customer engagement through the Decisiv platform.',
     calculation: 'Number of cases with 3+ external notes sent to customers/owners divided by total cases, expressed as percentage.',
-    target: 'Greater than 70% of cases with 3+ external notes',
+    target: '100% of cases with 3+ external notes',
     impact: 'Ensures proper customer communication, improves transparency, and maintains customer awareness throughout the service process.',
     workflowConnection: 'Active throughout entire service process: from Initial Contact through Service Completion and Follow-up',
     improvementTips: [
