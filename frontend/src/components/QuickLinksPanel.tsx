@@ -22,6 +22,15 @@ const referenceDocuments: ReferenceDocument[] = [
     isExternal: true
   },
   {
+    id: 'decisiv-case-update-tool',
+    title: 'Decisiv Case Update Tool',
+    description: 'Add notations and files to cases by email',
+    url: 'https://wki-dnt.onrender.com/',
+    icon: <AlertCircle size={16} />,
+    category: 'workflow',
+    isExternal: true
+  },
+  {
     id: 'vision-dashboards',
     title: 'Vision - Decisiv Dashboards',
     description: 'Advanced analytics and reporting dashboards',

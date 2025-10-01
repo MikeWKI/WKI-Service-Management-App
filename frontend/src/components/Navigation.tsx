@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { BarChart3, Workflow, GitBranch, BookOpen, Menu, X } from 'lucide-react';
+import { BarChart3, Workflow, GitBranch, BookOpen, Menu, X, AlertCircle } from 'lucide-react';
 
 export default function Navigation() {
   const location = useLocation();
@@ -110,6 +110,16 @@ export default function Navigation() {
                   <BookOpen size={18} />
                   <span className="text-sm font-semibold">Metrics Guide</span>
                 </Link>
+                
+                <a
+                  href="https://wki-dnt.onrender.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 border-2 bg-slate-800 text-slate-300 hover:bg-green-600 hover:text-white border-green-500/50 hover:border-green-400"
+                >
+                  <AlertCircle size={18} />
+                  <span className="text-sm font-semibold">Case Update Tool</span>
+                </a>
               </div>
 
               {/* Bottom row - Empty for now */}
@@ -215,6 +225,16 @@ export default function Navigation() {
                   <BookOpen size={20} />
                   <span>Metrics Guide</span>
                 </Link>
+
+                <a
+                  href="https://wki-dnt.onrender.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-all duration-200 border border-green-500/50 text-slate-300 hover:bg-green-600 hover:text-white hover:border-green-400"
+                >
+                  <AlertCircle size={20} />
+                  <span>Case Update Tool</span>
+                </a>
 
                 {/* Mobile External Links */}
                 <div className="pt-2 mt-2 border-t border-slate-700">
