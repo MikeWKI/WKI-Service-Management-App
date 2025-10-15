@@ -843,23 +843,25 @@ function extractLocationMetrics(text, locationName, locationNames) {
       if (extractedValues.length === 10) {
         console.log(`Found ${extractedValues.length} values - parsing as 10-column format (missing SM Monthly Dwell)`);
         
-        // Wichita September pattern: "100%  92%  99%  1.9  87.2%  3  18.1%  21.1%  5.3  5.6"
-        // Missing column 4 (SM Monthly Dwell Avg)
+        // Wichita September actual data: "100%  92%  99%  1.9  87.2%  3  18.1%  21.1%  5.3  5.6"
+        // Based on PDF analysis, the missing column is at position 3 (SM Monthly Dwell Avg)
+        // Correct mapping for 10 values:
         locationData = {
           vscCaseRequirements: extractedValues[0] || 'N/A',          // 100%
           vscClosedCorrectly: extractedValues[1] || 'N/A',           // 92%
           ttActivation: extractedValues[2] || 'N/A',                 // 99%
-          smMonthlyDwellAvg: 'N/A',                                  // MISSING
-          smYtdDwellAvgDays: extractedValues[3] || 'N/A',            // 1.9
-          triagePercentLess4Hours: extractedValues[4] || 'N/A',      // 87.2%
-          triageHours: extractedValues[5] || 'N/A',                  // 3
-          etrPercentCases: extractedValues[6] || 'N/A',              // 18.1%
-          percentCasesWith3Notes: extractedValues[7] || 'N/A',       // 21.1%
-          rdsMonthlyAvgDays: extractedValues[8] || 'N/A',            // 5.3
-          rdsYtdDwellAvgDays: extractedValues[9] || 'N/A'            // 5.6
+          smMonthlyDwellAvg: 'N/A',                                  // MISSING (was position 3)
+          smYtdDwellAvgDays: extractedValues[3] || 'N/A',            // 1.9 (shifts from position 4)
+          triagePercentLess4Hours: extractedValues[4] || 'N/A',      // 87.2% (shifts from position 5)
+          triageHours: extractedValues[5] || 'N/A',                  // 3 (shifts from position 6)
+          etrPercentCases: extractedValues[6] || 'N/A',              // 18.1% (shifts from position 7)
+          percentCasesWith3Notes: extractedValues[7] || 'N/A',       // 21.1% (shifts from position 8)
+          rdsMonthlyAvgDays: extractedValues[8] || 'N/A',            // 5.3 (shifts from position 9)
+          rdsYtdDwellAvgDays: extractedValues[9] || 'N/A'            // 5.6 (shifts from position 10)
         };
         
-        console.log(`✅ Successfully parsed ${locationName} with 10-value format (missing SM Monthly Dwell):`, locationData);
+        console.log(`✅ Parsed ${locationName} - 10 values mapped to 11 fields with SM Monthly Dwell as N/A`);
+        console.log(`   Mapping: 100%→VSC Req, 92%→VSC Closed, 99%→TT+, [MISSING]→SM Monthly, 1.9→SM YTD, 87.2%→Triage%, 3→Triage Hrs, 18.1%→ETR%, 21.1%→3+ Notes, 5.3→RDS Monthly, 5.6→RDS YTD`);
         break;
       } else if (extractedValues.length >= 11) {
         console.log(`Found ${extractedValues.length} values - parsing as complete 11-column format`);
@@ -1106,6 +1108,57 @@ router.post('/upload', upload.single('pdf'), async (req, res) => {
       success: false, 
       error: `Failed to process PDF: ${error.message}`,
       details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});
+
+// DELETE /api/location-metrics/{year}/{month} - Delete specific month metrics
+router.delete('/:year/:month', async (req, res) => {
+  try {
+    const { year, month } = req.params;
+    
+    // Convert various month formats to proper case
+    let monthName;
+    if (month.length <= 2) {
+      // Handle numeric month (09, 9, etc.)
+      const monthNum = parseInt(month);
+      const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+      monthName = monthNames[monthNum - 1];
+    } else {
+      // Handle month name (september, September, SEPTEMBER, etc.)
+      monthName = month.charAt(0).toUpperCase() + month.slice(1).toLowerCase();
+    }
+    
+    console.log(`🗑️ Deleting metrics for ${monthName} ${year}`);
+    
+    const result = await LocationMetric.deleteOne({
+      'metrics.month': monthName,
+      'metrics.year': parseInt(year)
+    });
+    
+    if (result.deletedCount === 0) {
+      console.log(`❌ No metrics found for ${monthName} ${year}`);
+      return res.status(404).json({ 
+        success: false, 
+        error: `No metrics found for ${monthName} ${year}` 
+      });
+    }
+    
+    console.log(`✅ Successfully deleted metrics for ${monthName} ${year}`);
+    
+    res.json({ 
+      success: true,
+      message: `Successfully deleted metrics for ${monthName} ${year}`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error('Delete metrics error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
     });
   }
 });
