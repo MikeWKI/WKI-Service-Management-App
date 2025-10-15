@@ -823,22 +823,40 @@ function extractLocationMetrics(text, locationName, locationNames) {
   for (const { index, line } of matchingLines) {
     console.log(`\nAnalyzing line ${index}: "${line}"`);
     
-    // Extract everything after the location name
-    const locationIndex = line.indexOf(locationName);
-    if (locationIndex !== -1) {
-      const dataAfterLocation = line.substring(locationIndex + locationName.length).trim();
-      console.log(`Data after location name: "${dataAfterLocation}"`);
-      
-      // FIXED: Split by multiple spaces to preserve column structure and empty positions
-      const rawValues = dataAfterLocation.split(/\s{2,}/).filter(v => v.trim());
-      console.log(`Raw split values: [${rawValues.join(' | ')}] (count: ${rawValues.length})`);
-      
-      // Extract all numeric values and percentages using simpler regex
-      const extractedValues = dataAfterLocation.match(/N\/A|\d+(?:\.\d+)?%?/g) || [];
-      
-      console.log(`Extracted tokens: [${extractedValues.join(', ')}] (count: ${extractedValues.length})`);
-      
-      // CRITICAL FIX: Wichita has 10 values (missing SM Monthly Dwell Avg at position 3)
+      // Extract everything after the location name
+      const locationIndex = line.indexOf(locationName);
+      if (locationIndex !== -1) {
+        let dataAfterLocation = line.substring(locationIndex + locationName.length).trim();
+        console.log(`Data after location name (full): "${dataAfterLocation.substring(0, 200)}..."`);
+        
+        // CRITICAL FIX: Stop at the next location name to avoid capturing other locations' data
+        // Find the next location name in the data and cut off there
+        let minNextLocationIndex = dataAfterLocation.length;
+        for (const nextLocation of locationNames) {
+          if (nextLocation !== locationName) {
+            const nextIndex = dataAfterLocation.indexOf(nextLocation);
+            if (nextIndex !== -1 && nextIndex < minNextLocationIndex) {
+              minNextLocationIndex = nextIndex;
+            }
+          }
+        }
+        
+        // Trim to only this location's data (before next location)
+        if (minNextLocationIndex < dataAfterLocation.length) {
+          dataAfterLocation = dataAfterLocation.substring(0, minNextLocationIndex).trim();
+          console.log(`Data trimmed at next location (index ${minNextLocationIndex})`);
+        }
+        
+        console.log(`Data for THIS location only: "${dataAfterLocation}"`);
+        
+        // FIXED: Split by multiple spaces to preserve column structure and empty positions
+        const rawValues = dataAfterLocation.split(/\s{2,}/).filter(v => v.trim());
+        console.log(`Raw split values: [${rawValues.join(' | ')}] (count: ${rawValues.length})`);
+        
+        // Extract all numeric values and percentages using simpler regex
+        const extractedValues = dataAfterLocation.match(/N\/A|\d+(?:\.\d+)?%?/g) || [];
+        
+        console.log(`Extracted tokens: [${extractedValues.join(', ')}] (count: ${extractedValues.length})`);      // CRITICAL FIX: Wichita has 10 values (missing SM Monthly Dwell Avg at position 3)
       // Other locations have 11 values (complete)
       if (extractedValues.length === 10) {
         console.log(`Found ${extractedValues.length} values - parsing as 10-column format (missing SM Monthly Dwell)`);
