@@ -838,30 +838,30 @@ function extractLocationMetrics(text, locationName, locationNames) {
       
       console.log(`Extracted tokens: [${extractedValues.join(', ')}] (count: ${extractedValues.length})`);
       
-      // CRITICAL FIX: Wichita has 10 values (missing SM Monthly Dwell Avg)
+      // CRITICAL FIX: Wichita has 10 values (missing SM Monthly Dwell Avg at position 3)
       // Other locations have 11 values (complete)
       if (extractedValues.length === 10) {
         console.log(`Found ${extractedValues.length} values - parsing as 10-column format (missing SM Monthly Dwell)`);
         
         // Wichita September actual data: "100%  92%  99%  1.9  87.2%  3  18.1%  21.1%  5.3  5.6"
-        // Based on PDF analysis, the missing column is at position 3 (SM Monthly Dwell Avg)
-        // Correct mapping for 10 values:
+        // CORRECTED MAPPING - Column 3 (SM Monthly Dwell Avg) is MISSING
+        // All subsequent values shift UP by one position
         locationData = {
-          vscCaseRequirements: extractedValues[0] || 'N/A',          // 100%
-          vscClosedCorrectly: extractedValues[1] || 'N/A',           // 92%
-          ttActivation: extractedValues[2] || 'N/A',                 // 99%
-          smMonthlyDwellAvg: 'N/A',                                  // MISSING (was position 3)
-          smYtdDwellAvgDays: extractedValues[3] || 'N/A',            // 1.9 (shifts from position 4)
-          triagePercentLess4Hours: extractedValues[4] || 'N/A',      // 87.2% (shifts from position 5)
-          triageHours: extractedValues[5] || 'N/A',                  // 3 (shifts from position 6)
-          etrPercentCases: extractedValues[6] || 'N/A',              // 18.1% (shifts from position 7)
-          percentCasesWith3Notes: extractedValues[7] || 'N/A',       // 21.1% (shifts from position 8)
-          rdsMonthlyAvgDays: extractedValues[8] || 'N/A',            // 5.3 (shifts from position 9)
-          rdsYtdDwellAvgDays: extractedValues[9] || 'N/A'            // 5.6 (shifts from position 10)
+          vscCaseRequirements: extractedValues[0] || 'N/A',          // Token 0: 100%
+          vscClosedCorrectly: extractedValues[1] || 'N/A',           // Token 1: 92%
+          ttActivation: extractedValues[2] || 'N/A',                 // Token 2: 99%
+          smMonthlyDwellAvg: 'N/A',                                  // MISSING - insert N/A here
+          smYtdDwellAvgDays: extractedValues[3] || 'N/A',            // Token 3: 1.9 (was going to smMonthlyDwellAvg)
+          triagePercentLess4Hours: extractedValues[4] || 'N/A',      // Token 4: 87.2%
+          triageHours: extractedValues[5] || 'N/A',                  // Token 5: 3
+          etrPercentCases: extractedValues[6] || 'N/A',              // Token 6: 18.1%
+          percentCasesWith3Notes: extractedValues[7] || 'N/A',       // Token 7: 21.1%
+          rdsMonthlyAvgDays: extractedValues[8] || 'N/A',            // Token 8: 5.3
+          rdsYtdDwellAvgDays: extractedValues[9] || 'N/A'            // Token 9: 5.6
         };
         
-        console.log(`✅ Parsed ${locationName} - 10 values mapped to 11 fields with SM Monthly Dwell as N/A`);
-        console.log(`   Mapping: 100%→VSC Req, 92%→VSC Closed, 99%→TT+, [MISSING]→SM Monthly, 1.9→SM YTD, 87.2%→Triage%, 3→Triage Hrs, 18.1%→ETR%, 21.1%→3+ Notes, 5.3→RDS Monthly, 5.6→RDS YTD`);
+        console.log(`✅ Parsed ${locationName} - 10 values with SM Monthly Dwell MISSING at position 3`);
+        console.log(`   Token mapping: [0]100%→VSC Req, [1]92%→VSC Closed, [2]99%→TT+, [MISSING]→SM Monthly, [3]1.9→SM YTD, [4]87.2%→Triage%, [5]3→Triage Hrs, [6]18.1%→ETR%, [7]21.1%→3+ Notes, [8]5.3→RDS Monthly, [9]5.6→RDS YTD`);
         break;
       } else if (extractedValues.length >= 11) {
         console.log(`Found ${extractedValues.length} values - parsing as complete 11-column format`);
