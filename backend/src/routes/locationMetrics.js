@@ -882,41 +882,43 @@ function extractLocationMetrics(text, locationName, locationNames) {
         console.log(`   Mapping: [0]100%→VSC Req, [1]92%→VSC Closed, [2]99%→TT+, [3]18.1%→ETR%, [4]5.3→RDS Monthly, [5]87.2%→Triage%, [6]21.1%→3+ Notes, [7]3→Triage Hrs, [8]1.9→SM YTD, [9]5.6→RDS YTD`);
         break;
       } else if (extractedValues.length >= 11) {
-        console.log(`Found ${extractedValues.length} values - parsing as complete 11-column format`);
+        console.log(`Found ${extractedValues.length} values - parsing as complete 11-column format with ACTUAL PDF column order`);
         
-        // Complete pattern: all 11 columns present
+        // ACTUAL PDF Column Order (same as 10-column, but with SM Monthly present at position 3)
+        // PDF columns: VSC Req, VSC Closed, TT+, SM Monthly, ETR%, RDS Monthly, Triage%, 3+ Notes%, Triage Hrs, SM YTD, RDS YTD
         locationData = {
-          vscCaseRequirements: extractedValues[0] || 'N/A',
-          vscClosedCorrectly: extractedValues[1] || 'N/A',
-          ttActivation: extractedValues[2] || 'N/A',
-          smMonthlyDwellAvg: extractedValues[3] || 'N/A',
-          smYtdDwellAvgDays: extractedValues[4] || 'N/A',
-          triagePercentLess4Hours: extractedValues[5] || 'N/A',
-          triageHours: extractedValues[6] || 'N/A',
-          etrPercentCases: extractedValues[7] || 'N/A',
-          percentCasesWith3Notes: extractedValues[8] || 'N/A',
-          rdsMonthlyAvgDays: extractedValues[9] || 'N/A',
-          rdsYtdDwellAvgDays: extractedValues[10] || 'N/A'
+          vscCaseRequirements: extractedValues[0] || 'N/A',       // Position 0
+          vscClosedCorrectly: extractedValues[1] || 'N/A',        // Position 1
+          ttActivation: extractedValues[2] || 'N/A',              // Position 2
+          smMonthlyDwellAvg: extractedValues[3] || 'N/A',         // Position 3 (present in 11-column)
+          etrPercentCases: extractedValues[4] || 'N/A',           // Position 4 (ETR%)
+          rdsMonthlyAvgDays: extractedValues[5] || 'N/A',         // Position 5 (RDS Monthly)
+          triagePercentLess4Hours: extractedValues[6] || 'N/A',   // Position 6 (Triage %)
+          percentCasesWith3Notes: extractedValues[7] || 'N/A',    // Position 7 (3+ Notes)
+          triageHours: extractedValues[8] || 'N/A',               // Position 8 (Triage Hours)
+          smYtdDwellAvgDays: extractedValues[9] || 'N/A',         // Position 9 (SM YTD)
+          rdsYtdDwellAvgDays: extractedValues[10] || 'N/A'        // Position 10 (RDS YTD)
         };
         
-        console.log(`✅ Successfully parsed ${locationName} with complete 11-value format:`, locationData);
+        console.log(`✅ Successfully parsed ${locationName} with complete 11-value format (SM Monthly at position 3):`, locationData);
         break;
       } else if (extractedValues.length >= 8) {
-        console.log(`Found ${extractedValues.length} values - attempting best-fit parsing`);
+        console.log(`Found ${extractedValues.length} values - attempting best-fit parsing with ACTUAL PDF column order`);
         
-        // Partial data - use what we have
+        // Partial data - use what we have, following the same column order
+        // PDF columns: VSC Req, VSC Closed, TT+, SM Monthly, ETR%, RDS Monthly, Triage%, 3+ Notes%, Triage Hrs, SM YTD, RDS YTD
         locationData = {
-          vscCaseRequirements: extractedValues[0] || 'N/A',
-          vscClosedCorrectly: extractedValues[1] || 'N/A',
-          ttActivation: extractedValues[2] || 'N/A',
-          smMonthlyDwellAvg: extractedValues[3] || 'N/A',
-          smYtdDwellAvgDays: extractedValues[4] || 'N/A',
-          triagePercentLess4Hours: extractedValues[5] || 'N/A',
-          triageHours: extractedValues[6] || 'N/A',
-          etrPercentCases: extractedValues[7] || 'N/A',
-          percentCasesWith3Notes: extractedValues[8] || 'N/A',
-          rdsMonthlyAvgDays: extractedValues[9] || 'N/A',
-          rdsYtdDwellAvgDays: extractedValues[10] || 'N/A'
+          vscCaseRequirements: extractedValues[0] || 'N/A',       // Position 0
+          vscClosedCorrectly: extractedValues[1] || 'N/A',        // Position 1
+          ttActivation: extractedValues[2] || 'N/A',              // Position 2
+          smMonthlyDwellAvg: extractedValues[3] || 'N/A',         // Position 3
+          etrPercentCases: extractedValues[4] || 'N/A',           // Position 4 (ETR%)
+          rdsMonthlyAvgDays: extractedValues[5] || 'N/A',         // Position 5 (RDS Monthly)
+          triagePercentLess4Hours: extractedValues[6] || 'N/A',   // Position 6 (Triage %)
+          percentCasesWith3Notes: extractedValues[7] || 'N/A',    // Position 7 (3+ Notes)
+          triageHours: extractedValues[8] || 'N/A',               // Position 8 (Triage Hours)
+          smYtdDwellAvgDays: extractedValues[9] || 'N/A',         // Position 9 (SM YTD)
+          rdsYtdDwellAvgDays: extractedValues[10] || 'N/A'        // Position 10 (RDS YTD)
         };
         
         console.log(`✅ Successfully parsed ${locationName} with best-fit:`, locationData);
