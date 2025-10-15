@@ -1112,6 +1112,52 @@ router.post('/upload', upload.single('pdf'), async (req, res) => {
   }
 });
 
+// GET /api/location-metrics/debug-september - Debug September data
+router.get('/debug-september', async (req, res) => {
+  try {
+    const september = await LocationMetric.findOne({
+      'metrics.month': 'September',
+      'metrics.year': 2025
+    }).lean();
+    
+    if (!september) {
+      return res.status(404).json({
+        success: false,
+        error: 'No September 2025 data found'
+      });
+    }
+    
+    const wichita = september.metrics.locations?.find(loc => loc.name === 'Wichita Kenworth');
+    
+    res.json({
+      success: true,
+      data: {
+        fullRecord: september,
+        wichitaOnly: wichita,
+        expectedValues: {
+          vscCaseRequirements: '100%',
+          vscClosedCorrectly: '92%',
+          ttActivation: '99%',
+          smMonthlyDwellAvg: 'N/A',
+          smYtdDwellAvgDays: '1.9',
+          triagePercentLess4Hours: '87.2%',
+          triageHours: '3',
+          etrPercentCases: '18.1%',
+          percentCasesWith3Notes: '21.1%',
+          rdsMonthlyAvgDays: '5.3',
+          rdsYtdDwellAvgDays: '5.6'
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Debug error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // DELETE /api/location-metrics/{year}/{month} - Delete specific month metrics
 router.delete('/:year/:month', async (req, res) => {
   try {
