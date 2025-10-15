@@ -199,53 +199,43 @@ function extractCampaignCompletionRates(text) {
       // Initialize location campaigns
       campaignData.locations[locationName] = {};
       
-      // FIXED: Updated regex to match the exact format from your extracted text
-      // Pattern: campaign_code campaign_name percentage% percentage% percentage%
-      // Example: "24KWL Bendix EC80 ABS ECU Incorrect Signal Processing 61% 59% 100%"
-      const lines = locationText.split('\n');
-      let campaignCount = 0;
+      // FIXED: Extract campaigns from continuous text (not line-by-line)
+      // Pattern: campaign_code followed by description followed by three percentages
+      // Example: "24KWL   Bendix EC80 ABS ECU Incorrect Signal Processing   63%   62%   100%"
       
-      for (const line of lines) {
-        const trimmedLine = line.trim();
-        if (!trimmedLine) continue;
+      // Use global regex to find all campaign patterns in the location text
+      const campaignPattern = /(24KWL|25KWB|E\d+)\s+([A-Za-z0-9\s\-\/]+?)\s+(\d+)%\s+(\d+)%\s+(\d+)%/g;
+      let campaignCount = 0;
+      let match;
+      
+      while ((match = campaignPattern.exec(locationText)) !== null) {
+        const [, campaignCode, campaignName, closeRate, nationalRate, goal] = match;
         
-        // Skip the location name line and headers
-        if (trimmedLine === locationName || trimmedLine.includes('Campaign Completion') || trimmedLine.includes('Close rate')) {
-          continue;
-        }
+        // Clean up campaign name (remove extra spaces, trim)
+        let cleanCampaignName = campaignName.trim().replace(/\s+/g, ' ');
         
-        // Look for lines with campaign codes and three percentages
-        const campaignMatch = trimmedLine.match(/^(24KWL|25KWB|E\d+)\s+(.+?)\s+(\d+)%\s+(\d+)%\s+(\d+)%$/);
+        console.log(`  ✅ Campaign ${campaignCount + 1}: "${cleanCampaignName}"`);
+        console.log(`     Code: ${campaignCode}, Close Rate: ${closeRate}%, National: ${nationalRate}%, Goal: ${goal}%`);
         
-        if (campaignMatch) {
-          const [, campaignCode, campaignName, closeRate, nationalRate, goal] = campaignMatch;
-          
-          // Clean up campaign name
-          let cleanCampaignName = campaignName.trim();
-          
-          console.log(`  ✅ Campaign ${campaignCount + 1}: "${cleanCampaignName}"`);
-          console.log(`     Code: ${campaignCode}, Close Rate: ${closeRate}%, National: ${nationalRate}%, Goal: ${goal}%`);
-          
-          // Store by location
-          campaignData.locations[locationName][cleanCampaignName] = {
-            code: campaignCode,
-            closeRate: `${closeRate}%`,
+        // Store by location
+        campaignData.locations[locationName][cleanCampaignName] = {
+          code: campaignCode,
+          closeRate: `${closeRate}%`,
+          nationalRate: `${nationalRate}%`,
+          goal: `${goal}%`
+        };
+        
+        // Store by campaign (for summary across locations)
+        if (!campaignData.campaigns[cleanCampaignName]) {
+          campaignData.campaigns[cleanCampaignName] = {
+            locations: {},
             nationalRate: `${nationalRate}%`,
             goal: `${goal}%`
           };
-          
-          // Store by campaign (for summary across locations)
-          if (!campaignData.campaigns[cleanCampaignName]) {
-            campaignData.campaigns[cleanCampaignName] = {
-              locations: {},
-              nationalRate: `${nationalRate}%`,
-              goal: `${goal}%`
-            };
-          }
-          campaignData.campaigns[cleanCampaignName].locations[locationName] = `${closeRate}%`;
-          
-          campaignCount++;
         }
+        campaignData.campaigns[cleanCampaignName].locations[locationName] = `${closeRate}%`;
+        
+        campaignCount++;
       }
       
       console.log(`   Total campaigns found for ${locationName}: ${campaignCount}`);
