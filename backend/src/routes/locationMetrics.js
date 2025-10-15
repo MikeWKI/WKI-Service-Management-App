@@ -850,18 +850,18 @@ function extractLocationMetrics(text, locationName, locationNames) {
           vscCaseRequirements: extractedValues[0] || 'N/A',          // Token 0: 100%
           vscClosedCorrectly: extractedValues[1] || 'N/A',           // Token 1: 92%
           ttActivation: extractedValues[2] || 'N/A',                 // Token 2: 99%
-          smMonthlyDwellAvg: 'N/A',                                  // MISSING - insert N/A here
-          smYtdDwellAvgDays: extractedValues[3] || 'N/A',            // Token 3: 1.9 (was going to smMonthlyDwellAvg)
-          triagePercentLess4Hours: extractedValues[4] || 'N/A',      // Token 4: 87.2%
-          triageHours: extractedValues[5] || 'N/A',                  // Token 5: 3
-          etrPercentCases: extractedValues[6] || 'N/A',              // Token 6: 18.1%
-          percentCasesWith3Notes: extractedValues[7] || 'N/A',       // Token 7: 21.1%
-          rdsMonthlyAvgDays: extractedValues[8] || 'N/A',            // Token 8: 5.3
-          rdsYtdDwellAvgDays: extractedValues[9] || 'N/A'            // Token 9: 5.6
+          smMonthlyDwellAvg: 'N/A',                                  // MISSING in PDF
+          etrPercentCases: extractedValues[3] || 'N/A',              // Token 3: 18.1% (ETR%)
+          rdsMonthlyAvgDays: extractedValues[4] || 'N/A',            // Token 4: 5.3 (RDS Monthly)
+          triagePercentLess4Hours: extractedValues[5] || 'N/A',      // Token 5: 87.2% (Triage %)
+          percentCasesWith3Notes: extractedValues[6] || 'N/A',       // Token 6: 21.1% (3+ Notes)
+          triageHours: extractedValues[7] || 'N/A',                  // Token 7: 3 (Triage Hours)
+          smYtdDwellAvgDays: extractedValues[8] || 'N/A',            // Token 8: 1.9 (SM YTD)
+          rdsYtdDwellAvgDays: extractedValues[9] || 'N/A'            // Token 9: 5.6 (RDS YTD)
         };
         
-        console.log(`✅ Parsed ${locationName} - 10 values with SM Monthly Dwell MISSING at position 3`);
-        console.log(`   Token mapping: [0]100%→VSC Req, [1]92%→VSC Closed, [2]99%→TT+, [MISSING]→SM Monthly, [3]1.9→SM YTD, [4]87.2%→Triage%, [5]3→Triage Hrs, [6]18.1%→ETR%, [7]21.1%→3+ Notes, [8]5.3→RDS Monthly, [9]5.6→RDS YTD`);
+        console.log(`✅ Parsed ${locationName} - 10 values with ACTUAL PDF column order (ETR%, RDS Monthly, Triage%, 3+ Notes, Triage Hrs, SM YTD, RDS YTD)`);
+        console.log(`   Mapping: [0]100%→VSC Req, [1]92%→VSC Closed, [2]99%→TT+, [3]18.1%→ETR%, [4]5.3→RDS Monthly, [5]87.2%→Triage%, [6]21.1%→3+ Notes, [7]3→Triage Hrs, [8]1.9→SM YTD, [9]5.6→RDS YTD`);
         break;
       } else if (extractedValues.length >= 11) {
         console.log(`Found ${extractedValues.length} values - parsing as complete 11-column format`);
@@ -1110,6 +1110,18 @@ router.post('/upload', upload.single('pdf'), async (req, res) => {
       details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
+});
+
+// GET /api/location-metrics/version - Check deployed code version
+router.get('/version', (req, res) => {
+  res.json({
+    success: true,
+    version: 'v2.0-corrected-10-value-mapping',
+    commit: '2937edeb',
+    timestamp: '2025-10-15T14:22:00Z',
+    extractionLogic: '10-value format: Token[3]=smYtdDwellAvgDays (NOT smMonthlyDwellAvg)',
+    deployedAt: new Date().toISOString()
+  });
 });
 
 // GET /api/location-metrics/debug-september - Debug September data
