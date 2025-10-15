@@ -1306,14 +1306,15 @@ router.get('/campaigns', async (req, res) => {
     console.log(`✅ Found latest campaign data: ${latest.metrics.month} ${latest.metrics.year}`);
     console.log(`📅 Uploaded at: ${latest.metrics.uploadedAt}`);
     
-    // CRITICAL FIX: Always use the expected campaign rates for now since PDF extraction may not be working
-    // This ensures the frontend gets the correct campaign data structure
-    const campaignData = getExpectedCampaignRates();
+    // Use actual extracted campaign data from the database
+    const campaignData = latest.metrics.dealership?.campaignCompletionRates || getExpectedCampaignRates();
     
-    console.log('✅ Returning expected campaign data structure');
-    console.log(`   Total campaigns: ${Object.keys(campaignData.campaigns).length}`);
-    console.log(`   Total locations: ${Object.keys(campaignData.locations).length}`);
-    console.log(`   Sample campaigns: ${Object.keys(campaignData.campaigns).slice(0, 2).join(', ')}`);
+    // Log what we're returning
+    const isRealData = latest.metrics.dealership?.campaignCompletionRates ? true : false;
+    console.log(`✅ Returning ${isRealData ? 'REAL EXTRACTED' : 'FALLBACK'} campaign data`);
+    console.log(`   Total campaigns: ${Object.keys(campaignData.campaigns || {}).length}`);
+    console.log(`   Total locations: ${Object.keys(campaignData.locations || {}).length}`);
+    console.log(`   Sample campaigns: ${Object.keys(campaignData.campaigns || {}).slice(0, 2).join(', ')}`);
     
     res.json({
       success: true,
