@@ -14,9 +14,10 @@ const createRateLimiter = (windowMs, max, message) => {
 
 // Different rate limits for different operations
 const rateLimiters = {
-  general: createRateLimiter(15 * 60 * 1000, 100, 'Too many requests, please try again later.'),
-  auth: createRateLimiter(15 * 60 * 1000, 5, 'Too many authentication attempts, please try again later.'),
-  api: createRateLimiter(1 * 60 * 1000, 30, 'Too many API requests, please try again later.')
+  // FIXED: Increased limits for production use to prevent 429 errors
+  general: createRateLimiter(15 * 60 * 1000, 500, 'Too many requests, please try again later.'), // 500 requests per 15 minutes
+  auth: createRateLimiter(15 * 60 * 1000, 10, 'Too many authentication attempts, please try again later.'), // 10 attempts per 15 minutes
+  api: createRateLimiter(1 * 60 * 1000, 100, 'Too many API requests, please try again later.') // 100 requests per minute
 };
 
 // Enhanced security headers

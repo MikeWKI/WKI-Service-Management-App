@@ -7,6 +7,10 @@ services:
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /health
+    # FIXED: Configure health check interval to reduce load
+    healthCheckIntervalSeconds: 30  # Check every 30 seconds instead of 5
+    healthCheckTimeoutSeconds: 10   # Timeout after 10 seconds
+    healthCheckGracePeriodSeconds: 60  # Wait 60 seconds after deploy before checking
     envVars:
       - key: NODE_ENV
         value: production

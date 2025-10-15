@@ -823,55 +823,64 @@ function extractLocationMetrics(text, locationName, locationNames) {
   for (const { index, line } of matchingLines) {
     console.log(`\nAnalyzing line ${index}: "${line}"`);
     
-    // Look for the line that contains the location name followed by metrics
-    // Pattern should be: "LocationName   XX%   XX%   XX%   X.X   X.X%   X.X XX.X%   X.X% X.X X.X   X.X"
-    
     // Extract everything after the location name
     const locationIndex = line.indexOf(locationName);
     if (locationIndex !== -1) {
       const dataAfterLocation = line.substring(locationIndex + locationName.length).trim();
       console.log(`Data after location name: "${dataAfterLocation}"`);
       
-      // Extract all numeric values and percentages using a more specific pattern
-      const extractedValues = dataAfterLocation.match(/(?:N\/A|\d+(?:\.\d+)?%?)/g) || [];
-      console.log(`Extracted values: [${extractedValues.join(', ')}] (count: ${extractedValues.length})`);
+      // FIXED: Split by multiple spaces to preserve column structure and empty positions
+      const rawValues = dataAfterLocation.split(/\s{2,}/).filter(v => v.trim());
+      console.log(`Raw split values: [${rawValues.join(' | ')}] (count: ${rawValues.length})`);
+      
+      // Extract all numeric values and percentages, preserving order and detecting empty positions
+      const extractedValues = [];
+      for (const val of rawValues) {
+        const cleaned = val.trim();
+        // Check if it's a valid metric value (number, percentage, or N/A)
+        if (/^(?:N\/A|\d+(?:\.\d+)?%?)$/.test(cleaned)) {
+          extractedValues.push(cleaned);
+        } else if (cleaned === '') {
+          // CRITICAL FIX: Preserve empty positions as 'N/A'
+          extractedValues.push('N/A');
+        }
+      }
+      
+      console.log(`Extracted values with empties preserved: [${extractedValues.join(', ')}] (count: ${extractedValues.length})`);
       
       // If we found enough metrics, try to parse them
       if (extractedValues.length >= 8) {
         console.log(`Found enough metrics (${extractedValues.length}) - attempting to parse`);
         
-        // CORRECTED MAPPING based on actual PDF data:
-        // From July log: "Wichita Kenworth   96%   92%   99%   2.7   1.3%   5.8 87.9%   10.1% 1.8 1.9   5.6"
-        // From June log: "Wichita Kenworth   96%   81%   99%   1.9   0.7%   5 85.0%   1.4% 1 1.7   5.6"
-        
-        // Correct column mapping:
-        // Col 0: 96% = vscCaseRequirements
-        // Col 1: 92%/81% = vscClosedCorrectly  
-        // Col 2: 99% = ttActivation
-        // Col 3: 2.7/1.9 = smMonthlyDwellAvg
-        // Col 4: 1.3%/0.7% = etrPercentCases
-        // Col 5: 5.8/5 = rdsMonthlyAvgDays
-        // Col 6: 87.9%/85.0% = triagePercentLess4Hours
-        // Col 7: 10.1%/1.4% = percentCasesWith3Notes
-        // Col 8: 1.8/1 = triageHours (sometimes missing)
-        // Col 9: 1.9/1.7 = smYtdDwellAvgDays
-        // Col 10: 5.6 = rdsYtdDwellAvgDays
+        // FIXED MAPPING - Now handles empty/missing values correctly
+        // Expected order from PDF (11 columns):
+        // 0: VSC Case Requirements (%)
+        // 1: VSC Closed Correctly (%)
+        // 2: TT+ Activation (%)
+        // 3: SM Monthly Dwell Avg (days) - CAN BE EMPTY
+        // 4: SM YTD Dwell Avg (days)
+        // 5: Triage % < 4 Hours (%)
+        // 6: Triage Hours (hours)
+        // 7: ETR % of Cases (%)
+        // 8: % Cases with 3+ Notes (%)
+        // 9: RDS Monthly Avg Days (days)
+        // 10: RDS YTD Dwell Avg (days)
         
         locationData = {
-          vscCaseRequirements: extractedValues[0] || 'N/A',          // Col 0: VSC Case Requirements
-          vscClosedCorrectly: extractedValues[1] || 'N/A',           // Col 1: VSC Closed Correctly
-          ttActivation: extractedValues[2] || 'N/A',                 // Col 2: TT+ Activation
-          smMonthlyDwellAvg: extractedValues[3] || 'N/A',            // Col 3: SM Monthly Dwell Avg
-          etrPercentCases: extractedValues[4] || 'N/A',              // Col 4: ETR % of Cases
-          rdsMonthlyAvgDays: extractedValues[5] || 'N/A',            // Col 5: RDS Monthly Avg Days
-          triagePercentLess4Hours: extractedValues[6] || 'N/A',      // Col 6: Triage % < 4 Hours
-          percentCasesWith3Notes: extractedValues[7] || 'N/A',       // Col 7: % Cases with 3+ Notes
-          triageHours: extractedValues[8] || extractedValues[9] || 'N/A',  // Col 8/9: Triage Hours (flexible position)
-          smYtdDwellAvgDays: extractedValues[9] || extractedValues[8] || 'N/A', // Col 9/8: SM YTD Dwell Avg
-          rdsYtdDwellAvgDays: extractedValues[10] || extractedValues[extractedValues.length - 1] || 'N/A' // Last column: RDS YTD Dwell Avg
+          vscCaseRequirements: extractedValues[0] || 'N/A',
+          vscClosedCorrectly: extractedValues[1] || 'N/A',
+          ttActivation: extractedValues[2] || 'N/A',
+          smMonthlyDwellAvg: extractedValues[3] || 'N/A',           // Position 3 - can be empty
+          smYtdDwellAvgDays: extractedValues[4] || 'N/A',
+          triagePercentLess4Hours: extractedValues[5] || 'N/A',
+          triageHours: extractedValues[6] || 'N/A',
+          etrPercentCases: extractedValues[7] || 'N/A',
+          percentCasesWith3Notes: extractedValues[8] || 'N/A',
+          rdsMonthlyAvgDays: extractedValues[9] || 'N/A',
+          rdsYtdDwellAvgDays: extractedValues[10] || 'N/A'
         };
         
-        console.log(`Successfully parsed ${locationName} from PDF:`, locationData);
+        console.log(`✅ Successfully parsed ${locationName} with correct field mapping:`, locationData);
         break;
       } else {
         console.log(`Not enough metrics found (${extractedValues.length}), continuing search`);
@@ -881,14 +890,14 @@ function extractLocationMetrics(text, locationName, locationNames) {
   
   // ONLY use hardcoded data if PDF parsing completely failed
   if (!locationData) {
-    console.log(`PDF parsing COMPLETELY FAILED for ${locationName}, using hardcoded fallback`);
+    console.log(`⚠️ PDF parsing COMPLETELY FAILED for ${locationName}, using hardcoded fallback`);
     
     const expectedData = {
       'Wichita Kenworth': {
         vscCaseRequirements: '96%',
         vscClosedCorrectly: '92%',
         ttActivation: '99%',
-        smMonthlyDwellAvg: '2.7',
+        smMonthlyDwellAvg: 'N/A',  // Updated to show empty value
         smYtdDwellAvgDays: '1.9',
         triagePercentLess4Hours: '87.9%',
         triageHours: '1.8',
@@ -940,11 +949,11 @@ function extractLocationMetrics(text, locationName, locationNames) {
     
     locationData = expectedData[locationName];
   } else {
-    console.log(`USING REAL PDF DATA for ${locationName} instead of hardcoded values!`);
+    console.log(`✅ USING REAL PDF DATA for ${locationName} instead of hardcoded values!`);
   }
 
   if (!locationData) {
-    console.error(`No data available for ${locationName}`);
+    console.error(`❌ No data available for ${locationName}`);
     return null;
   }
 

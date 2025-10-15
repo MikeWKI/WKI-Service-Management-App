@@ -39,10 +39,6 @@ app.use(cors({
   optionsSuccessStatus: 200 // For legacy browser support
 }));
 
-// Rate limiting (now works correctly with trust proxy setting)
-app.use('/api/', rateLimiters.api);
-app.use(rateLimiters.general);
-
 // Body parsing middleware
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
@@ -50,11 +46,7 @@ app.use(express.urlencoded({ extended: true }));
 // Compression middleware
 app.use(compression());
 
-// Logging middleware
-app.use(morgan("combined"));
-app.use(requestLogger);
-
-// Health Check Endpoints (for Render monitoring)
+// Health Check Endpoints (MUST be BEFORE rate limiting to avoid 429 errors)
 
 // Primary health check endpoint for Render (comprehensive)
 app.get("/health", async (req, res) => {
@@ -194,6 +186,14 @@ app.get("/metrics", (req, res) => {
   };
   res.json(metrics);
 });
+
+// CRITICAL: Apply rate limiting AFTER health checks to prevent 429 errors from Render health checks
+app.use('/api/', rateLimiters.api);
+app.use(rateLimiters.general);
+
+// Logging middleware (after health checks to reduce log noise)
+app.use(morgan("combined"));
+app.use(requestLogger);
 
 // API Routes
 
