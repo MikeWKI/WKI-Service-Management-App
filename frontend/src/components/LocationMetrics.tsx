@@ -252,78 +252,100 @@ export default function LocationMetrics() {
       name: 'VSC Case Requirements',
       unit: '%',
       description: 'PACCAR VSC case requirements compliance',
-      target: '> 95%',
-      good: (value: number) => value > 95
+      target: '100% (goal)',
+      good: (value: number) => value >= 80,  // Green: 80-100%
+      warning: (value: number) => value >= 60,  // Orange: 60-80%
+      // Red: < 60%
     },
     vscClosedCorrectly: {
       name: 'VSC Closed Correctly',
       unit: '%',
       description: 'PACCAR VSC cases closed with proper procedures',
-      target: '> 90%',
-      good: (value: number) => value > 90
+      target: '100% (goal)',
+      good: (value: number) => value >= 80,  // Green: 80-100%
+      warning: (value: number) => value >= 60,  // Orange: 60-80%
+      // Red: < 60%
     },
     ttActivation: {
       name: 'TT+ Activation',
       unit: '%',
       description: 'TruckTech+ activation rate',
-      target: '> 90%',
-      good: (value: number) => value > 90
+      target: '100% (goal)',
+      good: (value: number) => value >= 80,  // Green: 80-100%
+      warning: (value: number) => value >= 60,  // Orange: 60-80%
+      // Red: < 60%
     },
     smMonthlyDwellAvg: {
       name: 'SM Monthly Dwell Average',
       unit: 'days',
       description: 'Service management monthly dwell time average',
-      target: '< 3 days',
-      good: (value: number) => value < 3
+      target: '< 3 days (goal)',
+      good: (value: number) => value <= 1.5,  // Green: 0-1.5 days
+      warning: (value: number) => value <= 2.9,  // Orange: 1.5-2.9 days
+      // Red: >= 3 days
     },
     triageHours: {
-      name: 'Triage Hours',
+      name: 'SM Average Triage Hours',
       unit: 'hours',
       description: 'Average hours for case triage completion',
-      target: '< 2 hours',
-      good: (value: number) => value < 2
+      target: '< 2 hours (goal)',
+      good: (value: number) => value <= 1.5,  // Green: 0-1.5 hours
+      warning: (value: number) => value < 2,  // Orange: 1.5-2 hours
+      // Red: >= 2 hours
     },
     triagePercentLess4Hours: {
       name: 'Triage % < 4 Hours',
       unit: '%',
       description: 'Percentage of cases triaged within 4 hours',
-      target: '> 80%',
-      good: (value: number) => value > 80
+      target: '100% (goal)',
+      good: (value: number) => value >= 80,  // Green: 80-100%
+      warning: (value: number) => value >= 60,  // Orange: 60-80%
+      // Red: < 60%
     },
     etrPercentCases: {
       name: 'ETR % of Cases',
       unit: '%',
       description: 'Estimated Time of Repair provided for cases',
-      target: '< 5%',
-      good: (value: number) => value < 5
+      target: '100% (goal)',
+      good: (value: number) => value >= 80,  // Green: 80-100%
+      warning: (value: number) => value >= 60,  // Orange: 60-80%
+      // Red: < 60%
     },
     percentCasesWith3Notes: {
       name: '% Cases with 3+ Notes',
       unit: '%',
-      description: 'Percentage of cases with 3 or more notes',
-      target: '< 2%',
-      good: (value: number) => value < 2
+      description: 'Percentage of cases with 3 or more notes (higher is better)',
+      target: '100% (goal)',
+      good: (value: number) => value >= 80,  // Green: 80-100%
+      warning: (value: number) => value >= 60,  // Orange: 60-80%
+      // Red: < 60%
     },
     rdsMonthlyAvgDays: {
       name: 'RDS Monthly Avg Days',
       unit: 'days',
       description: 'RDS (Repair Duration Summary) monthly average',
-      target: '< 7 days',
-      good: (value: number) => value < 7
+      target: '< 3 days (goal)',
+      good: (value: number) => value <= 1.5,  // Green: 0-1.5 days
+      warning: (value: number) => value <= 2.9,  // Orange: 1.5-2.9 days
+      // Red: >= 3 days
     },
     smYtdDwellAvgDays: {
       name: 'SM YTD Dwell Avg Days',
       unit: 'days',
       description: 'Service management year-to-date dwell average',
-      target: '< 6 days',
-      good: (value: number) => value < 6
+      target: '< 3 days (goal)',
+      good: (value: number) => value <= 1.5,  // Green: 0-1.5 days
+      warning: (value: number) => value <= 2.9,  // Orange: 1.5-2.9 days
+      // Red: >= 3 days
     },
     rdsYtdDwellAvgDays: {
       name: 'RDS YTD Dwell Avg Days',
       unit: 'days',
       description: 'RDS year-to-date dwell time average',
-      target: '< 6 days',
-      good: (value: number) => value < 6
+      target: '< 3 days (goal)',
+      good: (value: number) => value <= 1.5,  // Green: 0-1.5 days
+      warning: (value: number) => value <= 2.9,  // Orange: 1.5-2.9 days
+      // Red: >= 3 days
     }
   };
 

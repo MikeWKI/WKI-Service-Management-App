@@ -1887,14 +1887,19 @@ function calculateTrendAnalysis(trendData, metric) {
   }
   
   if (Math.abs(overallChange) > avgValue * 0.1) { // 10% threshold for overall trend
-    trend = overallChange > 0 ? 'improving' : 'declining';
-  }
-  
-  // For metrics where lower is better (like triage hours, dwell times)
-  const lowerIsBetter = ['triageHours', 'smMonthlyDwellAvg', 'smYtdDwellAvgDays', 'rdsMonthlyAvgDays', 'rdsYtdDwellAvgDays'];
-  if (lowerIsBetter.includes(metric)) {
-    if (trend === 'improving') trend = 'declining';
-    else if (trend === 'declining') trend = 'improving';
+    // FIXED: Correctly determine if trend is improving based on metric goal direction
+    // Lower is better for: SM Average Triage Hours, all Dwell times
+    const lowerIsBetter = ['triageHours', 'smMonthlyDwellAvg', 'smYtdDwellAvgDays', 'rdsMonthlyAvgDays', 'rdsYtdDwellAvgDays'];
+    
+    if (lowerIsBetter.includes(metric)) {
+      // For "lower is better" metrics: decreasing value = improving
+      trend = overallChange < 0 ? 'improving' : 'declining';
+    } else {
+      // For "higher is better" metrics: increasing value = improving
+      // Includes: VSC Case Requirements, VSC Closed Correctly, TT+ Activation, 
+      //          Triage % < 4 Hours, ETR % of Cases, % Cases with 3+ Notes
+      trend = overallChange > 0 ? 'improving' : 'declining';
+    }
   }
   
   return {
