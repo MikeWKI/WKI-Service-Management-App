@@ -144,9 +144,9 @@ const getTechnicianMetrics = async (): Promise<MetricCard[]> => {
         title: '% Cases with 3+ Notes', 
         values: [] as LocationValue[], 
         icon: <MessageSquare className="w-6 h-6" />, 
-        target: '< 5% (target)', 
-        impact: 'Repair complexity and documentation quality', 
-        description: 'Cases requiring extensive documentation often indicate complex repairs or communication issues' 
+        target: '100% (goal)', 
+        impact: 'PACCAR case documentation compliance', 
+        description: 'Percentage of cases meeting PACCAR requirement of 3+ notes' 
       }
     };
     
@@ -271,9 +271,9 @@ const getTechnicianMetrics = async (): Promise<MetricCard[]> => {
           title: '% Cases with 3+ Notes', 
           values: [] as LocationValue[], 
           icon: <MessageSquare className="w-6 h-6" />, 
-          target: '< 5% (target)', 
-          impact: 'Repair complexity and documentation quality', 
-          description: 'Cases requiring extensive documentation often indicate complex repairs or communication issues' 
+          target: '100% (goal)', 
+          impact: 'PACCAR case documentation compliance', 
+          description: 'Percentage of cases meeting PACCAR requirement of 3+ notes' 
         }
       };
       

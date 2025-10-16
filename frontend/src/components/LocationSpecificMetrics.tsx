@@ -64,8 +64,9 @@ const parseEtrStatus = (value: string): 'good' | 'warning' | 'critical' => {
 const parseNotesStatus = (value: string): 'good' | 'warning' | 'critical' => {
   if (!value || value === 'N/A') return 'critical';
   const numValue = parseFloat(value.replace('%', ''));
-  if (numValue <= 5) return 'good';
-  if (numValue <= 10) return 'warning';
+  // Goal is 100% - PACCAR requires 3+ notes on every case (higher is better)
+  if (numValue >= 95) return 'good';
+  if (numValue >= 80) return 'warning';
   return 'critical';
 };
 
@@ -310,10 +311,10 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
         {
           title: '% Cases with 3+ Notes',
           value: formatValue(currentValues.percentCasesWith3Notes, 'percentCasesWith3Notes'),
-          target: '< 5% (target)',
+          target: '100% (goal)',
           status: parseNotesStatus(currentValues.percentCasesWith3Notes),
-          impact: 'Case documentation quality',
-          description: 'Cases requiring extensive documentation',
+          impact: 'PACCAR case documentation compliance',
+          description: 'Percentage of cases with required 3+ notes',
           icon: <AlertTriangle size={24} />,
           trend: 'stable'
         },
@@ -587,11 +588,11 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           {
             title: '% Cases with 3+ Notes',
             value: mappedMetrics.percentCasesWith3Notes,
-            target: '< 5% (target)',
+            target: '100% (goal)',
             status: parseNotesStatus(mappedMetrics.percentCasesWith3Notes),
             trend: 'stable',
             icon: <AlertTriangle className="w-6 h-6" />,
-            impact: 'Case documentation quality',
+            impact: 'PACCAR case documentation compliance',
             description: 'Upload monthly scorecard to view current metrics'
           },
           {
@@ -736,10 +737,10 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
     {
       title: '% Cases with 3+ Notes',
       value: completeData[7],
-      target: '< 5% (target)',
+      target: '100% (goal)',
       status: parseNotesStatus(completeData[7]),
-      impact: 'Case documentation quality',
-      description: 'Cases requiring extensive documentation',
+      impact: 'PACCAR case documentation compliance',
+      description: 'Percentage of cases with required 3+ notes',
       icon: <AlertTriangle size={24} />,
       trend: locationScorecard.trend
     },
@@ -843,9 +844,9 @@ const getDefaultMetrics = (): MetricCard[] => [
   {
     title: '% Cases with 3+ Notes',
     value: 'No data',
-    target: '< 5% (target)',
+    target: '100% (goal)',
     status: 'warning',
-    impact: 'Case documentation quality',
+    impact: 'PACCAR case documentation compliance',
     description: 'Upload monthly scorecard to view current metrics',
     icon: <AlertTriangle size={24} />
   }

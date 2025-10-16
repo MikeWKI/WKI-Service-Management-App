@@ -159,9 +159,9 @@ const getServiceAdvisorMetrics = async (): Promise<MetricCard[]> => {
         title: '% Cases with 3+ Notes', 
         values: [] as LocationValue[], 
         icon: <MessageSquare className="w-6 h-6" />, 
-        target: '< 5% (target)', 
-        impact: 'Customer engagement and case documentation quality', 
-        description: 'Cases requiring extensive documentation indicating communication complexity' 
+        target: '100% (goal)', 
+        impact: 'PACCAR case documentation compliance', 
+        description: 'Percentage of cases meeting PACCAR requirement of 3+ notes' 
       }
     };
     
@@ -288,9 +288,9 @@ const getServiceAdvisorMetrics = async (): Promise<MetricCard[]> => {
       title: '% Cases with 3+ Notes', 
       values: [] as LocationValue[], 
       icon: <MessageSquare className="w-6 h-6" />, 
-      target: '< 5% (target)', 
-      impact: 'Customer engagement and case documentation quality', 
-      description: 'Cases requiring extensive documentation indicating communication complexity' 
+      target: '100% (goal)', 
+      impact: 'PACCAR case documentation compliance', 
+      description: 'Percentage of cases meeting PACCAR requirement of 3+ notes' 
     }
   };
   

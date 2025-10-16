@@ -218,9 +218,9 @@ const getPartsStaffMetrics = async (): Promise<MetricCard[]> => {
           title: '% Cases with 3+ Notes', 
           values: [] as LocationValue[], 
           icon: <MessageSquare className="w-6 h-6" />, 
-          target: '< 5% (target)', 
-          impact: 'Parts availability and procurement efficiency', 
-          description: 'Cases requiring extensive documentation often indicate parts delays or complexity' 
+          target: '100% (goal)', 
+          impact: 'PACCAR case documentation compliance', 
+          description: 'Percentage of cases meeting PACCAR requirement of 3+ notes' 
         },
         dwell: { 
           title: 'Monthly Dwell Average', 
