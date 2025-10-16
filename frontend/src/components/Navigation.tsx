@@ -23,7 +23,7 @@ export default function Navigation() {
   };
 
   return (
-    <nav className="bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 shadow-2xl border-b-4 border-red-600 mb-4 sm:mb-8">
+    <nav className="bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 shadow-2xl border-b-4 border-red-600 mb-4 sm:mb-8 relative z-50">
       <div className="w-full max-w-full sm:max-w-6xl mx-auto px-2 sm:px-4 py-2 sm:py-4">
         {/* Desktop Layout */}
         <div className="hidden lg:block">
