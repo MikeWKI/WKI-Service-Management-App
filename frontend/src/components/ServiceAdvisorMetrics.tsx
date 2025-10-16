@@ -143,9 +143,9 @@ const getServiceAdvisorMetrics = async (): Promise<MetricCard[]> => {
         title: 'ETR % of Cases', 
         values: [] as LocationValue[], 
         icon: <Target className="w-6 h-6" />, 
-        target: '> 15% (target)', 
-        impact: 'Customer satisfaction and service transparency', 
-        description: 'Percentage of cases with accurate estimated time of repair provided to customers' 
+        target: '100% (goal)', 
+        impact: 'ETR compliance - must provide estimated repair time', 
+        description: 'Percentage of cases with ETR provided - required for all cases' 
       },
       dwell: { 
         title: 'SM Monthly Dwell Avg', 
@@ -272,9 +272,9 @@ const getServiceAdvisorMetrics = async (): Promise<MetricCard[]> => {
       title: 'ETR % of Cases', 
       values: [] as LocationValue[], 
       icon: <Target className="w-6 h-6" />, 
-      target: '> 15% (target)', 
-      impact: 'Customer satisfaction and service transparency', 
-      description: 'Percentage of cases with accurate estimated time of repair provided to customers' 
+      target: '100% (goal)', 
+      impact: 'ETR compliance - must provide estimated repair time', 
+      description: 'Percentage of cases with ETR provided - required for all cases' 
     },
     dwell: { 
       title: 'SM Monthly Dwell Avg', 

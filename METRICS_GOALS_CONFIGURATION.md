@@ -14,7 +14,7 @@ This document defines the goals and color-coding thresholds for all service metr
 | SM YTD Dwell Avg | ≤ 3.0 days | ≤ 3.0 | 3.1-5.0 | > 5.0 | Days ↓ |
 | Triage % < 4 Hours | ≥ 95% | ≥ 95% | 80-94% | < 80% | % ↑ |
 | SM Avg Triage Hours | ≤ 2.0 hrs | ≤ 2.0 | 2.1-3.0 | > 3.0 | Hours ↓ |
-| ETR % of Cases | ≥ 15% | ≥ 15% | 10-14% | < 10% | % ↑ |
+| ETR % of Cases | 100% | ≥ 95% | 80-94% | < 80% | % ↑ |
 | % Cases with 3+ Notes | 100% | ≥ 95% | 80-94% | < 80% | % ↑ |
 | RDS Monthly Avg Days | ≤ 3.0 days | ≤ 3.0 | 3.1-5.0 | > 5.0 | Days ↓ |
 | RDS YTD Dwell Avg | ≤ 3.0 days | ≤ 3.0 | 3.1-5.0 | > 5.0 | Days ↓ |
@@ -101,14 +101,14 @@ This document defines the goals and color-coding thresholds for all service metr
 - **Impact**: Initial assessment efficiency
 
 ### 8. ETR % of Cases
-- **Goal**: ≥ 15%
+- **Goal**: 100%
 - **Type**: Percentage
 - **Color Coding**:
-  - 🟢 Green: ≥ 15%
-  - 🟠 Orange: 10% - 14%
-  - 🔴 Red: < 10%
+  - 🟢 Green: ≥ 95%
+  - 🟠 Orange: 80% - 94%
+  - 🔴 Red: < 80%
 - **Description**: Estimated Time of Repair provided for cases
-- **Impact**: ETR compliance rate and customer transparency
+- **Impact**: ETR compliance - must provide estimated repair time for all cases
 
 ### 9. % Cases with 3+ Notes
 - **Goal**: 100%
@@ -178,10 +178,10 @@ parseVscStatus(value) {
   return 'critical'                    // Red
 }
 
-// ETR metric (percentage, higher is better) - Goal: ≥ 15%
+// ETR metric (percentage, higher is better) - Goal: 100%
 parseEtrStatus(value) {
-  if (value >= 15) return 'good'      // Green
-  if (value >= 10) return 'warning'   // Orange
+  if (value >= 95) return 'good'      // Green
+  if (value >= 80) return 'warning'   // Orange
   return 'critical'                    // Red
 }
 
@@ -223,7 +223,7 @@ parseRdsStatus(value) {
 - VSC Closed Correctly (Goal: ≥ 95%)
 - TT+ Activation (Goal: ≥ 95%)
 - Triage % < 4 Hours (Goal: ≥ 95%)
-- ETR % of Cases (Goal: ≥ 15%)
+- **ETR % of Cases (Goal: 100%)** - Must provide ETR for all cases
 - **% Cases with 3+ Notes (Goal: 100%)** - PACCAR compliance requirement
 
 ### Time Metrics (Lower is Better)
@@ -265,4 +265,4 @@ All metrics use a three-tier color system:
 - ✅ Color coding thresholds are consistent
 - ✅ Status parsing functions match target goals
 - ✅ Frontend components use consistent target displays
-- ✅ Backend provides correct data structure
+- ✅ Backend pr

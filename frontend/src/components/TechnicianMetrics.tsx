@@ -128,9 +128,9 @@ const getTechnicianMetrics = async (): Promise<MetricCard[]> => {
         title: 'ETR % of Cases', 
         values: [] as LocationValue[], 
         icon: <Target className="w-6 h-6" />, 
-        target: '> 15% (target)', 
-        impact: 'Customer satisfaction and repair transparency', 
-        description: 'Percentage of cases with accurate estimated time of repair - critical for customer communication' 
+        target: '100% (goal)', 
+        impact: 'ETR compliance - must provide estimated repair time', 
+        description: 'Percentage of cases with ETR provided - required for all cases' 
       },
       triage: { 
         title: 'SM Average Triage Hours', 
@@ -255,9 +255,9 @@ const getTechnicianMetrics = async (): Promise<MetricCard[]> => {
           title: 'ETR % of Cases', 
           values: [] as LocationValue[], 
           icon: <Target className="w-6 h-6" />, 
-          target: '> 15% (target)', 
-          impact: 'Customer satisfaction and repair transparency', 
-          description: 'Percentage of cases with accurate estimated time of repair - critical for customer communication' 
+          target: '100% (goal)', 
+          impact: 'ETR compliance - must provide estimated repair time', 
+          description: 'Percentage of cases with ETR provided - required for all cases' 
         },
         triage: { 
           title: 'SM Average Triage Hours', 

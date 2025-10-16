@@ -56,8 +56,9 @@ const parseTriageStatus = (value: string): 'good' | 'warning' | 'critical' => {
 const parseEtrStatus = (value: string): 'good' | 'warning' | 'critical' => {
   if (!value || value === 'N/A') return 'critical';
   const numValue = parseFloat(value.replace('%', ''));
-  if (numValue >= 15) return 'good';
-  if (numValue >= 10) return 'warning';
+  // Goal is 100% - ETR should be provided for all cases (higher is better)
+  if (numValue >= 95) return 'good';
+  if (numValue >= 80) return 'warning';
   return 'critical';
 };
 
@@ -302,9 +303,9 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
         {
           title: 'ETR % of Cases',
           value: formatValue(currentValues.etrPercentCases, 'etrPercentCases'),
-          target: '> 15% (target)',
+          target: '100% (goal)',
           status: parseEtrStatus(currentValues.etrPercentCases),
-          impact: 'ETR compliance rate',
+          impact: 'ETR compliance - must provide estimated repair time',
           description: 'Percentage of cases with ETR provided',
           icon: <BarChart3 size={24} />,
           trend: 'stable'
@@ -579,11 +580,11 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           {
             title: 'ETR % of Cases',
             value: mappedMetrics.etrPercentCases.includes('%') ? mappedMetrics.etrPercentCases : `${mappedMetrics.etrPercentCases}%`,
-            target: '> 15% (target)',
+            target: '100% (goal)',
             status: parseEtrStatus(mappedMetrics.etrPercentCases),
             trend: 'stable',
             icon: <BarChart3 className="w-6 h-6" />,
-            impact: 'Estimated time to repair compliance',
+            impact: 'ETR compliance - must provide estimated repair time',
             description: 'Upload monthly scorecard to view current metrics'
           },
           {
@@ -728,9 +729,9 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
     {
       title: 'ETR % of Cases',
       value: `${completeData[6]}%`,
-      target: '> 15% (target)',
+      target: '100% (goal)',
       status: parseEtrStatus(completeData[6]),
-      impact: 'ETR compliance rate',
+      impact: 'ETR compliance - must provide estimated repair time',
       description: 'Percentage of cases with ETR provided',
       icon: <BarChart3 size={24} />,
       trend: locationScorecard.trend
@@ -836,9 +837,9 @@ const getDefaultMetrics = (): MetricCard[] => [
   {
     title: 'ETR % of Cases',
     value: 'No data',
-    target: '> 15% (target)',
+    target: '100% (goal)',
     status: 'warning',
-    impact: 'ETR compliance rate',
+    impact: 'ETR compliance - must provide estimated repair time',
     description: 'Upload monthly scorecard to view current metrics',
     icon: <BarChart3 size={24} />
   },
