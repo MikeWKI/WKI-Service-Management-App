@@ -73,8 +73,9 @@ const parseNotesStatus = (value: string): 'good' | 'warning' | 'critical' => {
 const parseRdsStatus = (value: string): 'good' | 'warning' | 'critical' => {
   if (!value || value === 'N/A') return 'critical';
   const numValue = parseFloat(value);
-  if (numValue <= 6.0) return 'good';
-  if (numValue <= 8.0) return 'warning';
+  // Goal is ≤3.0 days for RDS dwell metrics (same as SM dwell)
+  if (numValue <= 3.0) return 'good';
+  if (numValue <= 5.0) return 'warning';
   return 'critical';
 };
 
@@ -271,8 +272,8 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
         {
           title: 'SM YTD Dwell Avg Days',
           value: formatValue(currentValues.smYtdDwellAvgDays, 'smYtdDwellAvgDays'),
-          target: '< 6.0 days (target)',
-          status: parseRdsStatus(currentValues.smYtdDwellAvgDays),
+          target: '< 3.0 days (goal)',
+          status: parseDwellStatus(currentValues.smYtdDwellAvgDays),
           impact: 'Service manager year-to-date performance',
           description: 'Year-to-date average dwell time',
           icon: <TrendingDown size={24} />,
@@ -321,7 +322,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
         {
           title: 'RDS Dwell Monthly Avg Days',
           value: formatValue(currentValues.rdsMonthlyAvgDays, 'rdsMonthlyAvgDays'),
-          target: '< 6.0 days (target)',
+          target: '< 3.0 days (goal)',
           status: parseRdsStatus(currentValues.rdsMonthlyAvgDays),
           impact: 'RDS monthly dwell performance',
           description: 'Remote diagnostic service dwell time',
@@ -331,7 +332,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
         {
           title: 'RDS YTD Dwell Avg Days',
           value: formatValue(currentValues.rdsYtdDwellAvgDays, 'rdsYtdDwellAvgDays'),
-          target: '< 6.0 days (target)',
+          target: '< 3.0 days (goal)',
           status: parseRdsStatus(currentValues.rdsYtdDwellAvgDays),
           impact: 'RDS year-to-date dwell performance',
           description: 'Year-to-date RDS dwell performance',
@@ -548,8 +549,8 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           {
             title: 'SM YTD Dwell Avg Days',
             value: `${mappedMetrics.smYtdDwellAvgDays} days`,
-            target: '< 6.0 days (target)',
-            status: parseRdsStatus(mappedMetrics.smYtdDwellAvgDays),
+            target: '< 3.0 days (goal)',
+            status: parseDwellStatus(mappedMetrics.smYtdDwellAvgDays),
             trend: 'stable',
             icon: <TrendingDown className="w-6 h-6" />,
             impact: 'Service manager year-to-date performance',
@@ -598,7 +599,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           {
             title: 'RDS Dwell Monthly Avg Days',
             value: `${mappedMetrics.rdsMonthlyAvgDays} days`,
-            target: '< 6.0 days (target)',
+            target: '< 3.0 days (goal)',
             status: parseRdsStatus(mappedMetrics.rdsMonthlyAvgDays),
             trend: 'stable',
             icon: <TrendingDown className="w-6 h-6" />,
@@ -608,7 +609,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
           {
             title: 'RDS YTD Dwell Avg Days',
             value: `${mappedMetrics.rdsYtdDwellAvgDays} days`,
-            target: '< 6.0 days (target)',
+            target: '< 3.0 days (goal)',
             status: parseRdsStatus(mappedMetrics.rdsYtdDwellAvgDays),
             trend: 'stable',
             icon: <TrendingDown className="w-6 h-6" />,
@@ -747,7 +748,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
     {
       title: 'RDS Dwell Monthly Avg Days', // FIXED: Consistent title
       value: `${completeData[8]} days`,
-      target: '< 6.0 days (target)',
+      target: '< 3.0 days (goal)',
       status: parseRdsStatus(completeData[8]),
       impact: 'RDS monthly dwell performance',
       description: 'Remote diagnostic service dwell time',
@@ -757,8 +758,8 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
     {
       title: 'SM YTD Dwell Avg Days', // FIXED: Consistent title
       value: `${completeData[9]} days`,
-      target: '< 6.0 days (target)',
-      status: parseRdsStatus(completeData[9]),
+      target: '< 3.0 days (goal)',
+      status: parseDwellStatus(completeData[9]),
       impact: 'Service manager year-to-date performance',
       description: 'Year-to-date average dwell time',
       icon: <TrendingDown size={24} />,
@@ -767,7 +768,7 @@ const getLocationMetrics = async (locationId: string): Promise<MetricCard[]> => 
     {
       title: 'RDS YTD Dwell Avg Days',
       value: `${completeData[10]} days`,
-      target: '< 6.0 days (target)',
+      target: '< 3.0 days (goal)',
       status: parseRdsStatus(completeData[10]),
       impact: 'RDS year-to-date dwell performance',
       description: 'Year-to-date RDS dwell performance',

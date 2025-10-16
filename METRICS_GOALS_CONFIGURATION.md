@@ -11,13 +11,13 @@ This document defines the goals and color-coding thresholds for all service metr
 | VSC Closed Correctly | ≥ 95% | ≥ 95% | 80-94% | < 80% | % ↑ |
 | TT+ Activation | ≥ 95% | ≥ 95% | 80-94% | < 80% | % ↑ |
 | SM Monthly Dwell Avg | ≤ 3.0 days | ≤ 3.0 | 3.1-5.0 | > 5.0 | Days ↓ |
-| SM YTD Dwell Avg | ≤ 6.0 days | ≤ 6.0 | 6.1-8.0 | > 8.0 | Days ↓ |
+| SM YTD Dwell Avg | ≤ 3.0 days | ≤ 3.0 | 3.1-5.0 | > 5.0 | Days ↓ |
 | Triage % < 4 Hours | ≥ 95% | ≥ 95% | 80-94% | < 80% | % ↑ |
 | SM Avg Triage Hours | ≤ 2.0 hrs | ≤ 2.0 | 2.1-3.0 | > 3.0 | Hours ↓ |
 | ETR % of Cases | ≥ 15% | ≥ 15% | 10-14% | < 10% | % ↑ |
 | % Cases with 3+ Notes | 100% | ≥ 95% | 80-94% | < 80% | % ↑ |
-| RDS Monthly Avg Days | ≤ 6.0 days | ≤ 6.0 | 6.1-8.0 | > 8.0 | Days ↓ |
-| RDS YTD Dwell Avg | ≤ 6.0 days | ≤ 6.0 | 6.1-8.0 | > 8.0 | Days ↓ |
+| RDS Monthly Avg Days | ≤ 3.0 days | ≤ 3.0 | 3.1-5.0 | > 5.0 | Days ↓ |
+| RDS YTD Dwell Avg | ≤ 3.0 days | ≤ 3.0 | 3.1-5.0 | > 5.0 | Days ↓ |
 
 **Legend**: ↑ = Higher is Better | ↓ = Lower is Better
 
@@ -71,12 +71,12 @@ This document defines the goals and color-coding thresholds for all service metr
 - **Impact**: Workflow efficiency and customer wait times
 
 ### 5. SM YTD Dwell Average Days
-- **Goal**: ≤ 6.0 days
+- **Goal**: ≤ 3.0 days
 - **Type**: Days (Lower is better)
 - **Color Coding**:
-  - 🟢 Green: ≤ 6.0 days
-  - 🟠 Orange: 6.1 - 8.0 days
-  - 🔴 Red: > 8.0 days
+  - 🟢 Green: ≤ 3.0 days
+  - 🟠 Orange: 3.1 - 5.0 days
+  - 🔴 Red: > 5.0 days
 - **Description**: Year-to-date average dwell time
 - **Impact**: Service manager year-to-date performance
 
@@ -121,22 +121,22 @@ This document defines the goals and color-coding thresholds for all service metr
 - **Impact**: PACCAR requires at least 3 notes on every case for compliance
 
 ### 10. RDS Monthly Average Days
-- **Goal**: ≤ 6.0 days
+- **Goal**: ≤ 3.0 days
 - **Type**: Days (Lower is better)
 - **Color Coding**:
-  - 🟢 Green: ≤ 6.0 days
-  - 🟠 Orange: 6.1 - 8.0 days
-  - 🔴 Red: > 8.0 days
+  - 🟢 Green: ≤ 3.0 days
+  - 🟠 Orange: 3.1 - 5.0 days
+  - 🔴 Red: > 5.0 days
 - **Description**: RDS monthly average dwell time
 - **Impact**: RDS operational efficiency
 
 ### 11. RDS YTD Dwell Average Days
-- **Goal**: ≤ 6.0 days
+- **Goal**: ≤ 3.0 days
 - **Type**: Days (Lower is better)
 - **Color Coding**:
-  - 🟢 Green: ≤ 6.0 days
-  - 🟠 Orange: 6.1 - 8.0 days
-  - 🔴 Red: > 8.0 days
+  - 🟢 Green: ≤ 3.0 days
+  - 🟠 Orange: 3.1 - 5.0 days
+  - 🔴 Red: > 5.0 days
 - **Description**: Year-to-date RDS dwell performance
 - **Impact**: RDS year-to-date dwell performance
 
@@ -206,10 +206,10 @@ parseDwellStatus(value) {
   return 'critical'                    // Red
 }
 
-// RDS metrics (days, lower is better) - Goal: ≤ 6.0 days
+// RDS metrics (days, lower is better) - Goal: ≤ 3.0 days
 parseRdsStatus(value) {
-  if (value <= 6.0) return 'good'     // Green
-  if (value <= 8.0) return 'warning'  // Orange
+  if (value <= 3.0) return 'good'     // Green
+  if (value <= 5.0) return 'warning'  // Orange
   return 'critical'                    // Red
 }
 ```
@@ -228,10 +228,10 @@ parseRdsStatus(value) {
 
 ### Time Metrics (Lower is Better)
 - SM Monthly Dwell Avg (Goal: ≤ 3.0 days)
-- SM YTD Dwell Avg Days (Goal: ≤ 6.0 days)
+- SM YTD Dwell Avg Days (Goal: ≤ 3.0 days)
 - SM Average Triage Hours (Goal: ≤ 2.0 hours)
-- RDS Monthly Avg Days (Goal: ≤ 6.0 days)
-- RDS YTD Dwell Avg Days (Goal: ≤ 6.0 days)
+- RDS Monthly Avg Days (Goal: ≤ 3.0 days)
+- RDS YTD Dwell Avg Days (Goal: ≤ 3.0 days)
 
 ---
 
