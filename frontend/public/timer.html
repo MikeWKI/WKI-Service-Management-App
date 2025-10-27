@@ -379,27 +379,6 @@
             50% { transform: translateY(-5px); }
         }
 
-        .email-settings {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #E5E7EB;
-        }
-
-        .email-input {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #E5E7EB;
-            border-radius: 6px;
-            margin-top: 5px;
-        }
-
-        .notification-status {
-            font-size: 12px;
-            color: #6B7280;
-            margin-top: 5px;
-            text-align: center;
-        }
-
         /* Footer Styles */
         .footer {
             background: #1a1a1a;
@@ -930,7 +909,6 @@
                 <ul class="help-feature-list">
                     <li>Automatic alerts at Orange status (1:16)</li>
                     <li>Critical alerts at Red status (1:30)</li>
-                    <li>Optional email notifications for each timer</li>
                     <li>Test notifications with the yellow button</li>
                 </ul>
             </div>
@@ -985,7 +963,6 @@
             <input type="text" id="caseNumberInput" placeholder="Enter Case Number (e.g., 12345)">
             <input type="number" id="hoursInput" placeholder="Hours (default: 2)" min="0" value="2">
             <input type="number" id="minutesInput" placeholder="Minutes (default: 0)" min="0" max="59" value="0">
-            <input type="email" id="emailInput" placeholder="Email for notifications (optional)">
             <div class="modal-buttons">
                 <button class="modal-btn modal-confirm" onclick="addTimer()">Add Timer</button>
                 <button class="modal-btn modal-cancel" onclick="closeAddTimerModal()">Cancel</button>
@@ -1115,7 +1092,7 @@
         document.head.appendChild(style);
 
         class Timer {
-            constructor(id, caseNumber, hours, minutes, email) {
+            constructor(id, caseNumber, hours, minutes) {
                 this.id = id;
                 this.caseNumber = caseNumber;
                 this.totalSeconds = (hours * 3600) + (minutes * 60);
@@ -1123,7 +1100,6 @@
                 this.elapsedSeconds = 0;
                 this.isRunning = false;
                 this.isPaused = false;
-                this.email = email;
                 this.notifications = {
                     orange: false,
                     red: false
@@ -1192,12 +1168,6 @@
                         requireInteraction: true
                     });
                 }
-                
-                // Email simulation (opens email client)
-                if (this.email) {
-                    console.log(`Email notification would be sent to ${this.email}: ${subject}`);
-                    // In a real application, this would send an actual email via backend
-                }
             }
 
             getStatus() {
@@ -1249,21 +1219,19 @@
             document.getElementById('caseNumberInput').value = '';
             document.getElementById('hoursInput').value = '2';
             document.getElementById('minutesInput').value = '0';
-            document.getElementById('emailInput').value = '';
         }
 
         function addTimer() {
             const caseNumber = document.getElementById('caseNumberInput').value;
             const hours = parseInt(document.getElementById('hoursInput').value) || 2;
             const minutes = parseInt(document.getElementById('minutesInput').value) || 0;
-            const email = document.getElementById('emailInput').value;
             
             if (!caseNumber) {
                 alert('Please enter a case number');
                 return;
             }
             
-            const timer = new Timer(timerId++, caseNumber, hours, minutes, email);
+            const timer = new Timer(timerId++, caseNumber, hours, minutes);
             timers.push(timer);
             
             // Auto-start the timer
@@ -1298,11 +1266,6 @@
                     <button class="control-btn pause-btn" onclick="pauseTimer(${timer.id})" id="pause-${timer.id}">Pause</button>
                     <button class="control-btn reset-btn" onclick="resetTimer(${timer.id})">Reset</button>
                     <button class="control-btn set-time-btn" onclick="showSetTimeModal(${timer.id})">Set Time</button>
-                </div>
-                <div class="email-settings">
-                    <div class="notification-status">
-                        ${timer.email ? `📧 Notifications: ${timer.email}` : '📧 No email set'}
-                    </div>
                 </div>
             `;
             
