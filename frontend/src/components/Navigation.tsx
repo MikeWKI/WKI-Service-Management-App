@@ -11,12 +11,8 @@ export default function Navigation() {
   const isMetrics = location.pathname === '/metrics' || (location.pathname.startsWith('/metrics') && !isMetricsDefinitions);
 
   const openTimer = () => {
-    // In development, open directly from public folder
-    // In production, it will be in the build root
-    const timerPath = process.env.NODE_ENV === 'development' 
-      ? `${window.location.origin}/timer.html`
-      : '/timer.html';
-    window.open(timerPath, 'CaseTimer', 'width=1400,height=900,menubar=no,toolbar=no,location=no,status=no,scrollbars=yes');
+    // Open timer in new window using React Router path
+    window.open('/timer', 'CaseTimer', 'width=1400,height=900,menubar=no,toolbar=no,location=no,status=no,scrollbars=yes');
   };
 
   return (

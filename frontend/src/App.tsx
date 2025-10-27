@@ -23,6 +23,7 @@ import {
   ErrorBoundary,
   HistoricalDashboard
 } from "./components";
+import CaseTimer from "./components/CaseTimer";
 import QuickLinksPanel from "./components/QuickLinksPanel";
 import FeedbackPanel from "./components/FeedbackPanel";
 import FixedThemeToggle from "./components/FixedThemeToggle";
@@ -73,6 +74,7 @@ function App() {
                     <ProcessWorkflowLayout />
                   </div>
                 } />
+                <Route path="/timer" element={<CaseTimer />} />
                 <Route path="/comprehensive" element={
                   <div className="flex flex-col items-center justify-center py-2 sm:py-4 md:py-8">
                     <ComprehensiveWorkflow />

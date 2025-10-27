@@ -1,8 +1,8 @@
-# Exclude static HTML files from redirect (must come BEFORE catch-all)
-/timer.html   /timer.html   200
+# Static files should not be redirected
+/timer.html /timer.html 200!
 
-# Only redirect non-API routes to React app
-/app/*    /index.html   200
+# API routes pass through
+/api/* /api/:splat 200
 
-# Catch-all MUST be last
-/*        /index.html   200
+# All other routes go to index.html for React Router
+/* /index.html 200
