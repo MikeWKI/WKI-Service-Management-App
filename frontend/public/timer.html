@@ -1249,6 +1249,9 @@
                 this.isPaused = false;
                 this.stage = 'checkin'; // 'checkin' or 'dwell'
                 this.approvalUnlocked = false; // Unlocks after 30 minutes
+                this.startTime = null; // Track actual start time
+                this.pausedTime = 0; // Track total paused duration
+                this.lastPauseTime = null; // Track when pause started
                 this.notifications = {
                     thirtyMinutes: false,
                     ninetyMinutes: false,
@@ -1259,10 +1262,18 @@
             start() {
                 this.isRunning = true;
                 this.isPaused = false;
+                if (!this.startTime) {
+                    this.startTime = Date.now();
+                } else if (this.lastPauseTime) {
+                    // Add the pause duration to total paused time
+                    this.pausedTime += (Date.now() - this.lastPauseTime);
+                    this.lastPauseTime = null;
+                }
             }
 
             pause() {
                 this.isPaused = true;
+                this.lastPauseTime = Date.now();
             }
 
             reset() {
@@ -1271,15 +1282,24 @@
                 this.isRunning = false;
                 this.isPaused = false;
                 this.approvalUnlocked = false;
+                this.startTime = null;
+                this.pausedTime = 0;
+                this.lastPauseTime = null;
                 this.notifications.thirtyMinutes = false;
                 this.notifications.ninetyMinutes = false;
                 this.notifications.twoHours = false;
             }
 
-            tick() {
-                if (this.isRunning && !this.isPaused && this.remainingSeconds > 0) {
-                    this.remainingSeconds--;
-                    this.elapsedSeconds++;
+            updateFromRealTime() {
+                if (this.isRunning && !this.isPaused && this.startTime) {
+                    // Calculate elapsed time based on real clock time
+                    const currentPausedTime = this.lastPauseTime ? 
+                        this.pausedTime + (Date.now() - this.lastPauseTime) : 
+                        this.pausedTime;
+                    
+                    const realElapsed = Math.floor((Date.now() - this.startTime - currentPausedTime) / 1000);
+                    this.elapsedSeconds = realElapsed;
+                    this.remainingSeconds = Math.max(0, this.totalSeconds - realElapsed);
                     
                     // Check for notification triggers
                     this.checkNotifications();
@@ -1292,6 +1312,11 @@
                 }
             }
 
+            tick() {
+                // Legacy method - now just calls updateFromRealTime
+                this.updateFromRealTime();
+            }
+
             moveToDwell() {
                 // Move to dwell stage with 3-day countdown
                 this.stage = 'dwell';
@@ -1301,6 +1326,10 @@
                 this.isRunning = true;
                 this.isPaused = false;
                 this.approvalUnlocked = false;
+                // Reset time tracking for new stage
+                this.startTime = Date.now();
+                this.pausedTime = 0;
+                this.lastPauseTime = null;
                 // Reset notifications for new stage
                 this.notifications = {
                     thirtyMinutes: false,
