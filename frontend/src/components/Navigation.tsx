@@ -10,6 +10,15 @@ export default function Navigation() {
   const isMetricsDefinitions = location.pathname === '/metrics/definitions';
   const isMetrics = location.pathname === '/metrics' || (location.pathname.startsWith('/metrics') && !isMetricsDefinitions);
 
+  const openTimer = () => {
+    // In development, open directly from public folder
+    // In production, it will be in the build root
+    const timerPath = process.env.NODE_ENV === 'development' 
+      ? `${window.location.origin}/timer.html`
+      : '/timer.html';
+    window.open(timerPath, 'CaseTimer', 'width=1400,height=900,menubar=no,toolbar=no,location=no,status=no,scrollbars=yes');
+  };
+
   return (
     <nav className="bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 shadow-2xl border-b-4 border-red-600 mb-4 sm:mb-8 relative z-50">
       <div className="w-full max-w-full sm:max-w-6xl mx-auto px-2 sm:px-4 py-2 sm:py-4">
@@ -106,7 +115,7 @@ export default function Navigation() {
                 </a>
                 
                 <button
-                  onClick={() => window.open(`${window.location.origin}/timer.html`, 'CaseTimer', 'width=1400,height=900,menubar=no,toolbar=no,location=no,status=no,scrollbars=yes')}
+                  onClick={openTimer}
                   className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 border-2 bg-slate-800 text-slate-300 hover:bg-orange-600 hover:text-white border-orange-500/50 hover:border-orange-400"
                 >
                   <Timer size={18} />
@@ -218,7 +227,7 @@ export default function Navigation() {
 
                 <button
                   onClick={() => {
-                    window.open(`${window.location.origin}/timer.html`, 'CaseTimer', 'width=1400,height=900,menubar=no,toolbar=no,location=no,status=no,scrollbars=yes');
+                    openTimer();
                     setIsMobileMenuOpen(false);
                   }}
                   className="flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-all duration-200 border border-orange-500/50 text-slate-300 hover:bg-orange-600 hover:text-white hover:border-orange-400 text-left w-full"
