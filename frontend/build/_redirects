@@ -1,3 +1,6 @@
+# Exclude static HTML files from redirect
+/timer.html   /timer.html   200
+
 # Only redirect non-API routes to React app
 /app/*    /index.html   200
 /          /index.html   200

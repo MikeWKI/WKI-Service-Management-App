@@ -106,7 +106,7 @@ export default function Navigation() {
                 </a>
                 
                 <button
-                  onClick={() => window.open('/timer.html', 'Case Timer', 'width=1400,height=900,menubar=no,toolbar=no,location=no,status=no')}
+                  onClick={() => window.open(`${window.location.origin}/timer.html`, 'CaseTimer', 'width=1400,height=900,menubar=no,toolbar=no,location=no,status=no,scrollbars=yes')}
                   className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 border-2 bg-slate-800 text-slate-300 hover:bg-orange-600 hover:text-white border-orange-500/50 hover:border-orange-400"
                 >
                   <Timer size={18} />
@@ -218,7 +218,7 @@ export default function Navigation() {
 
                 <button
                   onClick={() => {
-                    window.open('/timer.html', 'Case Timer', 'width=1400,height=900,menubar=no,toolbar=no,location=no,status=no');
+                    window.open(`${window.location.origin}/timer.html`, 'CaseTimer', 'width=1400,height=900,menubar=no,toolbar=no,location=no,status=no,scrollbars=yes');
                     setIsMobileMenuOpen(false);
                   }}
                   className="flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-all duration-200 border border-orange-500/50 text-slate-300 hover:bg-orange-600 hover:text-white hover:border-orange-400 text-left w-full"

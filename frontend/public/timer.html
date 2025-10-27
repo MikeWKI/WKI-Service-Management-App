@@ -1,0 +1,1475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WKI Case Timer Management System</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⏱️</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .top-header {
+            background: #c8102e;
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .logo-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .logo-container img {
+            height: 40px;
+            object-fit: contain;
+        }
+
+        .logo-container img:first-child {
+            /* Make Kenworth logo more visible against red background */
+            filter: brightness(1.2) contrast(1.3) drop-shadow(2px 2px 4px rgba(0,0,0,0.5));
+            background-color: rgba(255,255,255,0.9);
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            padding-top: 20px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            color: #ffffff;
+        }
+
+        .header p {
+            color: #e0e0e0;
+            font-size: 1.1rem;
+        }
+
+        .add-timer-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            gap: 10px;
+        }
+
+        .add-timer-btn {
+            background: #c8102e;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .add-timer-btn:hover {
+            background: #a00d24;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+        }
+
+        .timers-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .timer-window {
+            background: #f5f5f5;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            position: relative;
+            border: 1px solid #333;
+        }
+
+        .timer-window.status-blue {
+            border-top: 5px solid #3B82F6;
+            background: linear-gradient(to bottom, rgba(59, 130, 246, 0.05), #f5f5f5);
+        }
+
+        .timer-window.status-green {
+            border-top: 5px solid #10B981;
+            background: linear-gradient(to bottom, rgba(16, 185, 129, 0.05), #f5f5f5);
+        }
+
+        .timer-window.status-orange {
+            border-top: 5px solid #F59E0B;
+            background: linear-gradient(to bottom, rgba(245, 158, 11, 0.05), #f5f5f5);
+        }
+
+        .timer-window.status-red {
+            border-top: 5px solid #EF4444;
+            background: linear-gradient(to bottom, rgba(239, 68, 68, 0.1), #f5f5f5);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        .timer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .case-link {
+            font-size: 18px;
+            font-weight: bold;
+            color: #c8102e;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .case-link:hover {
+            color: #a00d24;
+            text-decoration: underline;
+        }
+
+        .close-btn {
+            background: #c8102e;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        .close-btn:hover {
+            background: #a00d24;
+        }
+
+        .timer-display {
+            font-size: 48px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            color: #1a1a1a;
+        }
+
+        .timer-status-message {
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: 500;
+        }
+
+        .status-blue .timer-status-message {
+            background: rgba(59, 130, 246, 0.1);
+            color: #1E40AF;
+        }
+
+        .status-green .timer-status-message {
+            background: rgba(16, 185, 129, 0.1);
+            color: #047857;
+        }
+
+        .status-orange .timer-status-message {
+            background: rgba(245, 158, 11, 0.1);
+            color: #B45309;
+        }
+
+        .status-red .timer-status-message {
+            background: rgba(239, 68, 68, 0.1);
+            color: #991B1B;
+        }
+
+        .timer-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .control-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .start-btn {
+            background: #10B981;
+            color: white;
+        }
+
+        .start-btn:hover {
+            background: #059669;
+        }
+
+        .pause-btn {
+            background: #F59E0B;
+            color: white;
+        }
+
+        .pause-btn:hover {
+            background: #D97706;
+        }
+
+        .reset-btn {
+            background: #6B7280;
+            color: white;
+        }
+
+        .reset-btn:hover {
+            background: #4B5563;
+        }
+
+        .set-time-btn {
+            background: #c8102e;
+            color: white;
+        }
+
+        .set-time-btn:hover {
+            background: #a00d24;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: #f5f5f5;
+            margin: 10% auto;
+            padding: 30px;
+            width: 80%;
+            max-width: 400px;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            border: 2px solid #c8102e;
+        }
+
+        .modal-header {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #1a1a1a;
+            font-weight: bold;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 2px solid #d0d0d0;
+            border-radius: 6px;
+            font-size: 16px;
+            background: white;
+        }
+
+        .modal input:focus {
+            outline: none;
+            border-color: #c8102e;
+            box-shadow: 0 0 0 3px rgba(200, 16, 46, 0.1);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .modal-confirm {
+            background: #c8102e;
+            color: white;
+        }
+
+        .modal-confirm:hover {
+            background: #a00d24;
+        }
+
+        .modal-cancel {
+            background: #E5E7EB;
+            color: #333;
+        }
+
+        .modal-cancel:hover {
+            background: #D1D5DB;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: #EF4444;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            display: none;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .email-settings {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #E5E7EB;
+        }
+
+        .email-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #E5E7EB;
+            border-radius: 6px;
+            margin-top: 5px;
+        }
+
+        .notification-status {
+            font-size: 12px;
+            color: #6B7280;
+            margin-top: 5px;
+            text-align: center;
+        }
+
+        /* Footer Styles */
+        .footer {
+            background: #1a1a1a;
+            border-top: 3px solid #c8102e;
+            color: #b0b0b0;
+            padding: 20px;
+            margin-top: auto;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.3);
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .footer-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .footer-logo {
+            width: 50px;
+            height: 50px;
+            background: #c8102e;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .footer-text h3 {
+            color: #ffffff;
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .footer-center {
+            flex: 1;
+            text-align: center;
+            padding: 10px 20px;
+            border-left: 1px solid #333;
+            border-right: 1px solid #333;
+        }
+
+        .proprietary-notice {
+            background: rgba(200, 16, 46, 0.1);
+            border: 1px solid rgba(200, 16, 46, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+
+        .proprietary-notice .warning-icon {
+            color: #fbbf24;
+            font-size: 20px;
+            margin-right: 10px;
+        }
+
+        .proprietary-notice strong {
+            color: #fbbf24;
+        }
+
+        .footer-right {
+            text-align: right;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .footer-links span {
+            color: #888;
+        }
+
+        @media (max-width: 768px) {
+            .footer-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .footer-center {
+                border: none;
+                border-top: 1px solid #333;
+                border-bottom: 1px solid #333;
+                margin: 20px 0;
+                width: 100%;
+            }
+
+            .footer-right {
+                text-align: center;
+                width: 100%;
+            }
+
+            .footer-links {
+                justify-content: center;
+            }
+
+            .logo-container {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+
+        /* Floating Help Window */
+        .help-window {
+            position: fixed;
+            right: 20px;
+            top: 120px;
+            width: 350px;
+            background: #f5f5f5;
+            border: 2px solid #c8102e;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            z-index: 500;
+            transition: transform 0.3s ease;
+        }
+
+        .help-window.hidden {
+            transform: translateX(400px);
+        }
+
+        .help-header {
+            background: #c8102e;
+            color: white;
+            padding: 15px;
+            border-radius: 10px 10px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .help-header h3 {
+            margin: 0;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .help-close-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background 0.3s;
+        }
+
+        .help-close-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .help-content {
+            padding: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .help-section {
+            margin-bottom: 25px;
+        }
+
+        .help-section h4 {
+            color: #1a1a1a;
+            font-size: 16px;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #c8102e;
+            padding-bottom: 5px;
+        }
+
+        .time-window-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+
+        .time-window-item.blue-window {
+            border-left-color: #3B82F6;
+        }
+
+        .time-window-item.green-window {
+            border-left-color: #10B981;
+        }
+
+        .time-window-item.orange-window {
+            border-left-color: #F59E0B;
+        }
+
+        .time-window-item.red-window {
+            border-left-color: #EF4444;
+        }
+
+        .time-indicator {
+            font-size: 24px;
+        }
+
+        .time-description {
+            flex: 1;
+        }
+
+        .time-description strong {
+            display: block;
+            margin-bottom: 3px;
+            color: #1a1a1a;
+        }
+
+        .time-description span {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .help-feature-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .help-feature-list li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+            color: #333;
+        }
+
+        .help-feature-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #c8102e;
+            font-weight: bold;
+        }
+
+        .help-tip {
+            background: rgba(200, 16, 46, 0.1);
+            border: 1px solid rgba(200, 16, 46, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 15px;
+        }
+
+        .help-tip-icon {
+            color: #c8102e;
+            margin-right: 8px;
+        }
+
+        .dismiss-options {
+            border-top: 1px solid #d0d0d0;
+            padding: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .dismiss-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .dismiss-session {
+            background: #6B7280;
+            color: white;
+        }
+
+        .dismiss-session:hover {
+            background: #4B5563;
+        }
+
+        .dismiss-permanent {
+            background: #c8102e;
+            color: white;
+        }
+
+        .dismiss-permanent:hover {
+            background: #a00d24;
+        }
+
+        .help-toggle-btn {
+            position: fixed;
+            right: 20px;
+            top: 80px;
+            background: #c8102e;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            font-size: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            z-index: 499;
+            transition: all 0.3s;
+            display: none;
+        }
+
+        .help-toggle-btn:hover {
+            background: #a00d24;
+            transform: scale(1.1);
+        }
+
+        .help-toggle-btn.visible {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .help-window {
+                width: 90%;
+                right: 5%;
+                left: 5%;
+            }
+            
+            .help-toggle-btn {
+                right: 10px;
+                top: 70px;
+            }
+        }
+
+        /* Easter Egg Modal */
+        .easter-egg-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            animation: fadeIn 0.5s ease;
+        }
+
+        .easter-egg-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+            border: 3px solid #c8102e;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+            max-width: 90vw;
+            max-height: 90vh;
+        }
+
+        .easter-egg-shield {
+            width: 300px;
+            height: 350px;
+            margin: 0 auto;
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAwIiBoZWlnaHQ9IjU4MCIgdmlld0JveD0iMCAwIDUwMCA1ODAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxkZWZzPgo8bGluZWFyR3JhZGllbnQgaWQ9InNoaWVsZEdyYWRpZW50IiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzZhNmE2YTtzdG9wLW9wYWNpdHk6MSIgLz4KPHN0b3Agb2Zmc2V0PSIzMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiM0YTRhNGE7c3RvcC1vcGFjaXR5OjEiIC8+CjxzdG9wIG9mZnNldD0iNzAlIiBzdHlsZT0ic3RvcC1jb2xvcjojM2EzYTNhO3N0b3Atb3BhY2l0eToxIiAvPgo8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMyYTJhMmE7c3RvcC1vcGFjaXR5OjEiIC8+CjwvbGluZWFyR3JhZGllbnQ+CjxsaW5lYXJHcmFkaWVudCBpZD0iY3Jvc3NHcmFkaWVudCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+CjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiM4ODg7c3RvcC1vcGFjaXR5OjEiIC8+CjxzdG9wIG9mZnNldD0iNTAlIiBzdHlsZT0ic3RvcC1jb2xvcjojNjY2O3N0b3Atb3BhY2l0eToxIiAvPgo8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiM0NDQ7c3RvcC1vcGFjaXR5OjEiIC8+CjwvbGluZWFyR3JhZGllbnQ+CjwvZGVmcz4KPCEtLSBTaGllbGQgT3V0bGluZSAtLT4KPHBhdGggZD0iTTI1MCA1NTBDNDA4IDU1MCA0ODAgNDQwIDQ4MCAyODBWNDBDNDgwIDMwIDQ3MCAyMCA0NjAgMjBINDBDMzAgMjAgMjAgMzAgMjAgNDBWMjgwQzIwIDQ0MCA5MiA1NTAgMjUwIDU1MFoiIGZpbGw9InVybCgjc2hpZWxkR3JhZGllbnQpIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iMyIvPgo8IS0tIE1ldGFsIFJpdmV0cyAtLT4KPGNpcmNsZSBjeD0iNzAiIGN5PSI3MCIgcj0iOCIgZmlsbD0iIzU1NSIgc3Ryb2tlPSIjMzMzIiBzdHJva2Utd2lkdGg9IjIiLz4KPGNpcmNsZSBjeD0iNDMwIiBjeT0iNzAiIHI9IjgiIGZpbGw9IiM1NTUiIHN0cm9rZT0iIzMzMyIgc3Ryb2tlLXdpZHRoPSIyIi8+CjxjaXJjbGUgY3g9IjcwIiBjeT0iMTUwIiByPSI4IiBmaWxsPSIjNTU1IiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSI0MzAiIGN5PSIxNTAiIHI9IjgiIGZpbGw9IiM1NTUiIHN0cm9rZT0iIzMzMyIgc3Ryb2tlLXdpZHRoPSIyIi8+CjxjaXJjbGUgY3g9IjcwIiBjeT0iMjMwIiByPSI4IiBmaWxsPSIjNTU1IiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSI0MzAiIGN5PSIyMzAiIHI9IjgiIGZpbGw9IiM1NTUiIHN0cm9rZT0iIzMzMyIgc3Ryb2tlLXdpZHRoPSIyIi8+CjxjaXJjbGUgY3g9IjcwIiBjeT0iMzEwIiByPSI4IiBmaWxsPSIjNTU1IiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSI0MzAiIGN5PSIzMTAiIHI9IjgiIGZpbGw9IiM1NTUiIHN0cm9rZT0iIzMzMyIgc3Ryb2tlLXdpZHRoPSIyIi8+CjxjaXJjbGUgY3g9IjcwIiBjeT0iMzkwIiByPSI4IiBmaWxsPSIjNTU1IiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSI0MzAiIGN5PSIzOTAiIHI9IjgiIGZpbGw9IiM1NTUiIHN0cm9rZT0iIzMzMyIgc3Ryb2tlLXdpZHRoPSIyIi8+CjwhLS0gQ3Jvc3MgLS0+CjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDI1MCwgMTgwKSI+CjxwYXRoIGQ9Ik0tNjAgLTEwIEwtNjAgLTQwIEwtMzAgLTQwIEwtMzAgLTEwMCBMMzAgLTEwMCBMMzAgLTQwIEw2MCAtNDAgTDYwIC0xMCBMMzAgLTEwIEwzMCA1MCBMLTQ1IDUwIEwtNDUgLTEwIFoiIGZpbGw9InVybCgjY3Jvc3NHcmFkaWVudCkiIHN0cm9rZT0iIzIyMiIgc3Ryb2tlLXdpZHRoPSIyIi8+CjwvZz4KPCEtLSBXS0kgVGV4dCAtLT4KPHRleHQgeD0iMjUwIiB5PSI0MDAiIGZvbnQtZmFtaWx5PSJHZW9yZ2lhLCBzZXJpZiIgZm9udC1zaXplPSI1NCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiM3NzciIHRleHQtYW5jaG9yPSJtaWRkbGUiIHN0cm9rZT0iIzMzMyIgc3Ryb2tlLXdpZHRoPSIxIj5XS0k8L3RleHQ+Cjwvc3ZnPg==');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.5));
+            animation: shieldGlow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes shieldGlow {
+            0% { filter: drop-shadow(0 10px 20px rgba(200, 16, 46, 0.3)); }
+            100% { filter: drop-shadow(0 15px 30px rgba(200, 16, 46, 0.6)); }
+        }
+
+        .easter-egg-title {
+            color: #c8102e;
+            font-size: 28px;
+            font-weight: bold;
+            margin: 20px 0 10px 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            font-family: 'Georgia', serif;
+        }
+
+        .easter-egg-subtitle {
+            color: #aaa;
+            font-size: 16px;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+
+        .easter-egg-close {
+            background: #c8102e;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .easter-egg-close:hover {
+            background: #a00d24;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            .easter-egg-shield {
+                width: 200px;
+                height: 233px;
+            }
+            
+            .easter-egg-title {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Header with Logos -->
+    <div class="top-header">
+        <div class="logo-container">
+            <img src="https://www.kenworth.com/media/w4jnzm4t/kenworth_logo-header-new-012023.png" alt="Kenworth" />
+            <img src="https://www.decisiv.com/wp-content/uploads/2020/01/Decisiv-Logo-096126.svg" alt="Decisiv" style="filter: brightness(0) invert(1);" />
+            <img src="https://www.karmak.com/static/dealer-25237/logo.png" alt="Karmak" />
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>🕐 WKI Case Timer Management System</h1>
+            <p>Track your case processing times efficiently</p>
+        </div>
+
+        <div class="add-timer-container">
+            <button class="add-timer-btn" onclick="showAddTimerModal()">+ Add New Timer</button>
+            <button class="add-timer-btn" onclick="testEmailNotification()" style="background: #F59E0B;">🔔 Test Notifications</button>
+        </div>
+
+        <div class="timers-container" id="timersContainer"></div>
+    </div>
+
+    <!-- Floating Help Window -->
+    <button class="help-toggle-btn" id="helpToggleBtn" onclick="toggleHelpWindow()" title="Show Help">❓</button>
+    
+    <div class="help-window" id="helpWindow">
+        <div class="help-header">
+            <h3>📚 Timer Guide & Instructions</h3>
+            <button class="help-close-btn" onclick="toggleHelpWindow()">×</button>
+        </div>
+        
+        <div class="help-content">
+            <div class="help-section">
+                <h4>⏱️ Time Window Status Guide</h4>
+                
+                <div class="time-window-item blue-window">
+                    <span class="time-indicator">🔵</span>
+                    <div class="time-description">
+                        <strong>0 - 30 Minutes</strong>
+                        <span>Initial Hold Period - Do not request estimate approval</span>
+                    </div>
+                </div>
+                
+                <div class="time-window-item green-window">
+                    <span class="time-indicator">🟢</span>
+                    <div class="time-description">
+                        <strong>31 Minutes - 1 Hour 15 Minutes</strong>
+                        <span>Optimal Processing Window - Ideal time for case work</span>
+                    </div>
+                </div>
+                
+                <div class="time-window-item orange-window">
+                    <span class="time-indicator">🟠</span>
+                    <div class="time-description">
+                        <strong>1 Hour 16 Minutes - 1 Hour 30 Minutes</strong>
+                        <span>Warning Zone - Case approaching deadline</span>
+                    </div>
+                </div>
+                
+                <div class="time-window-item red-window">
+                    <span class="time-indicator">🔴</span>
+                    <div class="time-description">
+                        <strong>Over 1 Hour 30 Minutes</strong>
+                        <span>Critical Status - Immediate attention required</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="help-section">
+                <h4>🔧 How to Use This Timer System</h4>
+                <ul class="help-feature-list">
+                    <li>Click <strong>"Add New Timer"</strong> to create a timer for each case</li>
+                    <li>Enter the case number when prompted - this becomes a direct link</li>
+                    <li>Each case number is automatically linked to Decisiv for quick access</li>
+                    <li>Set custom countdown duration or use the default 2 hours</li>
+                    <li>Start, pause, or reset timers as needed</li>
+                    <li>Monitor multiple cases simultaneously on one screen</li>
+                    <li>Receive browser notifications at critical time thresholds</li>
+                </ul>
+            </div>
+            
+            <div class="help-section">
+                <h4>🔗 Case Number Links</h4>
+                <p style="color: #333; margin-bottom: 10px;">
+                    Each case number becomes a clickable link that opens directly in Decisiv:
+                </p>
+                <div class="help-tip">
+                    <span class="help-tip-icon">💡</span>
+                    <strong>Pro Tip:</strong> Click any case number to jump straight to that case in Decisiv. Links open in a new tab to keep your timers running.
+                </div>
+            </div>
+            
+            <div class="help-section">
+                <h4>🔔 Notification Settings</h4>
+                <ul class="help-feature-list">
+                    <li>Automatic alerts at Orange status (1:16)</li>
+                    <li>Critical alerts at Red status (1:30)</li>
+                    <li>Optional email notifications for each timer</li>
+                    <li>Test notifications with the yellow button</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="dismiss-options">
+            <button class="dismiss-btn dismiss-session" onclick="dismissHelp('session')">
+                Hide for Session
+            </button>
+            <button class="dismiss-btn dismiss-permanent" onclick="dismissHelp('permanent')">
+                Don't Show Again
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <div class="footer-content">
+            <div class="footer-left">
+                <div class="footer-logo">⏱️</div>
+                <div class="footer-text">
+                    <h3>WKI Case Timer Management</h3>
+                    <p>© 2025 All rights reserved</p>
+                </div>
+            </div>
+            
+            <div class="footer-center">
+                <div class="proprietary-notice">
+                    <span class="warning-icon">🔒</span>
+                    <strong>WKI Proprietary Application</strong>
+                    <p>This application is proprietary to WKI and contains confidential business information. Unauthorized access, use, or distribution is strictly prohibited.</p>
+                </div>
+            </div>
+            
+            <div class="footer-right">
+                <p><strong>Built for WKI Service Excellence</strong></p>
+                <div class="footer-links">
+                    <span>Case Management System</span>
+                    <span>•</span>
+                    <span>Professional Service Tracking</span>
+                    <span>•</span>
+                    <span>WKI Internal Use Only</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Timer Modal -->
+    <div id="addTimerModal" class="modal">
+        <div class="modal-content">
+            <h2 class="modal-header">Add New Timer</h2>
+            <input type="text" id="caseNumberInput" placeholder="Enter Case Number (e.g., 12345)">
+            <input type="number" id="hoursInput" placeholder="Hours (default: 2)" min="0" value="2">
+            <input type="number" id="minutesInput" placeholder="Minutes (default: 0)" min="0" max="59" value="0">
+            <input type="email" id="emailInput" placeholder="Email for notifications (optional)">
+            <div class="modal-buttons">
+                <button class="modal-btn modal-confirm" onclick="addTimer()">Add Timer</button>
+                <button class="modal-btn modal-cancel" onclick="closeAddTimerModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Set Time Modal -->
+    <div id="setTimeModal" class="modal">
+        <div class="modal-content">
+            <h2 class="modal-header">Set Timer Duration</h2>
+            <input type="number" id="setHoursInput" placeholder="Hours" min="0">
+            <input type="number" id="setMinutesInput" placeholder="Minutes" min="0" max="59">
+            <div class="modal-buttons">
+                <button class="modal-btn modal-confirm" onclick="confirmSetTime()">Set Time</button>
+                <button class="modal-btn modal-cancel" onclick="closeSetTimeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Easter Egg Modal -->
+    <div id="easterEggModal" class="easter-egg-modal">
+        <div class="easter-egg-content">
+            <div class="easter-egg-shield"></div>
+            <h2 class="easter-egg-title">Warriors of Kenworth Industries</h2>
+            <p class="easter-egg-subtitle">"Forged in Excellence, Driven by Honor"</p>
+            <button class="easter-egg-close" onclick="closeEasterEgg()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        let timers = [];
+        let timerId = 0;
+        let currentSetTimeId = null;
+        let helpDismissed = false;
+
+        // Check if help was permanently dismissed
+        window.addEventListener('DOMContentLoaded', function() {
+            const helpPermanentlyDismissed = localStorage.getItem('timerHelpDismissed') === 'true';
+            const helpWindow = document.getElementById('helpWindow');
+            const helpToggleBtn = document.getElementById('helpToggleBtn');
+            
+            if (helpPermanentlyDismissed) {
+                helpWindow.classList.add('hidden');
+                helpToggleBtn.classList.add('visible');
+            } else {
+                // Show help window by default for new users
+                helpWindow.classList.remove('hidden');
+                helpToggleBtn.classList.remove('visible');
+            }
+        });
+
+        function toggleHelpWindow() {
+            const helpWindow = document.getElementById('helpWindow');
+            const helpToggleBtn = document.getElementById('helpToggleBtn');
+            
+            if (helpWindow.classList.contains('hidden')) {
+                helpWindow.classList.remove('hidden');
+                helpToggleBtn.classList.remove('visible');
+            } else {
+                helpWindow.classList.add('hidden');
+                helpToggleBtn.classList.add('visible');
+            }
+        }
+
+        function dismissHelp(type) {
+            const helpWindow = document.getElementById('helpWindow');
+            const helpToggleBtn = document.getElementById('helpToggleBtn');
+            
+            helpWindow.classList.add('hidden');
+            helpToggleBtn.classList.add('visible');
+            
+            if (type === 'permanent') {
+                localStorage.setItem('timerHelpDismissed', 'true');
+                
+                // Show confirmation
+                const confirmation = document.createElement('div');
+                confirmation.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    background: #c8102e;
+                    color: white;
+                    padding: 15px 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+                    z-index: 1000;
+                    animation: slideIn 0.3s ease;
+                `;
+                confirmation.innerHTML = `
+                    ✓ Help permanently hidden. 
+                    <a href="#" onclick="resetHelpPreference(); return false;" 
+                       style="color: white; text-decoration: underline; margin-left: 10px;">Undo</a>
+                `;
+                document.body.appendChild(confirmation);
+                
+                setTimeout(() => {
+                    confirmation.style.animation = 'slideOut 0.3s ease';
+                    setTimeout(() => confirmation.remove(), 300);
+                }, 5000);
+            } else if (type === 'session') {
+                helpDismissed = true;
+            }
+        }
+
+        function resetHelpPreference() {
+            localStorage.removeItem('timerHelpDismissed');
+            toggleHelpWindow();
+            
+            // Remove any confirmation messages
+            const confirmations = document.querySelectorAll('[style*="bottom: 20px"]');
+            confirmations.forEach(c => c.remove());
+        }
+
+        // Add slide animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        class Timer {
+            constructor(id, caseNumber, hours, minutes, email) {
+                this.id = id;
+                this.caseNumber = caseNumber;
+                this.totalSeconds = (hours * 3600) + (minutes * 60);
+                this.remainingSeconds = this.totalSeconds;
+                this.elapsedSeconds = 0;
+                this.isRunning = false;
+                this.isPaused = false;
+                this.email = email;
+                this.notifications = {
+                    orange: false,
+                    red: false
+                };
+            }
+
+            start() {
+                this.isRunning = true;
+                this.isPaused = false;
+            }
+
+            pause() {
+                this.isPaused = true;
+            }
+
+            reset() {
+                this.remainingSeconds = this.totalSeconds;
+                this.elapsedSeconds = 0;
+                this.isRunning = false;
+                this.isPaused = false;
+                this.notifications.orange = false;
+                this.notifications.red = false;
+            }
+
+            tick() {
+                if (this.isRunning && !this.isPaused && this.remainingSeconds > 0) {
+                    this.remainingSeconds--;
+                    this.elapsedSeconds++;
+                    
+                    // Check for notification triggers
+                    this.checkNotifications();
+                }
+            }
+
+            checkNotifications() {
+                const elapsedMinutes = this.elapsedSeconds / 60;
+                
+                // Orange status notification (1:16)
+                if (elapsedMinutes >= 76 && elapsedMinutes < 90 && !this.notifications.orange) {
+                    this.notifications.orange = true;
+                    this.sendNotification('orange');
+                }
+                
+                // Red status notification (1:30)
+                if (elapsedMinutes >= 90 && !this.notifications.red) {
+                    this.notifications.red = true;
+                    this.sendNotification('red');
+                }
+            }
+
+            sendNotification(status) {
+                const subject = `Case ${this.caseNumber} - ${status.toUpperCase()} Status Alert`;
+                let body = '';
+                
+                if (status === 'orange') {
+                    body = `Case ${this.caseNumber} has been active for 1 hour and 16 minutes. It will reach RED status in 14 minutes.`;
+                } else if (status === 'red') {
+                    body = `URGENT: Case ${this.caseNumber} has reached RED status (1.5 hours active). Immediate attention required!`;
+                }
+                
+                // Browser notification
+                if (Notification.permission === 'granted') {
+                    new Notification(subject, {
+                        body: body,
+                        icon: '⚠️',
+                        requireInteraction: true
+                    });
+                }
+                
+                // Email simulation (opens email client)
+                if (this.email) {
+                    console.log(`Email notification would be sent to ${this.email}: ${subject}`);
+                    // In a real application, this would send an actual email via backend
+                }
+            }
+
+            getStatus() {
+                const elapsedMinutes = this.elapsedSeconds / 60;
+                
+                if (elapsedMinutes <= 30) return 'blue';
+                if (elapsedMinutes <= 75) return 'green';
+                if (elapsedMinutes <= 90) return 'orange';
+                return 'red';
+            }
+
+            getStatusMessage() {
+                const elapsedMinutes = this.elapsedSeconds / 60;
+                
+                if (elapsedMinutes <= 30) {
+                    return '⏳ 30 minute check-in countdown - Please do not Request Estimate Approval until the case has been open for 30 minutes';
+                }
+                if (elapsedMinutes <= 75) {
+                    return '✅ Case is in optimal processing window';
+                }
+                if (elapsedMinutes <= 90) {
+                    return '⚠️ Approaching deadline - Please complete soon';
+                }
+                return '🚨 URGENT: Case has exceeded standard processing time';
+            }
+
+            getTimeDisplay() {
+                const hours = Math.floor(this.remainingSeconds / 3600);
+                const minutes = Math.floor((this.remainingSeconds % 3600) / 60);
+                const seconds = this.remainingSeconds % 60;
+                
+                return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            }
+
+            getElapsedDisplay() {
+                const hours = Math.floor(this.elapsedSeconds / 3600);
+                const minutes = Math.floor((this.elapsedSeconds % 3600) / 60);
+                
+                return `${hours}h ${minutes}m elapsed`;
+            }
+        }
+
+        function showAddTimerModal() {
+            document.getElementById('addTimerModal').style.display = 'block';
+        }
+
+        function closeAddTimerModal() {
+            document.getElementById('addTimerModal').style.display = 'none';
+            document.getElementById('caseNumberInput').value = '';
+            document.getElementById('hoursInput').value = '2';
+            document.getElementById('minutesInput').value = '0';
+            document.getElementById('emailInput').value = '';
+        }
+
+        function addTimer() {
+            const caseNumber = document.getElementById('caseNumberInput').value;
+            const hours = parseInt(document.getElementById('hoursInput').value) || 2;
+            const minutes = parseInt(document.getElementById('minutesInput').value) || 0;
+            const email = document.getElementById('emailInput').value;
+            
+            if (!caseNumber) {
+                alert('Please enter a case number');
+                return;
+            }
+            
+            const timer = new Timer(timerId++, caseNumber, hours, minutes, email);
+            timers.push(timer);
+            
+            // Auto-start the timer
+            timer.start();
+            
+            createTimerElement(timer);
+            closeAddTimerModal();
+            
+            // Request notification permission
+            if (Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        }
+
+        function createTimerElement(timer) {
+            const timerDiv = document.createElement('div');
+            timerDiv.className = 'timer-window status-blue';
+            timerDiv.id = `timer-${timer.id}`;
+            
+            timerDiv.innerHTML = `
+                <div class="notification-badge" id="badge-${timer.id}">!</div>
+                <div class="timer-header">
+                    <a href="https://paccarpg.decisiv.net/estimates/${timer.caseNumber}/edit" 
+                       target="_blank" class="case-link">Case #${timer.caseNumber}</a>
+                    <button class="close-btn" onclick="removeTimer(${timer.id})">×</button>
+                </div>
+                <div class="timer-display" id="display-${timer.id}">${timer.getTimeDisplay()}</div>
+                <div class="timer-status-message" id="status-${timer.id}">${timer.getStatusMessage()}</div>
+                <div style="text-align: center; color: #6B7280; font-size: 14px;" id="elapsed-${timer.id}">${timer.getElapsedDisplay()}</div>
+                <div class="timer-controls">
+                    <button class="control-btn start-btn" onclick="startTimer(${timer.id})" id="start-${timer.id}">Start</button>
+                    <button class="control-btn pause-btn" onclick="pauseTimer(${timer.id})" id="pause-${timer.id}">Pause</button>
+                    <button class="control-btn reset-btn" onclick="resetTimer(${timer.id})">Reset</button>
+                    <button class="control-btn set-time-btn" onclick="showSetTimeModal(${timer.id})">Set Time</button>
+                </div>
+                <div class="email-settings">
+                    <div class="notification-status">
+                        ${timer.email ? `📧 Notifications: ${timer.email}` : '📧 No email set'}
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('timersContainer').appendChild(timerDiv);
+            
+            // If timer is already running (auto-started), update button states
+            if (timer.isRunning && !timer.isPaused) {
+                document.getElementById(`start-${timer.id}`).style.display = 'none';
+                document.getElementById(`pause-${timer.id}`).style.display = 'inline-block';
+            }
+        }
+
+        function removeTimer(id) {
+            if (confirm('Are you sure you want to remove this timer?')) {
+                timers = timers.filter(t => t.id !== id);
+                document.getElementById(`timer-${id}`).remove();
+            }
+        }
+
+        function startTimer(id) {
+            const timer = timers.find(t => t.id === id);
+            if (timer) {
+                timer.start();
+                document.getElementById(`start-${id}`).style.display = 'none';
+                document.getElementById(`pause-${id}`).style.display = 'inline-block';
+            }
+        }
+
+        function pauseTimer(id) {
+            const timer = timers.find(t => t.id === id);
+            if (timer) {
+                timer.pause();
+                document.getElementById(`start-${id}`).style.display = 'inline-block';
+                document.getElementById(`pause-${id}`).style.display = 'none';
+            }
+        }
+
+        function resetTimer(id) {
+            const timer = timers.find(t => t.id === id);
+            if (timer) {
+                timer.reset();
+                updateTimerDisplay(timer);
+                document.getElementById(`start-${id}`).style.display = 'inline-block';
+                document.getElementById(`pause-${id}`).style.display = 'none';
+            }
+        }
+
+        function showSetTimeModal(id) {
+            currentSetTimeId = id;
+            document.getElementById('setTimeModal').style.display = 'block';
+        }
+
+        function closeSetTimeModal() {
+            document.getElementById('setTimeModal').style.display = 'none';
+            document.getElementById('setHoursInput').value = '';
+            document.getElementById('setMinutesInput').value = '';
+            currentSetTimeId = null;
+        }
+
+        function confirmSetTime() {
+            const hours = parseInt(document.getElementById('setHoursInput').value) || 0;
+            const minutes = parseInt(document.getElementById('setMinutesInput').value) || 0;
+            
+            if (hours === 0 && minutes === 0) {
+                alert('Please enter a valid time');
+                return;
+            }
+            
+            const timer = timers.find(t => t.id === currentSetTimeId);
+            if (timer) {
+                timer.totalSeconds = (hours * 3600) + (minutes * 60);
+                timer.reset();
+                updateTimerDisplay(timer);
+            }
+            
+            closeSetTimeModal();
+        }
+
+        function updateTimerDisplay(timer) {
+            const timerElement = document.getElementById(`timer-${timer.id}`);
+            const displayElement = document.getElementById(`display-${timer.id}`);
+            const statusElement = document.getElementById(`status-${timer.id}`);
+            const elapsedElement = document.getElementById(`elapsed-${timer.id}`);
+            
+            if (timerElement && displayElement && statusElement && elapsedElement) {
+                displayElement.textContent = timer.getTimeDisplay();
+                statusElement.textContent = timer.getStatusMessage();
+                elapsedElement.textContent = timer.getElapsedDisplay();
+                
+                // Update status class
+                timerElement.className = `timer-window status-${timer.getStatus()}`;
+                
+                // Show notification badge for red status
+                const badge = document.getElementById(`badge-${timer.id}`);
+                if (timer.getStatus() === 'red') {
+                    badge.style.display = 'block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        }
+
+        function testEmailNotification() {
+            if (Notification.permission === 'default') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        new Notification('Test Notification', {
+                            body: 'Notifications are enabled! You will receive alerts when timers reach orange and red status.',
+                            icon: '✅'
+                        });
+                    }
+                });
+            } else if (Notification.permission === 'granted') {
+                new Notification('Test Notification', {
+                    body: 'Notifications are working! You will receive alerts when timers reach orange and red status.',
+                    icon: '✅'
+                });
+            } else {
+                alert('Notifications are blocked. Please enable them in your browser settings.');
+            }
+        }
+
+        // Main update loop
+        setInterval(() => {
+            timers.forEach(timer => {
+                timer.tick();
+                updateTimerDisplay(timer);
+            });
+        }, 1000);
+
+        // Request notification permission on load
+        if (Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
+        // Prevent closing modals when clicking outside
+        window.onclick = function(event) {
+            if (event.target.className === 'modal') {
+                event.target.style.display = 'none';
+            }
+            // Close easter egg if clicking outside the content
+            if (event.target.id === 'easterEggModal') {
+                closeEasterEgg();
+            }
+        }
+
+        // Easter Egg Functions
+        function showEasterEgg() {
+            document.getElementById('easterEggModal').style.display = 'block';
+        }
+
+        function closeEasterEgg() {
+            document.getElementById('easterEggModal').style.display = 'none';
+        }
+
+        // Add double-click event listener to the proprietary notice
+        document.addEventListener('DOMContentLoaded', function() {
+            const proprietaryNotice = document.querySelector('.proprietary-notice strong');
+            if (proprietaryNotice) {
+                proprietaryNotice.addEventListener('dblclick', function() {
+                    showEasterEgg();
+                });
+                // Add a subtle hint that it's clickable
+                proprietaryNotice.style.cursor = 'pointer';
+                proprietaryNotice.title = 'Double-click for a surprise...';
+            }
+        });
+    </script>
+</body>
+</html>
