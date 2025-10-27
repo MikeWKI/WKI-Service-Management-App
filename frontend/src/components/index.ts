@@ -20,6 +20,7 @@ export { default as DodgeCityMetrics } from './DodgeCityMetrics';
 export { default as LiberalMetrics } from './LiberalMetrics';
 export { default as LocationSpecificMetrics } from './LocationSpecificMetrics';
 export { default as CampaignMetrics } from './CampaignMetrics';
+export { default as CaseTimer } from './CaseTimer';
 export { default as ErrorBoundary } from './ErrorBoundary';
 export { default as FeedbackPanel } from './FeedbackPanel';
 export { default as TrendModal } from './TrendModal';

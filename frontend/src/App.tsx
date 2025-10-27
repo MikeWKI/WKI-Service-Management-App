@@ -20,10 +20,10 @@ import {
   DodgeCityMetrics,
   LiberalMetrics,
   CampaignMetrics,
+  CaseTimer,
   ErrorBoundary,
   HistoricalDashboard
 } from "./components";
-import CaseTimer from "./components/CaseTimer";
 import QuickLinksPanel from "./components/QuickLinksPanel";
 import FeedbackPanel from "./components/FeedbackPanel";
 import FixedThemeToggle from "./components/FixedThemeToggle";
