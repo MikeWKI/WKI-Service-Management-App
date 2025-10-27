@@ -1106,6 +1106,7 @@
         <div class="modal-content">
             <h2 class="modal-header">Add New Timer</h2>
             <input type="text" id="caseNumberInput" placeholder="Enter Case Number (e.g., 12345)">
+            <input type="text" id="customerNameInput" placeholder="Customer Name (optional)">
             <input type="number" id="hoursInput" placeholder="Hours (default: 2)" min="0" value="2">
             <input type="number" id="minutesInput" placeholder="Minutes (default: 0)" min="0" max="59" value="0">
             <div class="modal-buttons">
@@ -1237,9 +1238,10 @@
         document.head.appendChild(style);
 
         class Timer {
-            constructor(id, caseNumber, hours, minutes) {
+            constructor(id, caseNumber, customerName, hours, minutes) {
                 this.id = id;
                 this.caseNumber = caseNumber;
+                this.customerName = customerName || '';
                 this.totalSeconds = (hours * 3600) + (minutes * 60);
                 this.remainingSeconds = this.totalSeconds;
                 this.elapsedSeconds = 0;
@@ -1435,12 +1437,14 @@
         function closeAddTimerModal() {
             document.getElementById('addTimerModal').style.display = 'none';
             document.getElementById('caseNumberInput').value = '';
+            document.getElementById('customerNameInput').value = '';
             document.getElementById('hoursInput').value = '2';
             document.getElementById('minutesInput').value = '0';
         }
 
         function addTimer() {
             const caseNumber = document.getElementById('caseNumberInput').value;
+            const customerName = document.getElementById('customerNameInput').value;
             const hours = parseInt(document.getElementById('hoursInput').value) || 2;
             const minutes = parseInt(document.getElementById('minutesInput').value) || 0;
             
@@ -1449,7 +1453,7 @@
                 return;
             }
             
-            const timer = new Timer(timerId++, caseNumber, hours, minutes);
+            const timer = new Timer(timerId++, caseNumber, customerName, hours, minutes);
             timers.push(timer);
             
             // Auto-start the timer
@@ -1475,6 +1479,11 @@
                     <button class="approval-btn" onclick="moveTimerToDwell(${timer.id})">✅ Approval Requested/Approved</button>
                 </div>` : '';
             
+            const customerNameHTML = timer.customerName ? 
+                `<div style="text-align: center; color: #1F2937; font-size: 16px; font-weight: 700; margin: 5px 0 10px 0;">
+                    👤 ${timer.customerName}
+                </div>` : '';
+            
             timerDiv.innerHTML = `
                 <div class="notification-badge" id="badge-${timer.id}">!</div>
                 <div class="stage-indicator stage-${timer.stage}" id="stage-${timer.id}">${stageLabel}</div>
@@ -1483,6 +1492,7 @@
                        target="_blank" class="case-link">Case #${timer.caseNumber}</a>
                     <button class="close-btn" onclick="removeTimer(${timer.id})">×</button>
                 </div>
+                ${customerNameHTML}
                 <div class="timer-display" id="display-${timer.id}">${timer.getTimeDisplay()}</div>
                 <div class="timer-status-message" id="status-${timer.id}">${timer.getStatusMessage()}</div>
                 <div style="text-align: center; color: #374151; font-size: 15px; font-weight: 600; margin: 10px 0;" id="elapsed-${timer.id}">${timer.getElapsedDisplay()}</div>
