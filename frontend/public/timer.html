@@ -101,11 +101,39 @@
         }
 
         .timers-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            display: flex;
             gap: 20px;
             max-width: 1400px;
             margin: 0 auto;
+        }
+
+        .timer-column {
+            flex: 1;
+            min-width: 350px;
+        }
+
+        .timer-column h2 {
+            color: white;
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .timer-column.triage-column h2 {
+            background: linear-gradient(135deg, #3B82F6, #1e40af);
+        }
+
+        .timer-column.dwell-column h2 {
+            background: linear-gradient(135deg, #10B981, #047857);
+        }
+
+        .timer-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
 
         .timer-window {
@@ -271,6 +299,47 @@
 
         .set-time-btn:hover {
             background: #a00d24;
+        }
+
+        .approval-btn {
+            background: #8B5CF6;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            margin-top: 10px;
+            width: 100%;
+            transition: all 0.3s;
+        }
+
+        .approval-btn:hover {
+            background: #7C3AED;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(139, 92, 246, 0.4);
+        }
+
+        .stage-indicator {
+            text-align: center;
+            padding: 8px;
+            margin: 10px 0;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .stage-checkin {
+            background: rgba(59, 130, 246, 0.1);
+            color: #1E40AF;
+        }
+
+        .stage-dwell {
+            background: rgba(16, 185, 129, 0.1);
+            color: #047857;
         }
 
         .modal {
@@ -464,6 +533,14 @@
         }
 
         @media (max-width: 768px) {
+            .timers-container {
+                flex-direction: column;
+            }
+
+            .timer-column {
+                min-width: 100%;
+            }
+
             .footer-content {
                 flex-direction: column;
                 text-align: center;
@@ -831,7 +908,16 @@
             <button class="add-timer-btn" onclick="testEmailNotification()" style="background: #F59E0B;">🔔 Test Notifications</button>
         </div>
 
-        <div class="timers-container" id="timersContainer"></div>
+        <div class="timers-container" id="timersContainer">
+            <div class="timer-column triage-column">
+                <h2>⏱️ Check-In / Triage (2 Hour Window)</h2>
+                <div class="timer-list" id="triageTimers"></div>
+            </div>
+            <div class="timer-column dwell-column">
+                <h2>📊 In Progress - Dwell (3 Day Window)</h2>
+                <div class="timer-list" id="dwellTimers"></div>
+            </div>
+        </div>
     </div>
 
     <!-- Floating Help Window -->
@@ -907,8 +993,9 @@
             <div class="help-section">
                 <h4>🔔 Notification Settings</h4>
                 <ul class="help-feature-list">
-                    <li>Automatic alerts at Orange status (1:16)</li>
-                    <li>Critical alerts at Red status (1:30)</li>
+                    <li>Alert at 30 minutes - Hold window complete, can Request Approval</li>
+                    <li>Alert at 1.5 hours - 30 minutes remaining to Request Approval</li>
+                    <li>Alert at 2 hours - Triage time elapsed, dwell time running</li>
                     <li>Test notifications with the yellow button</li>
                 </ul>
             </div>
@@ -1100,9 +1187,12 @@
                 this.elapsedSeconds = 0;
                 this.isRunning = false;
                 this.isPaused = false;
+                this.stage = 'checkin'; // 'checkin' or 'dwell'
+                this.approvalUnlocked = false; // Unlocks after 30 minutes
                 this.notifications = {
-                    orange: false,
-                    red: false
+                    thirtyMinutes: false,
+                    ninetyMinutes: false,
+                    twoHours: false
                 };
             }
 
@@ -1120,8 +1210,10 @@
                 this.elapsedSeconds = 0;
                 this.isRunning = false;
                 this.isPaused = false;
-                this.notifications.orange = false;
-                this.notifications.red = false;
+                this.approvalUnlocked = false;
+                this.notifications.thirtyMinutes = false;
+                this.notifications.ninetyMinutes = false;
+                this.notifications.twoHours = false;
             }
 
             tick() {
@@ -1131,46 +1223,94 @@
                     
                     // Check for notification triggers
                     this.checkNotifications();
+                    
+                    // Unlock approval button after 30 minutes in checkin stage
+                    if (this.stage === 'checkin' && this.elapsedSeconds >= 1800 && !this.approvalUnlocked) {
+                        this.approvalUnlocked = true;
+                        updateTimerDisplay(this);
+                    }
                 }
             }
 
+            moveToDwell() {
+                // Move to dwell stage with 3-day countdown
+                this.stage = 'dwell';
+                this.totalSeconds = 3 * 24 * 3600; // 3 days
+                this.remainingSeconds = this.totalSeconds;
+                this.elapsedSeconds = 0;
+                this.isRunning = true;
+                this.isPaused = false;
+                this.approvalUnlocked = false;
+                // Reset notifications for new stage
+                this.notifications = {
+                    thirtyMinutes: false,
+                    ninetyMinutes: false,
+                    twoHours: false
+                };
+            }
+
             checkNotifications() {
+                // Only send notifications in checkin stage
+                if (this.stage !== 'checkin') return;
+                
                 const elapsedMinutes = this.elapsedSeconds / 60;
                 
-                // Orange status notification (1:16)
-                if (elapsedMinutes >= 76 && elapsedMinutes < 90 && !this.notifications.orange) {
-                    this.notifications.orange = true;
-                    this.sendNotification('orange');
+                // 30-minute notification - Initial hold window passed
+                if (elapsedMinutes >= 30 && !this.notifications.thirtyMinutes) {
+                    this.notifications.thirtyMinutes = true;
+                    this.sendNotification('thirtyMinutes');
                 }
                 
-                // Red status notification (1:30)
-                if (elapsedMinutes >= 90 && !this.notifications.red) {
-                    this.notifications.red = true;
-                    this.sendNotification('red');
+                // 90-minute (1.5 hour) notification - 30 minutes remaining warning
+                if (elapsedMinutes >= 90 && !this.notifications.ninetyMinutes) {
+                    this.notifications.ninetyMinutes = true;
+                    this.sendNotification('ninetyMinutes');
+                }
+                
+                // 120-minute (2 hour) notification - Triage time elapsed
+                if (elapsedMinutes >= 120 && !this.notifications.twoHours) {
+                    this.notifications.twoHours = true;
+                    this.sendNotification('twoHours');
                 }
             }
 
             sendNotification(status) {
-                const subject = `Case ${this.caseNumber} - ${status.toUpperCase()} Status Alert`;
+                let subject = '';
                 let body = '';
+                let icon = '';
                 
-                if (status === 'orange') {
-                    body = `Case ${this.caseNumber} has been active for 1 hour and 16 minutes. It will reach RED status in 14 minutes.`;
-                } else if (status === 'red') {
-                    body = `URGENT: Case ${this.caseNumber} has reached RED status (1.5 hours active). Immediate attention required!`;
+                if (status === 'thirtyMinutes') {
+                    subject = `Case ${this.caseNumber} - Initial Hold Window Complete`;
+                    body = `The 30-minute hold window has passed. You can now "Request Approval" for this case. Note: Request Approval must be completed within the next 1.5 hours.`;
+                    icon = '✅';
+                } else if (status === 'ninetyMinutes') {
+                    subject = `Case ${this.caseNumber} - 30 Minutes Remaining Warning`;
+                    body = `ATTENTION: Only 30 minutes remaining to complete "Request Approval" before triage time elapses.`;
+                    icon = '⚠️';
+                } else if (status === 'twoHours') {
+                    subject = `Case ${this.caseNumber} - Triage Time Elapsed`;
+                    body = `URGENT: The 2-hour triage window has elapsed. Case dwell time is now running until the case is completed and the "Asset Released" Quick Action Button is pressed.`;
+                    icon = '🚨';
                 }
                 
                 // Browser notification
                 if (Notification.permission === 'granted') {
                     new Notification(subject, {
                         body: body,
-                        icon: '⚠️',
+                        icon: icon,
                         requireInteraction: true
                     });
                 }
             }
 
             getStatus() {
+                if (this.stage === 'dwell') {
+                    const daysRemaining = Math.floor(this.remainingSeconds / 86400);
+                    if (daysRemaining >= 2) return 'green';
+                    if (daysRemaining >= 1) return 'orange';
+                    return 'red';
+                }
+                
                 const elapsedMinutes = this.elapsedSeconds / 60;
                 
                 if (elapsedMinutes <= 30) return 'blue';
@@ -1180,6 +1320,17 @@
             }
 
             getStatusMessage() {
+                if (this.stage === 'dwell') {
+                    const daysRemaining = Math.floor(this.remainingSeconds / 86400);
+                    if (daysRemaining >= 2) {
+                        return '✅ Dwell time - Case in progress';
+                    } else if (daysRemaining >= 1) {
+                        return '⚠️ Less than 2 days remaining in dwell window';
+                    } else {
+                        return '🚨 URGENT: Less than 24 hours remaining in dwell window';
+                    }
+                }
+                
                 const elapsedMinutes = this.elapsedSeconds / 60;
                 
                 if (elapsedMinutes <= 30) {
@@ -1195,11 +1346,20 @@
             }
 
             getTimeDisplay() {
-                const hours = Math.floor(this.remainingSeconds / 3600);
-                const minutes = Math.floor((this.remainingSeconds % 3600) / 60);
-                const seconds = this.remainingSeconds % 60;
-                
-                return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                if (this.stage === 'dwell') {
+                    const days = Math.floor(this.remainingSeconds / 86400);
+                    const hours = Math.floor((this.remainingSeconds % 86400) / 3600);
+                    const minutes = Math.floor((this.remainingSeconds % 3600) / 60);
+                    const seconds = this.remainingSeconds % 60;
+                    
+                    return `${days}d ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                } else {
+                    const hours = Math.floor(this.remainingSeconds / 3600);
+                    const minutes = Math.floor((this.remainingSeconds % 3600) / 60);
+                    const seconds = this.remainingSeconds % 60;
+                    
+                    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                }
             }
 
             getElapsedDisplay() {
@@ -1251,8 +1411,15 @@
             timerDiv.className = 'timer-window status-blue';
             timerDiv.id = `timer-${timer.id}`;
             
+            const stageLabel = timer.stage === 'checkin' ? '🔵 Check-In / Triage Stage' : '🟢 Dwell Stage';
+            const approvalButtonHTML = timer.stage === 'checkin' ? 
+                `<div id="approval-container-${timer.id}" style="display: none;">
+                    <button class="approval-btn" onclick="moveTimerToDwell(${timer.id})">✅ Approval Requested/Approved</button>
+                </div>` : '';
+            
             timerDiv.innerHTML = `
                 <div class="notification-badge" id="badge-${timer.id}">!</div>
+                <div class="stage-indicator stage-${timer.stage}" id="stage-${timer.id}">${stageLabel}</div>
                 <div class="timer-header">
                     <a href="https://paccarpg.decisiv.net/estimates/${timer.caseNumber}/edit" 
                        target="_blank" class="case-link">Case #${timer.caseNumber}</a>
@@ -1261,6 +1428,7 @@
                 <div class="timer-display" id="display-${timer.id}">${timer.getTimeDisplay()}</div>
                 <div class="timer-status-message" id="status-${timer.id}">${timer.getStatusMessage()}</div>
                 <div style="text-align: center; color: #6B7280; font-size: 14px;" id="elapsed-${timer.id}">${timer.getElapsedDisplay()}</div>
+                ${approvalButtonHTML}
                 <div class="timer-controls">
                     <button class="control-btn start-btn" onclick="startTimer(${timer.id})" id="start-${timer.id}">Start</button>
                     <button class="control-btn pause-btn" onclick="pauseTimer(${timer.id})" id="pause-${timer.id}">Pause</button>
@@ -1269,12 +1437,19 @@
                 </div>
             `;
             
-            document.getElementById('timersContainer').appendChild(timerDiv);
+            // Append to correct column based on stage
+            const containerID = timer.stage === 'checkin' ? 'triageTimers' : 'dwellTimers';
+            document.getElementById(containerID).appendChild(timerDiv);
             
             // If timer is already running (auto-started), update button states
             if (timer.isRunning && !timer.isPaused) {
                 document.getElementById(`start-${timer.id}`).style.display = 'none';
                 document.getElementById(`pause-${timer.id}`).style.display = 'inline-block';
+            }
+            
+            // Show approval button if already unlocked
+            if (timer.approvalUnlocked && timer.stage === 'checkin') {
+                document.getElementById(`approval-container-${timer.id}`).style.display = 'block';
             }
         }
 
@@ -1349,6 +1524,7 @@
             const displayElement = document.getElementById(`display-${timer.id}`);
             const statusElement = document.getElementById(`status-${timer.id}`);
             const elapsedElement = document.getElementById(`elapsed-${timer.id}`);
+            const approvalContainer = document.getElementById(`approval-container-${timer.id}`);
             
             if (timerElement && displayElement && statusElement && elapsedElement) {
                 displayElement.textContent = timer.getTimeDisplay();
@@ -1358,6 +1534,11 @@
                 // Update status class
                 timerElement.className = `timer-window status-${timer.getStatus()}`;
                 
+                // Show approval button after 30 minutes in checkin stage
+                if (approvalContainer && timer.approvalUnlocked && timer.stage === 'checkin') {
+                    approvalContainer.style.display = 'block';
+                }
+                
                 // Show notification badge for red status
                 const badge = document.getElementById(`badge-${timer.id}`);
                 if (timer.getStatus() === 'red') {
@@ -1365,6 +1546,25 @@
                 } else {
                     badge.style.display = 'none';
                 }
+            }
+        }
+
+        function moveTimerToDwell(id) {
+            const timer = timers.find(t => t.id === id);
+            if (timer && timer.stage === 'checkin') {
+                // Move timer to dwell stage
+                timer.moveToDwell();
+                
+                // Remove from current container and recreate in dwell container
+                document.getElementById(`timer-${id}`).remove();
+                createTimerElement(timer);
+                
+                // Show notification
+                new Notification(`Case ${timer.caseNumber} - Moved to Dwell Stage`, {
+                    body: 'Timer has been moved to the 3-day dwell countdown. Case is now in progress.',
+                    icon: '✅',
+                    requireInteraction: false
+                });
             }
         }
 
